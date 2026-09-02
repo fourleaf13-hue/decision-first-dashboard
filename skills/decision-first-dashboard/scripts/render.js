@@ -5,8 +5,10 @@ import { validateDecisionState } from './validate.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 const currentDir = path.dirname(currentFile);
-const svgTemplatePath = path.resolve(currentDir, '../templates/no-score.svg');
-const htmlTemplatePath = path.resolve(currentDir, '../templates/no-score.html');
+const noScoreSvgTemplatePath = path.resolve(currentDir, '../templates/no-score.svg');
+const noScoreHtmlTemplatePath = path.resolve(currentDir, '../templates/no-score.html');
+const compositeSvgTemplatePath = path.resolve(currentDir, '../templates/composite.svg');
+const compositeHtmlTemplatePath = path.resolve(currentDir, '../templates/composite.html');
 const cssTemplatePath = path.resolve(currentDir, '../templates/dashboard.css');
 
 function assertValid(data) {
@@ -90,6 +92,22 @@ function htmlRevenueVisual(series) {
   return `<svg class="sparkline" viewBox="0 0 234 86" aria-label="Revenue trend"><path d="${path}"></path></svg>`;
 }
 
+function svgScoreVisual(series) {
+  if (!series?.length) {
+    return '<text x="98" y="330" class="muted" font-size="12">Trend data unavailable</text>';
+  }
+  const path = pathForSeries(series, { left: 98, right: 332, top: 286, bottom: 360 });
+  return `<path d="${path}" fill="none" stroke="url(#accentLine)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+
+function htmlScoreVisual(series) {
+  if (!series?.length) {
+    return '<div class="trend-unavailable">Trend data unavailable</div>';
+  }
+  const path = pathForSeries(series, { left: 0, right: 234, top: 6, bottom: 80 });
+  return `<svg class="sparkline" viewBox="0 0 234 86" aria-label="Score trend"><path d="${path}"></path></svg>`;
+}
+
 function splitSignalRows(signals) {
   const topCount = Math.ceil(signals.length / 2);
   return {
@@ -165,6 +183,84 @@ function htmlSignalCluster(signals) {
   </div>`).join('\n');
 
   return { paths, nodes };
+}
+
+function formatScore(value) {
+  if (Number.isInteger(value)) return String(value);
+  return String(Number(value.toFixed(1)));
+}
+
+function formatWeight(weight) {
+  return `${Number((weight * 100).toFixed(1))}%`;
+}
+
+function svgComponentCluster(components) {
+  const { top, bottom } = splitSignalRows(components);
+  const placed = [];
+
+  for (const [rowName, row, y] of [['top', top, 330], ['bottom', bottom, 590]]) {
+    const xs = svgRowXs(row.length);
+    row.forEach((component, index) => placed.push({ component, x: xs[index], y, rowName }));
+  }
+
+  const paths = placed.map(({ x, y }) => `M698 464 L${x} ${y}`).join(' ');
+  const nodes = placed.map(({ component, x, y, rowName }) => {
+    const topRow = rowName === 'top';
+    const scoreY = topRow ? y - 62 : y + 66;
+    const labelY = topRow ? y - 37 : y + 91;
+    const detailY = topRow ? y - 18 : y + 110;
+    const detail = `${formatWeight(component.weight)} · ${component.value}`;
+    return `<g class="score-component-node">
+      <circle cx="${x}" cy="${y}" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
+      <text x="${x}" y="${scoreY}" class="accent" font-size="24" font-weight="740" text-anchor="middle">${escapeMarkup(formatScore(component.normalizedScore))}</text>
+      <text x="${x}" y="${labelY}" class="ink" font-size="13" font-weight="650" text-anchor="middle">${escapeMarkup(component.label)}</text>
+      <text x="${x}" y="${detailY}" class="muted" font-size="11" text-anchor="middle">${escapeMarkup(detail)}</text>
+    </g>`;
+  }).join('\n');
+
+  return { paths, nodes };
+}
+
+function htmlComponentCluster(components) {
+  const { top, bottom } = splitSignalRows(components);
+  const placed = [];
+
+  for (const [row, y] of [[top, 28], [bottom, 72]]) {
+    const xs = htmlRowXs(row.length);
+    row.forEach((component, index) => placed.push({ component, x: xs[index], y }));
+  }
+
+  const paths = placed.map(({ x, y }) => {
+    const px = (620 * x / 100).toFixed(1);
+    const py = (520 * y / 100).toFixed(1);
+    return `M310 260 L${px} ${py}`;
+  }).join(' ');
+
+  const nodes = placed.map(({ component, x, y }) => `<div class="signal score-component" style="left:${x}%;top:${y}%">
+    <strong>${escapeMarkup(formatScore(component.normalizedScore))}</strong>
+    <span>${escapeMarkup(component.label)}</span>
+    <small>${escapeMarkup(`${formatWeight(component.weight)} · ${component.value}`)}</small>
+  </div>`).join('\n');
+
+  return { paths, nodes };
+}
+
+function svgCompositionRows(components) {
+  return components.map((component, index) => {
+    const y = 552 + index * 34;
+    const detail = `${formatScore(component.normalizedScore)} · ${formatWeight(component.weight)}`;
+    return `<g>
+      <text x="98" y="${y}" class="ink" font-size="12" font-weight="650">${escapeMarkup(component.label)}</text>
+      <text x="332" y="${y}" class="muted" font-size="11" text-anchor="end">${escapeMarkup(detail)}</text>
+    </g>`;
+  }).join('\n');
+}
+
+function htmlCompositionRows(components) {
+  return components.map((component) => `<div class="composition-row">
+    <span>${escapeMarkup(component.label)}</span>
+    <small>${escapeMarkup(`${formatScore(component.normalizedScore)} · ${formatWeight(component.weight)}`)}</small>
+  </div>`).join('\n');
 }
 
 function movementSignals(signals) {
@@ -285,7 +381,7 @@ function fillTemplate(template, replacements) {
   return output;
 }
 
-function viewModel(data) {
+function noScoreViewModel(data) {
   const mrr = data.signals.find((signal) => signal.metric === 'mrr');
   const synthesis = synthesisCopy(data.signals);
   const revenueSeries = data.context?.provenance === 'source' ? data.context.revenueSeries : null;
@@ -293,10 +389,9 @@ function viewModel(data) {
   return { mrr, synthesis, revenueSeries, movement };
 }
 
-export function renderSvg(data) {
-  assertValid(data);
-  const template = fs.readFileSync(svgTemplatePath, 'utf8');
-  const { mrr, synthesis, revenueSeries, movement } = viewModel(data);
+function renderNoScoreSvg(data) {
+  const template = fs.readFileSync(noScoreSvgTemplatePath, 'utf8');
+  const { mrr, synthesis, revenueSeries, movement } = noScoreViewModel(data);
   const signalCluster = svgSignalCluster(data.signals);
 
   return fillTemplate(template, {
@@ -313,11 +408,10 @@ export function renderSvg(data) {
   });
 }
 
-export function renderHtml(data) {
-  assertValid(data);
-  const template = fs.readFileSync(htmlTemplatePath, 'utf8');
+function renderNoScoreHtml(data) {
+  const template = fs.readFileSync(noScoreHtmlTemplatePath, 'utf8');
   const css = fs.readFileSync(cssTemplatePath, 'utf8');
-  const { mrr, synthesis, revenueSeries, movement } = viewModel(data);
+  const { mrr, synthesis, revenueSeries, movement } = noScoreViewModel(data);
   const signalCluster = htmlSignalCluster(data.signals);
 
   return fillTemplate(template, {
@@ -333,6 +427,56 @@ export function renderHtml(data) {
     HTML_EXCEPTION_ROWS: htmlExceptionRows(data.exceptions),
     HTML_EVENT_ROWS: htmlEventRows(data.events)
   });
+}
+
+function renderCompositeSvg(data) {
+  const template = fs.readFileSync(compositeSvgTemplatePath, 'utf8');
+  const scoreSeries = data.context?.provenance === 'source' ? data.context.scoreSeries : null;
+  const cluster = svgComponentCluster(data.model.components);
+
+  return fillTemplate(template, {
+    SCORE_LABEL: escapeMarkup(data.score.label),
+    SCORE_VALUE: escapeMarkup(formatScore(data.score.value)),
+    SCORE_MAX: escapeMarkup(formatScore(data.score.max)),
+    SCORE_BAND: escapeMarkup(data.score.band),
+    SVG_SCORE_TREND: svgScoreVisual(scoreSeries),
+    SVG_COMPOSITION_ROWS: svgCompositionRows(data.model.components),
+    SVG_COMPONENT_PATHS: cluster.paths,
+    SVG_COMPONENT_NODES: cluster.nodes,
+    EXCEPTION_ROWS: svgExceptionRows(data.exceptions),
+    EVENT_ROWS: svgEventRows(data.events)
+  });
+}
+
+function renderCompositeHtml(data) {
+  const template = fs.readFileSync(compositeHtmlTemplatePath, 'utf8');
+  const css = fs.readFileSync(cssTemplatePath, 'utf8');
+  const scoreSeries = data.context?.provenance === 'source' ? data.context.scoreSeries : null;
+  const cluster = htmlComponentCluster(data.model.components);
+
+  return fillTemplate(template, {
+    CSS: css,
+    SCORE_LABEL: escapeMarkup(data.score.label),
+    SCORE_VALUE: escapeMarkup(formatScore(data.score.value)),
+    SCORE_MAX: escapeMarkup(formatScore(data.score.max)),
+    SCORE_BAND: escapeMarkup(data.score.band),
+    HTML_SCORE_TREND: htmlScoreVisual(scoreSeries),
+    HTML_COMPOSITION_ROWS: htmlCompositionRows(data.model.components),
+    HTML_COMPONENT_PATHS: cluster.paths,
+    HTML_COMPONENT_NODES: cluster.nodes,
+    HTML_EXCEPTION_ROWS: htmlExceptionRows(data.exceptions),
+    HTML_EVENT_ROWS: htmlEventRows(data.events)
+  });
+}
+
+export function renderSvg(data) {
+  assertValid(data);
+  return data.mode === 'composite' ? renderCompositeSvg(data) : renderNoScoreSvg(data);
+}
+
+export function renderHtml(data) {
+  assertValid(data);
+  return data.mode === 'composite' ? renderCompositeHtml(data) : renderNoScoreHtml(data);
 }
 
 if (process.argv[1] === currentFile) {
