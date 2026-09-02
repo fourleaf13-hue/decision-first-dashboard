@@ -42,7 +42,7 @@
     <text x="98" y="228" class="ink" font-size="30" font-weight="720">$184,320</text>
     <text x="98" y="252" class="positive" font-size="14" font-weight="650">+12.4%</text>
     <text x="156" y="252" class="muted" font-size="13">vs last month</text>
-    <path d="M98.0 360.0 L137.0 352.6 L176.0 343.2 L215.0 330.5 L254.0 317.7 L293.0 303.0 L332.0 286.0" fill="none" stroke="url(#accentLine)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="98" y="330" class="muted" font-size="12">Trend data unavailable</text>
     <line x1="98" y1="392" x2="332" y2="392" stroke="#efedf6"/>
     <text x="98" y="421" class="muted" font-size="12">Current MRR</text>
     <text x="332" y="421" class="ink" font-size="13" font-weight="650" text-anchor="end">$184,320</text>

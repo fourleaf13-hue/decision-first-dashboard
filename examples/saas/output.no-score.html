@@ -101,6 +101,14 @@ body {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+.trend-unavailable {
+  height: 86px;
+  margin: 22px 0 5px;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+}
 .card-divider { height: 1px; background: #efedf6; margin: 8px 0 17px; }
 .context-row { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
 .context-row strong { color: var(--ink); font-size: 13px; }
@@ -246,9 +254,7 @@ body {
           <div class="eyebrow">Revenue growth</div>
           <div class="metric-value">$184,320</div>
           <div class="metric-delta positive">+12.4% <span>vs last month</span></div>
-          <svg class="sparkline" viewBox="0 0 234 86" aria-label="Revenue trend">
-            <path d="M0.0 80.0 L39.0 72.6 L78.0 63.2 L117.0 50.5 L156.0 37.7 L195.0 23.0 L234.0 6.0"></path>
-          </svg>
+          <div class="trend-unavailable">Trend data unavailable</div>
           <div class="card-divider"></div>
           <div class="context-row"><span>Current MRR</span><strong>$184,320</strong></div>
         </article>
