@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mode", "synthesis", "signals"],
+  "properties": {
+    "mode": { "const": "no_score" },
+    "synthesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["direction", "targetState", "exceptionState"],
+      "properties": {
+        "direction": { "enum": ["improving", "deteriorating", "mixed", "unknown"] },
+        "targetState": { "enum": ["known", "unknown"] },
+        "exceptionState": { "enum": ["present", "none_visible", "unknown"] }
+      }
+    },
+    "signals": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 6,
+      "items": { "$ref": "#/definitions/signal" }
+    },
+    "context": { "$ref": "#/definitions/context" },
+    "exceptions": {
+      "type": "array",
+      "maxItems": 5,
+      "items": { "$ref": "#/definitions/exception" }
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 5,
+      "items": { "$ref": "#/definitions/event" }
+    }
+  },
+  "definitions": {
+    "signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric", "label", "value", "delta", "direction", "provenance"],
+      "properties": {
+        "metric": { "type": "string", "pattern": "^[a-z0-9_]{1,40}$" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "value": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "delta": { "type": "string", "minLength": 1, "maxLength": 20 },
+        "direction": { "enum": ["improving", "deteriorating", "flat", "unknown"] },
+        "provenance": { "enum": ["source", "derived"] }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "revenueSeries": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 24,
+          "items": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "exception": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "status", "provenance"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "plan": { "type": "string", "maxLength": 24 },
+        "mrr": { "type": "string", "maxLength": 24 },
+        "status": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "provenance": { "enum": ["source", "derived"] }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject", "event", "time", "provenance"],
+      "properties": {
+        "subject": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "event": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "detail": { "type": "string", "maxLength": 50 },
+        "time": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "provenance": { "enum": ["source", "derived"] }
+      }
+    }
+  }
+}
