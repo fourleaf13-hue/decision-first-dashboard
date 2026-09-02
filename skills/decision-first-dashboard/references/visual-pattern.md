@@ -1,81 +1,71 @@
-# Visual Pattern Reference — v5
+# Visual Pattern Reference — v6
 
-Use this as an **executable composition target**, not as a source of business data.
+Use this as an executable composition target, not a source of business data.
 
-The intended visual family is `after-reference.png`: one dominant synthesis region, compact supporting areas, restrained product styling, and no visible decision-framework language.
+The intended visual family is `after-reference.png`: one dominant synthesis region, compact support cards, restrained color, generous whitespace, and no visible decision-framework language.
 
-## Non-negotiable composition rules
+## Executive geometry
 
-For an executive dashboard:
+After navigation, treat the main content as one composition rather than a dashboard grid.
 
-- The synthesis region is the unmistakable first focal point.
-- It should normally occupy roughly 40–50% of the main content width or otherwise dominate by scale and whitespace.
-- Left/right support areas must be visually subordinate and may be asymmetric.
-- Do not start with four equal KPI cards.
-- Do not render a full-width customer table unless the task explicitly requires operational account management.
-- Do not use large explanatory paragraphs as the synthesis.
-- Do not label columns with methodology language.
+Preferred balance:
 
-## Template A — Composite center
+- left support: about 20–25%;
+- dominant center: about 45–50%;
+- right support: about 25–30%.
 
-Use only when the source provides a defensible score/status model.
+The center must win visually by both width and emphasis.
 
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│ Subscription health                                              │
-│                                                                  │
-│  compact context          DOMINANT CENTER        compact action  │
-│                                                                  │
-│  MRR / target             Growth   Retention     Accounts at risk│
-│  score composition          ↘       ↓       ↙     Score trend     │
-│  segment weakness           68 / 100              Business impact │
-│                               At risk                            │
-│                            ↗       ↑       ↖                      │
-│                         Conversion  Churn                          │
-└──────────────────────────────────────────────────────────────────┘
-```
+## Composite mode
 
-### Render behavior
-
-- The score/status is central and largest.
-- 3–6 validated inputs visually orbit, converge on, or tightly surround the center.
-- Left side explains why/where.
-- Right side answers who/trend/impact.
-- Outcome metrics remain visually separate from score inputs.
-
-## Template B — Multi-signal center
-
-Use when no defensible composite score exists.
-
-**Never replace the missing score with a fabricated one. Never retreat to a standard KPI grid.**
+Use only when a real composite score/status model exists.
 
 ```text
-┌──────────────────────────────────────────────────────────────────┐
-│ Subscription health                                              │
-│                                                                  │
-│  Revenue growth            ↑ MRR +12.4%         Accounts to watch│
-│  7-month trend                   ╲               Dovetail         │
-│                               IMPROVING           At risk          │
-│  Retention context          target unknown       Recent events    │
-│  Churn 2.84%                   ╱    ╲                               │
-│                         ↓ Churn   ↑ Conversion    MRR context       │
-│                           -0.6pp      +3.2%       $184,320          │
-│                              ↑ Customers +8.1%                    │
-└──────────────────────────────────────────────────────────────────┘
+┌───────────────┬──────────────────────────────┬──────────────────┐
+│ Revenue/why   │       Subscription health    │ Accounts at risk │
+│               │                              │                  │
+│ score inputs  │       Growth   Retention     │ Score trend      │
+│ segment risk  │          \      /             │ Business impact  │
+│               │           68 / 100           │                  │
+│               │            At risk           │                  │
+│               │          /        \           │                  │
+│               │     Conversion   Churn       │                  │
+└───────────────┴──────────────────────────────┴──────────────────┘
 ```
 
-### Render behavior
+Do not confuse business outcome metrics with score inputs.
 
-- `Improving — target unknown` or another evidence-bounded status sits at the visual center.
-- 3–6 source-supported directional signals form a **single visual cluster** around it.
-- Signals are compact; do not turn each into a large independent card.
-- Left side carries only the minimum context needed to explain the movement.
-- Right side carries only confirmed exceptions, recent events, trend, or business impact.
-- If only one confirmed at-risk account is visible, show that account compactly; do not imply it is the only risk company-wide.
+## No-score executive mode
 
-## Product-native language
+Use when targets, healthy ranges, normalization, or weights are missing.
 
-Good labels when supported:
+The central region still behaves like the After reference, but replace the score with a directional synthesis cluster.
+
+```text
+┌───────────────┬──────────────────────────────┬──────────────────┐
+│ Revenue growth│        Subscription health   │ Accounts to watch│
+│ 7-month trend │                              │ Dovetail / At risk│
+│               │   MRR +12.4   Customers +8.1│                  │
+│ churn context │          \        /           │ Recent events    │
+│               │           IMPROVING          │ cancellation     │
+│               │         target unknown       │ conversion       │
+│               │          /        \           │                  │
+│               │ Churn -0.6pp   Trial +3.2%   │ MRR context      │
+└───────────────┴──────────────────────────────┴──────────────────┘
+```
+
+### No-score rules
+
+- Four core metrics belong inside the center cluster, not in four separate top-row cards.
+- `Improving — target unknown` is a status of direction, not a claim of healthy performance.
+- Never show `HEALTH GOOD`, `Healthy`, `Marginal`, `At risk`, or a 0–100 score without source rules.
+- Keep the revenue trend compact on the left; do not let it dominate the page.
+- Show only the minimum confirmed account exceptions/events on the right.
+- Do not render the full customer table unless operational account management is the user's task.
+
+## Product-native copy
+
+Prefer specific domain labels:
 
 - Subscription health
 - Revenue growth
@@ -85,35 +75,29 @@ Good labels when supported:
 - Business impact
 - Churn by plan
 
-Do not render:
+Avoid methodology/report labels:
 
 - Executive Decision Dashboard
 - Primary Decision
 - Diagnostic / Diagnostic Context
+- Outcome
 - Actionable
 - Required Interventions
 - Overall State
+- Core Metrics
 - Key Health Metrics Context
-- Outcome / Driver / Success Signal
+- Context & Risk
 
-## Reference fidelity
+## Final visual gate
 
-When `after-reference.png` is available, inspect it before rendering and preserve:
+Before returning the visual, compare it with `after-reference.png`.
 
-- center dominance;
-- compact side cards;
-- whitespace ratio;
-- restrained color usage;
-- card density;
-- asymmetric balance;
-- absence of large operational tables;
-- one coherent page composition.
+Redraw if:
 
-Do **not** copy its numbers, score, thresholds, or customer facts unless those facts also exist in the source dashboard.
-
-## Data integrity
-
-If a source has no target, do not add one.
-If an account is only `At risk`, do not invent a reason such as failed payment.
-If an event says a trial converted, do not render a `Convert` button.
-If table and event states conflict, preserve the conflict rather than silently resolving it.
+1. four equal KPI cards appear as the main top row;
+2. a green/red top banner declares health without a rule;
+3. a full-width customer table dominates the bottom;
+4. the center is not the largest visual region;
+5. the center is a sentence card instead of a compact visual cluster;
+6. side areas compete with the center;
+7. any framework labels, invented buttons, or source-data mismatches appear.
