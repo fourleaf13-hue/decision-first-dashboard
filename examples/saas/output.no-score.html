@@ -92,6 +92,8 @@ body {
 .metric-delta { margin-top: 6px; font-size: 13px; font-weight: 700; }
 .metric-delta span { color: var(--muted); font-weight: 500; margin-left: 6px; }
 .positive { color: var(--positive); }
+.danger { color: var(--danger); }
+.muted { color: var(--muted); }
 
 .sparkline { width: 100%; height: 86px; margin: 22px 0 5px; overflow: visible; }
 .sparkline path {
@@ -193,14 +195,11 @@ body {
   width: 142px;
   text-align: center;
   z-index: 2;
+  transform: translate(-50%, -50%);
 }
-.signal strong { display: block; color: var(--accent); font-size: 25px; line-height: 1; letter-spacing: -0.025em; }
+.signal strong { display: block; color: var(--accent); font-size: 24px; line-height: 1; letter-spacing: -0.025em; }
 .signal span { display: block; margin-top: 9px; font-weight: 700; font-size: 13px; }
 .signal small { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
-.signal--1 { left: 12%; top: 23%; }
-.signal--2 { right: 12%; top: 23%; }
-.signal--3 { left: 12%; bottom: 18%; }
-.signal--4 { right: 12%; bottom: 18%; }
 
 .compact-card { padding: 26px; min-height: 278px; }
 .events-card { min-height: 308px; }
@@ -262,15 +261,15 @@ body {
         <article class="card context-card">
           <div class="eyebrow">Movement context</div>
           <div class="context-metric">
-            <span>Churn</span>
-            <strong>2.84%</strong>
-            <em class="positive">-0.6pp</em>
-          </div>
-          <div class="context-metric">
-            <span>Trial conversion</span>
-            <strong>31.7%</strong>
-            <em class="positive">+3.2%</em>
-          </div>
+    <span>Churn</span>
+    <strong>2.84%</strong>
+    <em class="positive">-0.6pp</em>
+  </div>
+<div class="context-metric">
+    <span>Trial conversion</span>
+    <strong>31.7%</strong>
+    <em class="positive">+3.2%</em>
+  </div>
         </article>
       </aside>
 
@@ -280,30 +279,30 @@ body {
           <div class="orbit-ring orbit-ring--outer"></div>
           <div class="orbit-ring orbit-ring--inner"></div>
           <svg viewBox="0 0 620 520" preserveAspectRatio="none">
-            <path d="M310 260 L160 160 M310 260 L460 160 M310 260 L160 360 M310 260 L460 360"></path>
+            <path d="M310 260 L161.2 145.6 M310 260 L458.8 145.6 M310 260 L161.2 374.4 M310 260 L458.8 374.4"></path>
           </svg>
         </div>
 
-        <div class="signal signal--1">
-          <strong>+12.4%</strong>
-          <span>MRR</span>
-          <small>$184,320</small>
-        </div>
-        <div class="signal signal--2">
-          <strong>+8.1%</strong>
-          <span>Customers</span>
-          <small>8,942</small>
-        </div>
-        <div class="signal signal--3">
-          <strong>-0.6pp</strong>
-          <span>Churn</span>
-          <small>2.84%</small>
-        </div>
-        <div class="signal signal--4">
-          <strong>+3.2%</strong>
-          <span>Trial conversion</span>
-          <small>31.7%</small>
-        </div>
+        <div class="signal" style="left:26%;top:28%">
+    <strong>+12.4%</strong>
+    <span>MRR</span>
+    <small>$184,320</small>
+  </div>
+<div class="signal" style="left:74%;top:28%">
+    <strong>+8.1%</strong>
+    <span>Customers</span>
+    <small>8,942</small>
+  </div>
+<div class="signal" style="left:26%;top:72%">
+    <strong>-0.6pp</strong>
+    <span>Churn</span>
+    <small>2.84%</small>
+  </div>
+<div class="signal" style="left:74%;top:72%">
+    <strong>+3.2%</strong>
+    <span>Trial conversion</span>
+    <small>31.7%</small>
+  </div>
 
         <div class="synthesis-core">
           <strong>IMPROVING</strong>
