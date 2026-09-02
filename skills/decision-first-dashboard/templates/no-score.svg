@@ -42,7 +42,7 @@
     <text x="98" y="228" class="ink" font-size="30" font-weight="720">{{MRR_VALUE}}</text>
     <text x="98" y="252" class="positive" font-size="14" font-weight="650">{{MRR_DELTA}}</text>
     <text x="156" y="252" class="muted" font-size="13">vs last month</text>
-    <path d="{{REVENUE_PATH}}" fill="none" stroke="url(#accentLine)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    {{REVENUE_VISUAL}}
     <line x1="98" y1="392" x2="332" y2="392" stroke="#efedf6"/>
     <text x="98" y="421" class="muted" font-size="12">Current MRR</text>
     <text x="332" y="421" class="ink" font-size="13" font-weight="650" text-anchor="end">{{MRR_VALUE}}</text>
