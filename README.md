@@ -1,10 +1,58 @@
 # Decision-First Dashboard
 
-**Turn dashboards people have to read into dashboards people can understand at a glance.**
+Turn dashboards people have to read into dashboards people can understand at a glance.
 
 Most dashboards organize data. This skill organizes decisions.
 
 > **Many metrics → Minimum sufficient decision signals → Diagnosis → Action**
+
+Decision-First Dashboard is an Agent Skill for redesigning KPI-heavy dashboards around the decision a user actually needs to make.
+
+It is a reusable decision-design framework **plus a visual translation grammar** for turning:
+
+**many metrics → minimum sufficient decision signals → diagnosis → action**
+
+Instead of treating every KPI as equally important, it helps an agent determine:
+
+- who is looking;
+- what decision they are trying to make;
+- which metrics are outcomes, drivers, diagnostics, or action data;
+- whether the metrics can defensibly form one composite signal;
+- what should dominate the visual hierarchy;
+- what requires intervention.
+
+The visual style can change, but the result should preserve a clear visual grammar: one dominant synthesis area, supporting diagnosis, visible action targets, restrained product-native styling, and no exposed framework labels.
+
+## Before → After
+
+<table>
+  <tr>
+    <th width="50%">Before</th>
+    <th width="50%">After</th>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="examples/saas/before.png" width="100%">
+    </td>
+    <td width="50%">
+      <img src="examples/saas/after.png" width="100%">
+    </td>
+  </tr>
+</table>
+
+The Before dashboard is clean, but users still have to scan independent KPI cards, a trend chart, an activity feed, and a customer table before constructing a mental model.
+
+The After example reorganizes the same type of executive dashboard around a dominant subscription-health signal, diagnosis, account-level action targets, trend, and business impact.
+
+> The After image is an example of **composite mode**. A composite score should only be used when its normalization, thresholds, and weights are defensible. Otherwise the skill uses multiple primary signals instead of inventing a score.
+
+## Install
+
+Install this skill with any Agent Skills-compatible client:
+
+```bash
+npx skills add fourleaf13-hue/decision-first-dashboard
+```
 
 ## Quick start
 
@@ -18,123 +66,99 @@ Then give your agent a dashboard screenshot, Figma frame, or existing dashboard 
 
 > Redesign this dashboard using the `decision-first-dashboard` skill. First identify the primary user and decision. Do not change the visual style until the decision hierarchy is clear.
 
-## Before → After
-
-<table>
-  <tr>
-    <th width="50%">Before</th>
-    <th width="50%">After</th>
-  </tr>
-  <tr>
-    <td width="50%"><img src="examples/saas/before.png" width="100%"></td>
-    <td width="50%"><img src="examples/saas/after.png" width="100%"></td>
-  </tr>
-</table>
-
-### Before
-
-Users scan multiple KPI cards, charts, activity feeds, and tables, then mentally combine them to decide whether the business is healthy.
-
-### After
-
-The dashboard builds that mental model for them:
-
-- one dominant decision signal when one is defensible;
-- supporting evidence only where needed;
-- diagnostic data at the sides;
-- clear action targets;
-- explicit distinction between **score inputs** and **outcome impact**.
-
 ## Core idea
 
-Do not redesign the dashboard until you can state the user’s decision in one sentence.
+A dashboard should not force the user to construct the conclusion themselves.
 
-The skill asks the designer or agent to determine:
-
-1. Who is looking?
-2. What decision are they trying to make?
-3. Which metrics can actually change that decision?
-4. Can those metrics form **one defensible signal**?
-5. If not, what are the **minimum sufficient decision signals**?
-6. Which metrics only explain the signal?
-7. What entities can the user act on?
-8. Is any **hard-stop** condition present that must override normal status?
-
-Only then should the visual hierarchy be redesigned.
-
-## The difference
-
-A typical dashboard redesign improves layout, spacing, typography, and charts.
-
-This skill first asks:
-
-> **What decision should the user be able to make in 5–10 seconds?**
-
-Only then does it redesign the information hierarchy.
-
-## What the skill changes
-
-### Data-first dashboard
+A typical KPI-first dashboard often looks like:
 
 ```text
 KPI   KPI   KPI   KPI
 
-Trend chart      Activity
+Chart             Activity
 
-Customer table
+Table
 ```
 
-### Decision-first dashboard
+A decision-first dashboard instead asks:
 
 ```text
-           PRIMARY DECISION / STATUS
-
-        One dominant signal OR a few primary signals
-
-WHY?                  WHERE?
-Drivers              Segment / plan / cohort risk
-
-WHO?                  IMPACT?
-Action targets       Business outcome
+What does the user need to decide?
+        ↓
+What is the minimum sufficient signal?
+        ↓
+Why is it happening?
+        ↓
+Where / who requires attention?
+        ↓
+What action follows?
 ```
 
-## Important safeguards
+## One signal is not always the answer
 
-### 1) Do not invent composite-score math
+The skill does **not** require every dashboard to have one Health Score.
 
-Use one composite score only when:
+It branches:
 
-- the component metrics describe the same high-level condition;
-- targets or healthy ranges exist;
-- normalization rules are defensible;
-- weights are known or explicitly defined.
+```text
+Can these metrics defensibly form one signal?
 
-If those inputs are missing, keep metrics separate or clearly mark the score as illustrative.
+YES → composite mode
+      one dominant signal + drivers + diagnosis + action
 
-### 2) Hard-stop metrics override averages
+NO  → multi-signal mode
+      2–4 primary signals + diagnosis + action
+```
 
-Critical safety, security, compliance, regulatory, or contractual conditions should not be averaged into a reassuring health score when they independently determine status.
+This prevents agents from inventing arbitrary score math simply because a 0–100 gauge looks clean.
 
-### 3) The example visualization is illustrative, not prescribed
+## Who is looking changes the dashboard
 
-The SaaS example uses a radar chart and a central health score because that fit the scenario. The skill does **not** require radar charts or scorecards. The fixed part is the **decision hierarchy**, not the chart type.
+The same underlying data should not produce the same hierarchy for every role.
 
-## Example: SaaS subscription health
+### CEO / Founder
 
-Primary decision:
+Prioritize:
 
-> Is subscription health good enough, or does something require intervention?
+- synthesis;
+- business impact;
+- high-value exceptions;
+- a small number of action targets.
 
-The updated After example organizes the screen around a central **Subscription health** signal.
+### Operator / Analyst
 
-It distinguishes:
+Prioritize:
 
-- **Inputs to the Health Score**: Growth, Retention, Conversion, Churn, ARPA, Trial
-- **Primary drag**: Enterprise churn at 6.8%
-- **Who requires attention**: at-risk accounts
-- **Business outcome**: Net New MRR, explicitly labeled as **not included in Health Score**
+- diagnosability;
+- segment and cohort detail;
+- drill-down;
+- potentially multiple primary signals.
 
-See [`examples/saas/reasoning.md`](examples/saas/reasoning.md).
+`Who is looking?` is therefore a design input, not a checklist question.
+
+## Hard-stop conditions
+
+Safety, compliance, security, regulatory, or contractual conditions can be **hard stops**.
+
+A hard-stop metric must not be averaged into a reassuring composite score.
+
+Example:
+
+```text
+Operational Health: 84 / Healthy
+Safety Incident: ACTIVE
+```
+
+is a bad hierarchy.
+
+The hard stop should override the normal interpretation:
+
+```text
+CRITICAL
+Active safety incident
+
+Normal operational health interpretation suspended.
+```
 
 ## Visual translation
 
@@ -154,13 +178,16 @@ See [`skills/decision-first-dashboard/references/visual-pattern.md`](skills/deci
 
 ## Tests
 
-The repo includes three pressure scenarios:
+The repository includes pressure scenarios for:
 
-- [`tests/saas.md`](tests/saas.md)
-- [`tests/ecommerce.md`](tests/ecommerce.md)
-- [`tests/operations.md`](tests/operations.md)
+- SaaS dashboards;
+- SaaS dashboards without score rules;
+- visual-output regressions;
+- evidence-scope / data-integrity behavior;
+- e-commerce dashboards;
+- operations dashboards with hard-stop conditions.
 
-The Operations test specifically checks that a critical safety or compliance condition overrides any composite score.
+These scenarios are used to test whether an agent follows the method instead of defaulting to generic KPI-card layouts.
 
 ## Repository structure
 
@@ -168,17 +195,17 @@ The Operations test specifically checks that a critical safety or compliance con
 decision-first-dashboard/
 ├── README.md
 ├── LICENSE
+├── examples/
+│   └── saas/
+│       ├── before.png
+│       ├── after.png
+│       └── reasoning.md
 ├── skills/
 │   └── decision-first-dashboard/
 │       ├── SKILL.md
 │       └── references/
 │           ├── visual-pattern.md
 │           └── after-reference.png
-├── examples/
-│   └── saas/
-│       ├── before.png
-│       ├── after.png
-│       └── reasoning.md
 └── tests/
     ├── saas.md
     ├── saas-no-score.md
@@ -188,26 +215,13 @@ decision-first-dashboard/
     └── operations.md
 ```
 
-## What this is — and isn’t
+## What this is not
 
-This is **not** a dashboard template.
+This is not a chart-style library.
 
-This is **not** a visual-style prompt.
+It does not prescribe radar charts, gauges, gradients, card styles, or a specific visual language.
 
-It is a reusable decision-design framework **plus a visual translation grammar** for turning:
-
-**many metrics → minimum sufficient decision signals → diagnosis → action**
-
-It combines:
-
-- UX reasoning
-- information architecture
-- dashboard design
-- data visualization
-- decision hierarchy
-- action-oriented product design
-
-The visual style can change, but the result should preserve a clear visual grammar: one dominant synthesis area, supporting diagnosis, visible action targets, restrained product-native styling, and no exposed framework labels.
+It is intended to change the **decision hierarchy** before changing the visual style.
 
 ## License
 
