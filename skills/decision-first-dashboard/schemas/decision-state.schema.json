@@ -8,9 +8,8 @@
     "synthesis": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["direction", "targetState", "exceptionState"],
+      "required": ["targetState", "exceptionState"],
       "properties": {
-        "direction": { "enum": ["improving", "deteriorating", "mixed", "unknown"] },
         "targetState": { "enum": ["known", "unknown"] },
         "exceptionState": { "enum": ["present", "none_visible", "unknown"] }
       }
@@ -50,13 +49,15 @@
     "context": {
       "type": "object",
       "additionalProperties": false,
+      "required": ["revenueSeries", "provenance"],
       "properties": {
         "revenueSeries": {
           "type": "array",
           "minItems": 2,
           "maxItems": 24,
           "items": { "type": "number", "minimum": 0 }
-        }
+        },
+        "provenance": { "const": "source" }
       }
     },
     "exception": {
