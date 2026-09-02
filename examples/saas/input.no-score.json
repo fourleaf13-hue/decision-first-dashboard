@@ -1,9 +1,5 @@
 {
   "mode": "no_score",
-  "synthesis": {
-    "targetState": "unknown",
-    "exceptionState": "present"
-  },
   "signals": [
     {
       "metric": "mrr",
