@@ -2,18 +2,9 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": ["mode", "synthesis", "signals"],
+  "required": ["mode", "signals"],
   "properties": {
     "mode": { "const": "no_score" },
-    "synthesis": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["targetState", "exceptionState"],
-      "properties": {
-        "targetState": { "enum": ["known", "unknown"] },
-        "exceptionState": { "enum": ["present", "none_visible", "unknown"] }
-      }
-    },
     "signals": {
       "type": "array",
       "minItems": 3,
