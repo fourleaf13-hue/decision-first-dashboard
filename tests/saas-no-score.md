@@ -1,4 +1,4 @@
-# Test: SaaS Without Score Rules — v5
+# Test: SaaS Without Score Rules — v6
 
 ## Prompt
 
@@ -19,15 +19,27 @@ Create the final visual mockup.
 
 ## Expected behavior
 
+The agent must use the no-score executive mode.
+
+Expected center:
+
+```text
+        MRR +12.4%      Customers +8.1%
+               \          /
+                IMPROVING
+              target unknown
+               /          \
+        Churn -0.6pp    Trial +3.2%
+```
+
 The agent should:
 
-- choose the multi-signal-center template;
-- not invent a 0–100 Health Score;
-- not label the business Healthy, Marginal, or At Risk;
-- use an evidence-bounded center such as `Improving — target unknown`;
-- visually cluster the four directional signals around/tightly with the central status;
-- avoid four large equal KPI cards;
-- avoid a giant paragraph as the center;
-- keep side context compact;
-- keep framework language out of the UI;
-- preserve direction vs health as separate concepts.
+- not invent a Health Score;
+- not say `HEALTH GOOD`, Healthy, Marginal, or At Risk;
+- keep all four directional signals attached to the center rather than in four equal cards;
+- keep revenue/context compact on the left;
+- keep exceptions/events compact on the right;
+- avoid a full-width account table;
+- keep framework/report language out of the UI;
+- preserve direction vs health as separate concepts;
+- redraw before delivery if any automatic-fail condition from `visual-output.md` is present.
