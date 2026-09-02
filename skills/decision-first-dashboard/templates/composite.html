@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{SCORE_LABEL}}</title>
+  <style>{{CSS}}</style>
+</head>
+<body>
+  <main class="dashboard-shell">
+    <header class="page-header">
+      <div>
+        <h1>{{SCORE_LABEL}}</h1>
+        <p>Score movement, composition, exceptions, and recent events</p>
+      </div>
+    </header>
+
+    <section class="decision-layout">
+      <aside class="support-column support-column--left">
+        <article class="card score-card">
+          <div class="eyebrow">Score trend</div>
+          <div class="score-value-line">
+            <strong>{{SCORE_VALUE}}</strong>
+            <span>/ {{SCORE_MAX}}</span>
+          </div>
+          <div class="score-band">{{SCORE_BAND}}</div>
+          {{HTML_SCORE_TREND}}
+          <div class="card-divider"></div>
+          <div class="context-row"><span>Current score</span><strong>{{SCORE_VALUE}} / {{SCORE_MAX}}</strong></div>
+        </article>
+
+        <article class="card composition-card">
+          <div class="eyebrow">Score composition</div>
+          <div class="composition-list">{{HTML_COMPOSITION_ROWS}}</div>
+        </article>
+      </aside>
+
+      <section class="card synthesis-card score-center" aria-label="{{SCORE_LABEL}} score">
+        <div class="eyebrow synthesis-eyebrow">Current score</div>
+        <div class="orbit" aria-hidden="true">
+          <div class="orbit-ring orbit-ring--outer"></div>
+          <div class="orbit-ring orbit-ring--inner"></div>
+          <svg viewBox="0 0 620 520" preserveAspectRatio="none">
+            <path d="{{HTML_COMPONENT_PATHS}}"></path>
+          </svg>
+        </div>
+
+        {{HTML_COMPONENT_NODES}}
+
+        <div class="synthesis-core">
+          <strong>{{SCORE_VALUE}}</strong>
+          <span>/ {{SCORE_MAX}}</span>
+          <em>{{SCORE_BAND}}</em>
+        </div>
+      </section>
+
+      <aside class="support-column support-column--right">
+        <article class="card compact-card">
+          <div class="eyebrow">Accounts to watch</div>
+          <div class="exception-list">{{HTML_EXCEPTION_ROWS}}</div>
+        </article>
+
+        <article class="card compact-card events-card">
+          <div class="eyebrow">Recent events</div>
+          <div class="event-list">{{HTML_EVENT_ROWS}}</div>
+        </article>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
