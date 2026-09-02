@@ -7,11 +7,11 @@ description: Use when redesigning KPI-heavy dashboards where users must scan mul
 
 ## Core principle
 
-Design the user's conclusion before designing the cards.
+Design the conclusion first, then render it as a product interface.
 
 **Many metrics → Minimum sufficient decision signals → Diagnosis → Action**
 
-Decision-first is an internal design method. The finished interface must look like a mature product, not a diagram explaining the method.
+The method stays backstage. The finished dashboard must look like a mature product, not a diagram explaining the method.
 
 ## 1. Define the decision
 
@@ -22,186 +22,100 @@ Identify:
 - primary business outcome;
 - what evidence would change the judgment.
 
-Role must change the result:
-- **Executive / founder:** synthesis, exceptions, business impact, minimal detail.
+Role must change the output:
+- **Executive / founder:** synthesis, exceptions, impact, minimal detail.
 - **Operator / analyst:** diagnosis, segmentation, drill-down, operational detail.
 
-## 2. Classify the data
+## 2. Preserve evidence discipline
 
-Assign each item a role:
+Do not invent:
 
-- **Outcome** — result the user ultimately cares about.
-- **Driver** — explains the outcome or overall condition.
-- **Diagnostic** — needed after a signal looks abnormal.
-- **Action data** — entity the user can act on.
+- scores or score math;
+- targets or thresholds;
+- customer states or events;
+- workflow buttons or actions;
+- causal relationships;
+- missing metrics.
 
-Do not invent missing metrics, targets, customer states, events, workflows, or causal relationships.
+Do not generalize a visible sample to the full population.
 
-## 3. Choose composite or multi-signal mode
+Direction is not the same as health. If targets are missing, use an evidence-bounded conclusion such as `Improving — target unknown`, `Mixed`, or `Cannot determine against target`.
 
-Use one composite signal only when normalization, thresholds/targets, and weights are defensible.
+## 3. Choose exactly one executive visual template
 
-**Never invent score math.**
+Read `references/visual-pattern.md` before rendering.
 
-If those rules are missing, use the minimum sufficient primary signals instead.
+### Template A — Composite center
 
-### Resolve the decision to the limit of the evidence
+Use only when a defensible composite score/status model already exists.
 
-Do not stop at organizing metrics and make the user reconstruct the conclusion.
+The center is the dominant focal point and may show the score/status. Supporting inputs visually converge on it. Compact diagnostics sit to the left; compact exceptions, trend, and business impact sit to the right.
 
-If evidence supports a judgment, state it. If targets or thresholds are missing, use an evidence-bounded status such as:
+### Template B — Multi-signal center
 
-- `Improving — target unknown`
-- `Deteriorating — threshold unknown`
-- `Mixed`
-- `Cannot determine against target`
-- `Insufficient evidence`
+Use when no defensible composite exists.
 
-Direction is not the same as health.
+**Do not fall back to a generic KPI grid.**
 
-## 4. Handle hard stops
+The center is still the dominant focal point, but it becomes a compact signal cluster:
 
-Critical safety, compliance, security, regulatory, contractual, or outage conditions override normal status.
+- one evidence-bounded status in the middle;
+- 3–6 directional signals arranged around or tightly attached to it;
+- left side = compact context that explains the movement;
+- right side = confirmed exceptions, events, trend, or impact.
 
-Never average a hard stop into a reassuring composite. Promote it to the top level and subordinate normal health interpretation.
+The central synthesis must be visual, not a large paragraph card.
 
-## 5. Use the executive composition grammar
+## 4. Preserve the supplied visual reference
 
-For executive/founder dashboards, do **not** default to a KPI strip or a generic three-column report.
+When `after-reference.png` or another explicit reference is available, inspect it before rendering.
 
-Prefer one integrated composition:
-
-- **LEFT — context / diagnosis:** compact evidence explaining why or where.
-- **CENTER — dominant synthesis:** the strongest visual region on the page.
-- **RIGHT — exceptions / trend / impact:** who needs attention, movement, and business consequence.
-
-The center should normally own roughly **40–50% of the main content width** or otherwise be unmistakably dominant. Left and right should be supporting columns, not peers.
-
-### The center must be a visual synthesis, not a large text card
-
-Do not satisfy this requirement by placing a sentence such as `Metric performance is improving` inside a large rectangle.
-
-Instead, visually combine the primary signals into one coherent composition:
-
-- composite mode: score/status with contributing dimensions arranged around or adjacent to it;
-- multi-signal mode: central evidence-bounded status with 3–6 compact directional signals clustered around it;
-- use radar, radial, ring, compact matrix, orbit, or another integrated form only when the data supports it.
-
-Supporting signals should visually converge on the central state.
-
-See `references/visual-pattern.md`.
-
-## 6. Follow supplied visual references literally enough to preserve composition
-
-When a reference image is supplied specifically as a visual/composition target, inspect it before rendering.
-
-Preserve its major structural traits unless the user's data makes them invalid:
+Match its **composition**, not its data:
 
 - dominant center;
-- asymmetric supporting columns;
-- compact card density;
-- whitespace ratio;
-- visual balance;
-- chart prominence;
-- restrained semantic color;
-- hierarchy of large vs. small elements.
+- subordinate asymmetric support areas;
+- compact cards;
+- generous whitespace;
+- restrained color;
+- no full-width operational table dominating the page;
+- one composition rather than three equal report columns.
 
-Do **not** reinterpret a strong reference as a generic dashboard layout.
+Do not reinterpret the reference as a generic `left / center / right` report.
 
-Use the reference for composition and visual language, **not** as a source of business facts.
+## 5. Keep reasoning language out of the UI
 
-## 7. Keep the reasoning backstage
+Do not expose framework or brief language such as:
 
-Never expose framework labels such as:
-
-- Decision
+- Decision / Primary Decision
 - Diagnostic
 - Outcome
 - Actionable
 - Driver
-- Success Signal
-- Diagnostic Context
-- Overall State
 - Required Interventions
+- Overall State
+- Key Health Metrics Context
+- Executive Decision Dashboard
 
-unless they are established domain language.
+Use domain-native labels such as `Subscription health`, `Revenue growth`, `Accounts to watch`, `Recent events`, `Score trend`, or `Business impact` when supported.
 
-Do not put the design brief itself in the UI.
+## 6. Hard stops override normal health
 
-Use domain-native labels such as `Subscription health`, `Revenue growth`, `Accounts to watch`, `Health trend`, or `Business impact` when supported by the product.
+Critical safety, compliance, security, regulatory, contractual, or outage conditions override normal status. Never average them into a reassuring composite.
 
-## 8. Separate inputs from outcomes
+## 7. Finish at the requested output layer
 
-If a composite score exists, distinguish score inputs from business outcomes. Never make an outcome metric look like another score component.
+If the user asks for a visual redesign and the host can render/build one, create the actual interface. Do not stop at reasoning or a layout specification.
 
-## 9. Show diagnosis without overstating causality
+After rendering, verify every displayed number, label, state, event, threshold, status, action, and chart value against the source.
 
-Make the main explanatory path easy to follow, but claim causality only when supported.
+## Delivery check
 
-When causality is not established, prefer wording such as `primary drag`, `associated with`, `likely contributor`, or `coincides with`.
+A passing executive dashboard should satisfy all of these:
 
-## 10. Respect evidence scope
-
-Do not generalize a partial table, sample, cohort, or visible subset to the full population.
-
-Four displayed accounts out of 8,942 customers do not prove that only one account company-wide is at risk.
-
-## 11. Do not invent status or actions
-
-Do not label a system `Healthy`, `Marginal`, `At risk`, `Critical`, `Good`, or `Bad` unless thresholds, benchmarks, rules, or hard-stop evidence support that judgment.
-
-Do not invent buttons or workflows such as `Contact`, `Convert`, `Intervene`, `Escalate`, or `Pause campaign` unless the source product or brief supports them.
-
-If an issue requires attention but the workflow is unknown, surface the issue without fabricating the mechanism.
-
-## 12. Keep executive detail compact
-
-For executive mode, do not add a full-width customer table merely because one exists in the source.
-
-Prefer the minimum actionable subset: a compact account list, exception card, or short ranked set.
-
-Keep a full table only when:
-
-- the table itself is the primary decision/action surface;
-- the user explicitly asks for operational account management; or
-- removing it would discard essential information with no compact substitute.
-
-## 13. Use restrained product-native visuals
-
-Prefer:
-
-- one dominant focal point;
-- calm neutral surfaces;
-- restrained accent color;
-- generous whitespace;
-- compact supporting metrics;
-- clear typography;
-- natural product terminology.
-
-Avoid:
-
-- traffic-light coloring on every card;
-- giant warning banners without evidence;
-- four or more equal KPI cards as the default top row;
-- explanatory prose inside every card;
-- framework labels in parentheses;
-- three equal columns with section headings that merely restate the framework.
-
-Radar charts are optional, never mandatory.
-
-## 14. Finish at the requested output layer
-
-If the user asks for a visual redesign or mockup and the host can render/build one, create the actual interface. Do not stop at reasoning or a layout specification.
-
-After rendering, verify every displayed number, label, customer state, event, threshold, status, chart value, and action against the source.
-
-## Quick check before delivery
-
-1. Can the primary user understand the top-level state in 3–5 seconds?
-2. Does the interface answer the primary decision as far as the evidence allows?
-3. Is the center a real visual synthesis rather than a large sentence card?
-4. Does the composition preserve the supplied reference's dominant-center structure when one was provided?
-5. Are diagnosis and exceptions compact and easy to find?
-6. Are unsupported scores, statuses, actions, or causal claims absent?
-7. Does the UI look like a real product rather than a framework diagram or consulting slide?
-8. Does every displayed value still match the source?
+1. Top-level state is understandable in 3–5 seconds.
+2. The center is the unmistakable first focal point.
+3. Supporting signals visually contribute to the center.
+4. Left/right support areas are compact and subordinate.
+5. No unsupported score, status, event, action, or causal claim appears.
+6. No framework terminology leaks into the product UI.
+7. The result feels structurally closer to the supplied After reference than to a standard admin dashboard.
