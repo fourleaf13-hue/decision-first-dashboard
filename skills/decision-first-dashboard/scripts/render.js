@@ -31,24 +31,36 @@ function signalByMetric(data, metric, fallbackIndex) {
   return data.signals.find((signal) => signal.metric === metric) ?? data.signals[fallbackIndex];
 }
 
-function synthesisCopy(synthesis) {
+export function deriveOverallDirection(signals = []) {
+  const known = new Set(
+    signals
+      .map((signal) => signal.direction)
+      .filter((direction) => direction && direction !== 'unknown')
+  );
+
+  if (known.size === 0) return 'unknown';
+  if (known.has('improving') && known.has('deteriorating')) return 'mixed';
+  if (known.has('improving')) return 'improving';
+  if (known.has('deteriorating')) return 'deteriorating';
+  if (known.has('flat')) return 'flat';
+  return 'unknown';
+}
+
+function synthesisCopy(data) {
+  const derivedDirection = deriveOverallDirection(data.signals);
   const direction = {
     improving: 'IMPROVING',
     deteriorating: 'DETERIORATING',
     mixed: 'MIXED',
+    flat: 'FLAT',
     unknown: 'UNKNOWN'
-  }[synthesis.direction];
+  }[derivedDirection];
 
-  const target = synthesis.targetState === 'known' ? 'Target known' : 'Target unknown';
+  const target = data.synthesis.targetState === 'known' ? 'Target known' : 'Target unknown';
   return { direction, target };
 }
 
 function pathForSeries(series, { left, right, top, bottom }) {
-  if (!series || series.length < 2) {
-    const mid = ((top + bottom) / 2).toFixed(1);
-    return `M${left} ${mid} L${right} ${mid}`;
-  }
-
   const min = Math.min(...series);
   const max = Math.max(...series);
   const span = Math.max(max - min, 1);
@@ -60,6 +72,22 @@ function pathForSeries(series, { left, right, top, bottom }) {
       return `${index === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
     })
     .join(' ');
+}
+
+function svgRevenueVisual(series) {
+  if (!series?.length) {
+    return '<text x="98" y="330" class="muted" font-size="12">Trend data unavailable</text>';
+  }
+  const path = pathForSeries(series, { left: 98, right: 332, top: 286, bottom: 360 });
+  return `<path d="${path}" fill="none" stroke="url(#accentLine)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+
+function htmlRevenueVisual(series) {
+  if (!series?.length) {
+    return '<div class="trend-unavailable">Trend data unavailable</div>';
+  }
+  const path = pathForSeries(series, { left: 0, right: 234, top: 6, bottom: 80 });
+  return `<svg class="sparkline" viewBox="0 0 234 86" aria-label="Revenue trend"><path d="${path}"></path></svg>`;
 }
 
 function svgExceptionRows(exceptions = []) {
@@ -136,8 +164,8 @@ function viewModel(data) {
   const customers = signalByMetric(data, 'active_customers', 1);
   const churn = signalByMetric(data, 'churn_rate', 2);
   const trial = signalByMetric(data, 'trial_conversion', 3);
-  const synthesis = synthesisCopy(data.synthesis);
-  const revenueSeries = data.context?.revenueSeries ?? [];
+  const synthesis = synthesisCopy(data);
+  const revenueSeries = data.context?.provenance === 'source' ? data.context.revenueSeries : null;
 
   return { mrr, customers, churn, trial, synthesis, revenueSeries };
 }
@@ -153,7 +181,7 @@ export function renderSvg(data) {
     CHURN_VALUE: escapeMarkup(churn?.value ?? '—'),
     CHURN_DELTA: escapeMarkup(churn?.delta ?? '—'),
     TRIAL_DELTA: escapeMarkup(trial?.delta ?? '—'),
-    REVENUE_PATH: pathForSeries(revenueSeries, { left: 98, right: 332, top: 286, bottom: 360 }),
+    REVENUE_VISUAL: svgRevenueVisual(revenueSeries),
     SYNTHESIS: synthesis.direction,
     TARGET_COPY: synthesis.target,
     S1_DELTA: escapeMarkup(mrr?.delta ?? '—'),
@@ -187,7 +215,7 @@ export function renderHtml(data) {
     CHURN_DELTA: escapeMarkup(churn?.delta ?? '—'),
     TRIAL_VALUE: escapeMarkup(trial?.value ?? '—'),
     TRIAL_DELTA: escapeMarkup(trial?.delta ?? '—'),
-    HTML_REVENUE_PATH: pathForSeries(revenueSeries, { left: 0, right: 234, top: 6, bottom: 80 }),
+    HTML_REVENUE_VISUAL: htmlRevenueVisual(revenueSeries),
     SYNTHESIS: synthesis.direction,
     TARGET_COPY: synthesis.target,
     S1_DELTA: escapeMarkup(mrr?.delta ?? '—'),
