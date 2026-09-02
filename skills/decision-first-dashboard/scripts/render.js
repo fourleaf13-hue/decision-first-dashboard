@@ -27,10 +27,6 @@ function escapeMarkup(value = '') {
     .replaceAll("'", '&#39;');
 }
 
-function signalByMetric(data, metric, fallbackIndex) {
-  return data.signals.find((signal) => signal.metric === metric) ?? data.signals[fallbackIndex];
-}
-
 export function deriveOverallDirection(signals = []) {
   const known = new Set(
     signals
@@ -46,18 +42,22 @@ export function deriveOverallDirection(signals = []) {
   return 'unknown';
 }
 
-function synthesisCopy(data) {
-  const derivedDirection = deriveOverallDirection(data.signals);
+function synthesisCopy(signals) {
   const direction = {
     improving: 'IMPROVING',
     deteriorating: 'DETERIORATING',
     mixed: 'MIXED',
     flat: 'FLAT',
     unknown: 'UNKNOWN'
-  }[derivedDirection];
+  }[deriveOverallDirection(signals)];
 
-  const target = data.synthesis.targetState === 'known' ? 'Target known' : 'Target unknown';
-  return { direction, target };
+  return { direction, target: 'Target unknown' };
+}
+
+function directionClass(direction) {
+  if (direction === 'improving') return 'positive';
+  if (direction === 'deteriorating') return 'danger';
+  return 'muted';
 }
 
 function pathForSeries(series, { left, right, top, bottom }) {
@@ -88,6 +88,132 @@ function htmlRevenueVisual(series) {
   }
   const path = pathForSeries(series, { left: 0, right: 234, top: 6, bottom: 80 });
   return `<svg class="sparkline" viewBox="0 0 234 86" aria-label="Revenue trend"><path d="${path}"></path></svg>`;
+}
+
+function splitSignalRows(signals) {
+  const topCount = Math.ceil(signals.length / 2);
+  return {
+    top: signals.slice(0, topCount),
+    bottom: signals.slice(topCount)
+  };
+}
+
+function svgRowXs(count) {
+  return {
+    1: [698],
+    2: [548, 848],
+    3: [478, 698, 918]
+  }[count] ?? [];
+}
+
+function htmlRowXs(count) {
+  return {
+    1: [50],
+    2: [26, 74],
+    3: [15, 50, 85]
+  }[count] ?? [];
+}
+
+function svgSignalCluster(signals) {
+  const { top, bottom } = splitSignalRows(signals);
+  const placed = [];
+
+  for (const [rowName, row, y] of [['top', top, 330], ['bottom', bottom, 590]]) {
+    const xs = svgRowXs(row.length);
+    row.forEach((signal, index) => placed.push({ signal, x: xs[index], y, rowName }));
+  }
+
+  const paths = placed
+    .map(({ x, y }) => `M698 464 L${x} ${y}`)
+    .join(' ');
+
+  const nodes = placed.map(({ signal, x, y, rowName }) => {
+    const topRow = rowName === 'top';
+    const deltaY = topRow ? y - 62 : y + 66;
+    const labelY = topRow ? y - 37 : y + 91;
+    const valueY = topRow ? y - 18 : y + 110;
+    return `<g class="signal-node">
+      <circle cx="${x}" cy="${y}" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
+      <text x="${x}" y="${deltaY}" class="accent" font-size="24" font-weight="740" text-anchor="middle">${escapeMarkup(signal.delta)}</text>
+      <text x="${x}" y="${labelY}" class="ink" font-size="13" font-weight="650" text-anchor="middle">${escapeMarkup(signal.label)}</text>
+      <text x="${x}" y="${valueY}" class="muted" font-size="11" text-anchor="middle">${escapeMarkup(signal.value)}</text>
+    </g>`;
+  }).join('\n');
+
+  return { paths, nodes };
+}
+
+function htmlSignalCluster(signals) {
+  const { top, bottom } = splitSignalRows(signals);
+  const placed = [];
+
+  for (const [row, y] of [[top, 28], [bottom, 72]]) {
+    const xs = htmlRowXs(row.length);
+    row.forEach((signal, index) => placed.push({ signal, x: xs[index], y }));
+  }
+
+  const paths = placed.map(({ x, y }) => {
+    const px = (620 * x / 100).toFixed(1);
+    const py = (520 * y / 100).toFixed(1);
+    return `M310 260 L${px} ${py}`;
+  }).join(' ');
+
+  const nodes = placed.map(({ signal, x, y }) => `<div class="signal" style="left:${x}%;top:${y}%">
+    <strong>${escapeMarkup(signal.delta)}</strong>
+    <span>${escapeMarkup(signal.label)}</span>
+    <small>${escapeMarkup(signal.value)}</small>
+  </div>`).join('\n');
+
+  return { paths, nodes };
+}
+
+function movementSignals(signals) {
+  const preferred = ['churn_rate', 'trial_conversion'];
+  const selected = [];
+
+  for (const metric of preferred) {
+    const match = signals.find((signal) => signal.metric === metric);
+    if (match && !selected.includes(match)) selected.push(match);
+  }
+
+  for (const signal of signals) {
+    if (selected.length >= 2) break;
+    if (signal.metric !== 'mrr' && !selected.includes(signal)) selected.push(signal);
+  }
+
+  return selected.slice(0, 2);
+}
+
+function svgMovementRows(signals) {
+  if (signals.length === 0) {
+    return '<text x="98" y="566" class="muted" font-size="12">No additional movement signals</text>';
+  }
+
+  return signals.map((signal, index) => {
+    const labelY = 552 + index * 72;
+    const valueY = labelY + 27;
+    const divider = index === 0 && signals.length > 1
+      ? '<line x1="98" y1="600" x2="332" y2="600" stroke="#efedf6"/>'
+      : '';
+    return `<g>
+      <text x="98" y="${labelY}" class="muted" font-size="12">${escapeMarkup(signal.label)}</text>
+      <text x="98" y="${valueY}" class="ink" font-size="21" font-weight="700">${escapeMarkup(signal.value)}</text>
+      <text x="332" y="${valueY}" class="${directionClass(signal.direction)}" font-size="13" font-weight="650" text-anchor="end">${escapeMarkup(signal.delta)}</text>
+      ${divider}
+    </g>`;
+  }).join('\n');
+}
+
+function htmlMovementRows(signals) {
+  if (signals.length === 0) {
+    return '<div class="empty-state">No additional movement signals</div>';
+  }
+
+  return signals.map((signal) => `<div class="context-metric">
+    <span>${escapeMarkup(signal.label)}</span>
+    <strong>${escapeMarkup(signal.value)}</strong>
+    <em class="${directionClass(signal.direction)}">${escapeMarkup(signal.delta)}</em>
+  </div>`).join('\n');
 }
 
 function svgExceptionRows(exceptions = []) {
@@ -160,42 +286,28 @@ function fillTemplate(template, replacements) {
 }
 
 function viewModel(data) {
-  const mrr = signalByMetric(data, 'mrr', 0);
-  const customers = signalByMetric(data, 'active_customers', 1);
-  const churn = signalByMetric(data, 'churn_rate', 2);
-  const trial = signalByMetric(data, 'trial_conversion', 3);
-  const synthesis = synthesisCopy(data);
+  const mrr = data.signals.find((signal) => signal.metric === 'mrr');
+  const synthesis = synthesisCopy(data.signals);
   const revenueSeries = data.context?.provenance === 'source' ? data.context.revenueSeries : null;
-
-  return { mrr, customers, churn, trial, synthesis, revenueSeries };
+  const movement = movementSignals(data.signals);
+  return { mrr, synthesis, revenueSeries, movement };
 }
 
 export function renderSvg(data) {
   assertValid(data);
   const template = fs.readFileSync(svgTemplatePath, 'utf8');
-  const { mrr, customers, churn, trial, synthesis, revenueSeries } = viewModel(data);
+  const { mrr, synthesis, revenueSeries, movement } = viewModel(data);
+  const signalCluster = svgSignalCluster(data.signals);
 
   return fillTemplate(template, {
     MRR_VALUE: escapeMarkup(mrr?.value ?? '—'),
     MRR_DELTA: escapeMarkup(mrr?.delta ?? '—'),
-    CHURN_VALUE: escapeMarkup(churn?.value ?? '—'),
-    CHURN_DELTA: escapeMarkup(churn?.delta ?? '—'),
-    TRIAL_DELTA: escapeMarkup(trial?.delta ?? '—'),
+    MRR_DIRECTION_CLASS: directionClass(mrr?.direction),
     REVENUE_VISUAL: svgRevenueVisual(revenueSeries),
+    MOVEMENT_ROWS: svgMovementRows(movement),
     SYNTHESIS: synthesis.direction,
-    TARGET_COPY: synthesis.target,
-    S1_DELTA: escapeMarkup(mrr?.delta ?? '—'),
-    S1_LABEL: escapeMarkup(mrr?.label ?? 'Signal 1'),
-    S1_VALUE: escapeMarkup(mrr?.value ?? '—'),
-    S2_DELTA: escapeMarkup(customers?.delta ?? '—'),
-    S2_LABEL: escapeMarkup(customers?.label ?? 'Signal 2'),
-    S2_VALUE: escapeMarkup(customers?.value ?? '—'),
-    S3_DELTA: escapeMarkup(churn?.delta ?? '—'),
-    S3_LABEL: escapeMarkup(churn?.label ?? 'Signal 3'),
-    S3_VALUE: escapeMarkup(churn?.value ?? '—'),
-    S4_DELTA: escapeMarkup(trial?.delta ?? '—'),
-    S4_LABEL: escapeMarkup(trial?.label ?? 'Signal 4'),
-    S4_VALUE: escapeMarkup(trial?.value ?? '—'),
+    SVG_ORBIT_PATHS: signalCluster.paths,
+    SVG_SIGNAL_NODES: signalCluster.nodes,
     EXCEPTION_ROWS: svgExceptionRows(data.exceptions),
     EVENT_ROWS: svgEventRows(data.events)
   });
@@ -205,31 +317,19 @@ export function renderHtml(data) {
   assertValid(data);
   const template = fs.readFileSync(htmlTemplatePath, 'utf8');
   const css = fs.readFileSync(cssTemplatePath, 'utf8');
-  const { mrr, customers, churn, trial, synthesis, revenueSeries } = viewModel(data);
+  const { mrr, synthesis, revenueSeries, movement } = viewModel(data);
+  const signalCluster = htmlSignalCluster(data.signals);
 
   return fillTemplate(template, {
     CSS: css,
     MRR_VALUE: escapeMarkup(mrr?.value ?? '—'),
     MRR_DELTA: escapeMarkup(mrr?.delta ?? '—'),
-    CHURN_VALUE: escapeMarkup(churn?.value ?? '—'),
-    CHURN_DELTA: escapeMarkup(churn?.delta ?? '—'),
-    TRIAL_VALUE: escapeMarkup(trial?.value ?? '—'),
-    TRIAL_DELTA: escapeMarkup(trial?.delta ?? '—'),
+    MRR_DIRECTION_CLASS: directionClass(mrr?.direction),
     HTML_REVENUE_VISUAL: htmlRevenueVisual(revenueSeries),
+    HTML_MOVEMENT_ROWS: htmlMovementRows(movement),
     SYNTHESIS: synthesis.direction,
-    TARGET_COPY: synthesis.target,
-    S1_DELTA: escapeMarkup(mrr?.delta ?? '—'),
-    S1_LABEL: escapeMarkup(mrr?.label ?? 'Signal 1'),
-    S1_VALUE: escapeMarkup(mrr?.value ?? '—'),
-    S2_DELTA: escapeMarkup(customers?.delta ?? '—'),
-    S2_LABEL: escapeMarkup(customers?.label ?? 'Signal 2'),
-    S2_VALUE: escapeMarkup(customers?.value ?? '—'),
-    S3_DELTA: escapeMarkup(churn?.delta ?? '—'),
-    S3_LABEL: escapeMarkup(churn?.label ?? 'Signal 3'),
-    S3_VALUE: escapeMarkup(churn?.value ?? '—'),
-    S4_DELTA: escapeMarkup(trial?.delta ?? '—'),
-    S4_LABEL: escapeMarkup(trial?.label ?? 'Signal 4'),
-    S4_VALUE: escapeMarkup(trial?.value ?? '—'),
+    HTML_ORBIT_PATHS: signalCluster.paths,
+    HTML_SIGNAL_NODES: signalCluster.nodes,
     HTML_EXCEPTION_ROWS: htmlExceptionRows(data.exceptions),
     HTML_EVENT_ROWS: htmlEventRows(data.events)
   });
