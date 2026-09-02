@@ -1,39 +1,28 @@
-# Test — Generic SaaS Dashboard
+# Test: SaaS Subscription Health
 
-## Input condition
+## Prompt
 
-A SaaS dashboard contains:
-
-- MRR
-- active customers
-- churn rate
-- trial conversion
-- revenue trend
-- recent account activity
-- customer table
+Redesign this subscription analytics dashboard using the decision-first-dashboard skill.
 
 Primary user: SaaS founder.
 
-## Baseline failure to watch for
+Primary decision: Is subscription health good enough, or does something require intervention?
 
-The agent only improves spacing, colors, typography, card styling, and chart polish while preserving the same flat KPI hierarchy.
+Important metrics:
+- MRR growth +12.4% vs target +15%
+- NRR 96.8%
+- Trial-to-paid 31.7%
+- Enterprise churn 6.8%
+- Active customers 8,942
+- ARPA $20.6
+- Net New MRR +$21.1K
 
-## Expected behavior with the skill
+## Expected behavior
 
 The agent should:
-
-1. state the primary user decision;
-2. classify outcome, drivers, diagnostics, and action data;
-3. avoid inventing scoring math;
-4. determine whether a composite subscription-health signal is defensible;
-5. make one decision signal visually dominant;
-6. move diagnostics and action data into supporting roles;
-7. surface the main risk and affected accounts.
-
-## Pass criteria
-
-The redesigned structure should let the user answer within roughly 5–10 seconds:
-
-- Are we healthy?
-- What is dragging performance down?
-- Which accounts require attention?
+- identify the primary user and decision;
+- justify whether one composite signal is defensible;
+- distinguish score inputs from outcome metrics;
+- surface enterprise churn as the primary drag;
+- label Net New MRR as outcome impact rather than a score input;
+- surface accounts at risk as the action layer.

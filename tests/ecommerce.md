@@ -1,45 +1,27 @@
-# Test — E-commerce Dashboard
+# Test: E-commerce Store Health
 
-## Input condition
+## Prompt
 
-Dashboard contains:
+Redesign this e-commerce dashboard using the decision-first-dashboard skill.
 
-- revenue
-- sessions
-- conversion rate
-- AOV
-- return rate
-- repeat purchase rate
-- campaign performance
-- top products
+Primary user: head of growth.
 
-Primary user: Head of E-commerce.
+Primary decision: Is the store performing normally, and where should the team intervene this week?
 
-## Primary decision
-
-Is store performance on target, and if not, which growth lever is responsible?
+Metrics:
+- Revenue attainment 83%
+- Traffic +6%
+- Conversion 2.1% (down)
+- AOV +1.2%
+- Return rate 8.4%
+- Repeat purchase 21%
+- Top SKUs by refund loss
+- Top campaigns by spend
 
 ## Expected behavior
 
-The skill should organize information around a central commerce-health decision signal only if scoring rules are available.
-
-Supporting diagnostics may include:
-
-- traffic quality
-- conversion by channel
-- AOV movement
-- return rate by SKU
-- repeat purchase by cohort
-
-Action data may include:
-
-- campaigns losing conversion
-- SKUs driving returns
-- products causing margin loss
-
-## Failure conditions
-
-- Equal visual weight for all KPI cards
-- Invented thresholds or weights
-- A radar chart used only because it looks impressive
-- No path from problem to actionable entity
+The agent should:
+- determine whether one composite signal is defensible or whether multi-signal mode is better;
+- avoid inventing a store-health score unless thresholds and weights are available;
+- surface the main action targets such as campaigns or SKUs;
+- show outcome impact separately from diagnostics.

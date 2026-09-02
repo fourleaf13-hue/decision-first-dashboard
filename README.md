@@ -4,7 +4,19 @@
 
 Most dashboards organize data. This skill organizes decisions.
 
-> **Many metrics → One decision signal → Drivers → Diagnosis → Action**
+> **Many metrics → Minimum sufficient decision signals → Diagnosis → Action**
+
+## Quick start
+
+Install the skill:
+
+```bash
+npx skills add fourleaf13-hue/decision-first-dashboard
+```
+
+Then give your agent a dashboard screenshot, Figma frame, or existing dashboard code and ask:
+
+> Redesign this dashboard using the `decision-first-dashboard` skill. First identify the primary user and decision. Do not change the visual style until the decision hierarchy is clear.
 
 ## Before → After
 
@@ -14,12 +26,8 @@ Most dashboards organize data. This skill organizes decisions.
     <th width="50%">After</th>
   </tr>
   <tr>
-    <td width="50%">
-      <img src="examples/saas/before.png" width="100%">
-    </td>
-    <td width="50%">
-      <img src="examples/saas/after.png" width="100%">
-    </td>
+    <td width="50%"><img src="examples/saas/before.png" width="100%"></td>
+    <td width="50%"><img src="examples/saas/after.png" width="100%"></td>
   </tr>
 </table>
 
@@ -31,40 +39,38 @@ Users scan multiple KPI cards, charts, activity feeds, and tables, then mentally
 
 The dashboard builds that mental model for them:
 
-- one dominant decision signal;
-- explicit drivers around it;
-- supporting evidence at the sides;
-- diagnostic data only where needed;
-- action-oriented entities when intervention is required.
+- one dominant decision signal when one is defensible;
+- supporting evidence only where needed;
+- diagnostic data at the sides;
+- clear action targets;
+- explicit distinction between **score inputs** and **outcome impact**.
 
 ## Core idea
 
-Do not redesign the dashboard until you can state the user's decision in one sentence.
+Do not redesign the dashboard until you can state the user’s decision in one sentence.
 
-The skill asks the designer/agent to determine:
+The skill asks the designer or agent to determine:
 
 1. Who is looking?
 2. What decision are they trying to make?
 3. Which metrics can actually change that decision?
-4. Can those metrics form one defensible decision signal?
-5. Which metrics only explain the signal?
-6. What entities can the user act on?
+4. Can those metrics form **one defensible signal**?
+5. If not, what are the **minimum sufficient decision signals**?
+6. Which metrics only explain the signal?
+7. What entities can the user act on?
+8. Is any **hard-stop** condition present that must override normal status?
 
 Only then should the visual hierarchy be redesigned.
 
-## Install
+## The difference
 
-Install this skill with any Agent Skills-compatible client:
+A typical dashboard redesign improves layout, spacing, typography, and charts.
 
-```bash
-npx skills add fourleaf13-hue/decision-first-dashboard
-```
+This skill first asks:
 
-The skill file lives at:
+> **What decision should the user be able to make in 5–10 seconds?**
 
-```text
-skills/decision-first-dashboard/SKILL.md
-```
+Only then does it redesign the information hierarchy.
 
 ## What the skill changes
 
@@ -81,35 +87,37 @@ Customer table
 ### Decision-first dashboard
 
 ```text
-                CORE DECISION SIGNAL
+           PRIMARY DECISION / STATUS
 
-                 Health / Status
+        One dominant signal OR a few primary signals
 
-        Driver       Driver       Driver
+WHY?                  WHERE?
+Drivers              Segment / plan / cohort risk
 
- WHY?                                        WHERE?
- Score composition                         Segment risk
-
- IMPACT?                                     WHO?
- Outcome movement                         At-risk entities
+WHO?                  IMPACT?
+Action targets       Business outcome
 ```
 
 ## Important safeguards
 
-### Do not invent composite-score math
+### 1) Do not invent composite-score math
 
-A health score is appropriate only when:
+Use one composite score only when:
 
-- component metrics describe the same high-level condition;
+- the component metrics describe the same high-level condition;
 - targets or healthy ranges exist;
 - normalization rules are defensible;
 - weights are known or explicitly defined.
 
 If those inputs are missing, keep metrics separate or clearly mark the score as illustrative.
 
-### Hard-stop metrics override averages
+### 2) Hard-stop metrics override averages
 
-Critical safety, security, compliance, or regulatory conditions should not be averaged into a normal-looking health score when they independently determine status.
+Critical safety, security, compliance, regulatory, or contractual conditions should not be averaged into a reassuring health score when they independently determine status.
+
+### 3) The example visualization is illustrative, not prescribed
+
+The SaaS example uses a radar chart and a central health score because that fit the scenario. The skill does **not** require radar charts or scorecards. The fixed part is the **decision hierarchy**, not the chart type.
 
 ## Example: SaaS subscription health
 
@@ -117,12 +125,14 @@ Primary decision:
 
 > Is subscription health good enough, or does something require intervention?
 
-The After example organizes the screen around a central **Subscription Health** signal, with supporting information answering:
+The updated After example organizes the screen around a central **Subscription health** signal.
 
-- **WHY?** What is driving the score?
-- **WHERE?** Which plan is causing churn?
-- **WHO?** Which accounts are at risk?
-- **IMPACT?** What is happening to Net New MRR?
+It distinguishes:
+
+- **Inputs to the Health Score**: Growth, Retention, Conversion, Churn, ARPA, Trial
+- **Primary drag**: Enterprise churn at 6.8%
+- **Who requires attention**: at-risk accounts
+- **Business outcome**: Net New MRR, explicitly labeled as **not included in Health Score**
 
 See [`examples/saas/reasoning.md`](examples/saas/reasoning.md).
 
@@ -134,7 +144,7 @@ The repo includes three pressure scenarios:
 - [`tests/ecommerce.md`](tests/ecommerce.md)
 - [`tests/operations.md`](tests/operations.md)
 
-The Operations test specifically checks that a critical safety condition overrides any composite score.
+The Operations test specifically checks that a critical safety or compliance condition overrides any composite score.
 
 ## Repository structure
 
@@ -156,9 +166,15 @@ decision-first-dashboard/
     └── operations.md
 ```
 
-## Positioning
+## What this is — and isn’t
 
-This is not a visual-style prompt.
+This is **not** a dashboard template.
+
+This is **not** a visual-style prompt.
+
+It is a reusable decision-design framework for turning:
+
+**many metrics → minimum sufficient decision signals → diagnosis → action**
 
 It combines:
 

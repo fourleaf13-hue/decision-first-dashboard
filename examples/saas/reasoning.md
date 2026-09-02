@@ -1,67 +1,51 @@
-# SaaS Example — Reasoning
-
-## Before
-
-The original dashboard exposes four KPI cards, a revenue trend, recent activity, and a customer table.
-
-The user must manually combine:
-
-- MRR
-- active customers
-- churn
-- trial conversion
-- revenue trend
-- customer events
-
-before deciding whether the business is healthy.
-
-The visual hierarchy mirrors the database schema more than the user's decision process.
-
-## Primary user
-
-SaaS founder / Head of Growth / Revenue leader.
+# SaaS Example Reasoning
 
 ## Primary decision
 
-> Is subscription health good enough, or is there a problem that requires intervention?
+Is subscription health good enough, or does something require intervention?
 
-## After
+## Why this After version is stronger
 
-The redesign moves from a data-first model to a decision-first model.
+The revised After example does four important things:
 
-### Core decision signal
+1. It defines the **Health Score** as a composite signal built from **6 weighted inputs**.
+2. It keeps **Outcome impact / Net New MRR** on the page, but explicitly labels it as **not included in Health Score**.
+3. It surfaces **Enterprise churn (6.8%)** as the primary drag through the churn panel and the low churn score.
+4. It provides **Who requires attention** through the at-risk account list.
 
-**Subscription Health Score: 68 / 100 — At risk**
+## Information roles
 
-The score is surrounded by the normalized dimensions that create it:
+### Inputs to Health Score
 
-- Growth — 83
-- Retention — 68
-- Conversion — 74
-- ARPA — 65
-- Churn control — 40
-- Trial volume — 78
+- Growth / MRR growth
+- Retention / net revenue
+- Conversion / trial → paid
+- Churn / enterprise churn control
+- ARPA / growth
+- Trial / volume
 
-In the demo these six scores average to 68. This is illustrative. In a real product, each raw metric must have an explicit normalization rule and weight before a composite score is used.
+### Diagnostics
 
-### Left-side explanation
+- Churn by plan
+- Score trend
 
-The score composition explains which signals are helping and hurting overall health.
+### Action data
 
-Churn by plan provides a diagnostic drill-down.
+- Accounts at risk
 
-### Right-side explanation
+### Business outcome
 
-- Score trend answers: what changed?
-- Accounts at risk answers: who requires attention?
-- Net new MRR answers: what is the business impact?
+- Net New MRR
+- Explicitly labeled: **Not included in Health Score**
 
-## Information transformation
+## Important note
 
-Before:
+The radar chart is illustrative, not mandatory.
 
-`Metrics → charts → table → user mentally synthesizes conclusion`
+The real pattern is:
 
-After:
-
-`Decision signal → drivers → diagnosis → affected entities → impact`
+- a dominant status signal;
+- clearly defined score inputs;
+- diagnostics at the sides;
+- action targets;
+- outcome impact separated from score composition.

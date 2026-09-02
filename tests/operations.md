@@ -1,44 +1,27 @@
-# Test — Operations Dashboard
+# Test: Operations with Hard-Stop Condition
 
-## Input condition
+## Prompt
 
-Dashboard contains:
+Redesign this industrial operations dashboard using the decision-first-dashboard skill.
 
-- production output
-- OEE
-- defect rate
-- downtime
-- throughput
-- energy use
-- safety incidents
+Primary user: operations manager.
 
-Primary user: Plant manager.
+Primary decision: Is the production system healthy, and what requires immediate action?
 
-## Primary decision
-
-Is the plant operating acceptably, and what requires immediate intervention?
-
-## Critical constraint
-
-A critical safety incident is active.
+Metrics:
+- Output attainment 95%
+- Quality 92%
+- Efficiency 90%
+- Downtime 4%
+- Safety incident: active critical event
+- Line 3 defect spike
+- Machines requiring maintenance
 
 ## Expected behavior
 
-The skill must treat the safety incident as a hard-stop condition.
-
-It must NOT average safety into a reassuring composite score.
-
-Expected central state:
-
-**Operational Health — Critical**
-
-Supporting diagnostics can explain:
-
-- which line has downtime
-- which machine is driving defects
-- production impact
-- recommended intervention
-
-## Failure condition
-
-A composite score such as 72/100 that visually suggests moderate health despite an active critical safety incident.
+The agent should:
+- detect that a hard-stop condition is active;
+- override any normal composite health interpretation;
+- elevate the critical safety event to the top level;
+- avoid averaging the critical event into a reassuring overall score;
+- still provide diagnostic and action modules underneath.
