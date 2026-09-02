@@ -1,76 +1,28 @@
 # Decision-First Dashboard
 
-Turn dashboards people have to read into dashboards people can understand at a glance.
+Turn KPI-heavy dashboards into decision-first dashboards without letting the agent invent the visual hierarchy.
 
-Most dashboards organize data. This skill organizes decisions.
+Most dashboard prompts ask an LLM to **design**. This project treats dashboard redesign more like a small compiler:
 
-> **Many metrics → Minimum sufficient decision signals → Diagnosis → Action**
-
-Decision-First Dashboard is an Agent Skill for redesigning KPI-heavy dashboards around the decision a user actually needs to make.
-
-It is a reusable decision-design framework **plus a visual translation grammar** for turning:
-
-**many metrics → minimum sufficient decision signals → diagnosis → action**
-
-Instead of treating every KPI as equally important, it helps an agent determine:
-
-- who is looking;
-- what decision they are trying to make;
-- which metrics are outcomes, drivers, diagnostics, or action data;
-- whether the metrics can defensibly form one composite signal;
-- what should dominate the visual hierarchy;
-- what requires intervention.
-
-The visual style can change, but the result should preserve a clear visual grammar: one dominant synthesis area, supporting diagnosis, visible action targets, restrained product-native styling, and no exposed framework labels.
-
-## Before → After
-
-<table>
-  <tr>
-    <th width="50%">Before</th>
-    <th width="50%">After</th>
-  </tr>
-  <tr>
-    <td width="50%">
-      <img src="examples/saas/before.png" width="100%">
-    </td>
-    <td width="50%">
-      <img src="examples/saas/after.png" width="100%">
-    </td>
-  </tr>
-</table>
-
-The Before dashboard is clean, but users still have to scan independent KPI cards, a trend chart, an activity feed, and a customer table before constructing a mental model.
-
-The After example reorganizes the same type of executive dashboard around a dominant subscription-health signal, diagnosis, account-level action targets, trend, and business impact.
-
-> The After image is an example of **composite mode**. A composite score should only be used when its normalization, thresholds, and weights are defensible. Otherwise the skill uses multiple primary signals instead of inventing a score.
-
-## Install
-
-Install this skill with any Agent Skills-compatible client:
-
-```bash
-npx skills add fourleaf13-hue/decision-first-dashboard
+```text
+source dashboard
+      ↓
+verified facts
+      ↓
+decision-state JSON
+      ↓
+schema validation
+      ↓
+deterministic renderer
+      ↓
+SVG / HTML dashboard
 ```
 
-## Quick start
+> **Many metrics → minimum sufficient decision signals → diagnosis → action**
 
-Install the skill:
+## Why this exists
 
-```bash
-npx skills add fourleaf13-hue/decision-first-dashboard
-```
-
-Then give your agent a dashboard screenshot, Figma frame, or existing dashboard code and ask:
-
-> Redesign this dashboard using the `decision-first-dashboard` skill. First identify the primary user and decision. Do not change the visual style until the decision hierarchy is clear.
-
-## Core idea
-
-A dashboard should not force the user to construct the conclusion themselves.
-
-A typical KPI-first dashboard often looks like:
+A conventional dashboard often looks like:
 
 ```text
 KPI   KPI   KPI   KPI
@@ -80,114 +32,117 @@ Chart             Activity
 Table
 ```
 
-A decision-first dashboard instead asks:
+The user still has to scan everything and construct the conclusion mentally.
+
+Decision-First Dashboard changes the information hierarchy first. For executive no-score cases, the rendered structure is deliberately constrained:
 
 ```text
-What does the user need to decide?
-        ↓
-What is the minimum sufficient signal?
-        ↓
-Why is it happening?
-        ↓
-Where / who requires attention?
-        ↓
-What action follows?
+WHY / CONTEXT  →  DOMINANT SYNTHESIS  ←  WHO / EVENTS
 ```
 
-## One signal is not always the answer
+The LLM extracts evidence. The renderer controls the layout.
 
-The skill does **not** require every dashboard to have one Health Score.
+## Before → deterministic no-score output
 
-It branches:
+<table>
+  <tr>
+    <th width="50%">Before</th>
+    <th width="50%">Compiler output</th>
+  </tr>
+  <tr>
+    <td width="50%"><img src="examples/saas/before.png" width="100%"></td>
+    <td width="50%"><img src="examples/saas/output.no-score.svg" width="100%"></td>
+  </tr>
+</table>
+
+The no-score output does **not** invent a Health Score. Its overall direction is derived deterministically from the source-supported signal directions.
+
+## Composite reference
+
+When a real score model exists, a dominant composite can be appropriate. The repository also includes a composite visual reference:
+
+<img src="examples/saas/after.png" width="760">
+
+A composite is valid only when normalization, weights, thresholds, and status rules are defensible. The current compiler MVP implements the deterministic **no-score executive** branch; it will not fabricate a score just to imitate the composite reference.
+
+## Install
+
+```bash
+npx skills add fourleaf13-hue/decision-first-dashboard
+```
+
+The skill directory contains its own schema, validator, templates, and renderer. Runtime validation has no third-party dependency.
+
+## Use
+
+Give the agent a dashboard screenshot, Figma frame, existing dashboard code, or verified metrics and ask:
+
+> Redesign this dashboard using the `decision-first-dashboard` skill. Preserve source evidence and produce the deterministic decision-first output.
+
+The intended execution path is:
+
+1. Extract verified facts only.
+2. Build `decision-state.json` matching the bundled schema.
+3. Validate it.
+4. Render SVG and HTML from the same JSON.
+5. Inspect the output for evidence and visual integrity.
+
+From the skill directory:
+
+```bash
+node scripts/validate.js path/to/decision-state.json
+node scripts/render.js path/to/decision-state.json path/to/output-directory
+```
+
+## Anti-hallucination contract
+
+The no-score schema intentionally makes common dashboard hallucinations structurally invalid.
+
+It rejects unsupported fields such as:
+
+- invented `score` / health score;
+- caller-supplied overall direction;
+- invented target or goal fields;
+- renewal/workflow/action/assignee fields;
+- derived account exceptions or events presented as source facts.
+
+Numeric trend series are optional. If exact source-supported points are unavailable, the renderer says `Trend data unavailable` instead of drawing a plausible-looking line.
+
+## Overall direction is derived
+
+The agent does not provide `IMPROVING`, `MIXED`, or `DETERIORATING` as a top-level verdict.
+
+The renderer derives it from the validated signal directions:
 
 ```text
-Can these metrics defensibly form one signal?
-
-YES → composite mode
-      one dominant signal + drivers + diagnosis + action
-
-NO  → multi-signal mode
-      2–4 primary signals + diagnosis + action
+all improving          → IMPROVING
+improving + deteriorating → MIXED
+all deteriorating      → DETERIORATING
+flat only              → FLAT
+no known direction     → UNKNOWN
 ```
 
-This prevents agents from inventing arbitrary score math simply because a 0–100 gauge looks clean.
+This keeps directional synthesis separate from health status.
 
-## Who is looking changes the dashboard
+> `Improving` does not mean `Healthy`.
 
-The same underlying data should not produce the same hierarchy for every role.
+If targets or healthy ranges are unknown, the UI says `Target unknown` rather than inventing adequacy.
 
-### CEO / Founder
+## Deterministic visual contract
 
-Prioritize:
+The bundled no-score renderers enforce:
 
-- synthesis;
-- business impact;
-- high-value exceptions;
-- a small number of action targets.
+- one dominant center synthesis area;
+- 3–6 signals converging on the center;
+- compact left business context;
+- compact right account exceptions and events;
+- no four-equal-KPI top row;
+- no full-width customer table;
+- no invented action buttons;
+- no framework labels in the UI;
+- restrained SaaS visual styling.
 
-### Operator / Analyst
-
-Prioritize:
-
-- diagnosability;
-- segment and cohort detail;
-- drill-down;
-- potentially multiple primary signals.
-
-`Who is looking?` is therefore a design input, not a checklist question.
-
-## Hard-stop conditions
-
-Safety, compliance, security, regulatory, or contractual conditions can be **hard stops**.
-
-A hard-stop metric must not be averaged into a reassuring composite score.
-
-Example:
-
-```text
-Operational Health: 84 / Healthy
-Safety Incident: ACTIVE
-```
-
-is a bad hierarchy.
-
-The hard stop should override the normal interpretation:
-
-```text
-CRITICAL
-Active safety incident
-
-Normal operational health interpretation suspended.
-```
-
-## Visual translation
-
-The skill now separates **reasoning** from **rendering**.
-
-Reasoning concepts such as `Decision`, `Diagnostic`, `Outcome`, and `Actionable` stay backstage. They determine prominence and grouping; they should not normally appear as UI labels.
-
-For executive dashboards, the preferred composition is:
-
-```text
-WHY / WHERE   →   OVERALL STATE   ←   WHO / TREND / IMPACT
-```
-
-If a defensible composite exists, the overall state can be a score/status. If not, use an evidence-bounded synthesis such as **Improving — target unknown** rather than inventing a score.
-
-See [`skills/decision-first-dashboard/references/visual-pattern.md`](skills/decision-first-dashboard/references/visual-pattern.md).
-
-## Tests
-
-The repository includes pressure scenarios for:
-
-- SaaS dashboards;
-- SaaS dashboards without score rules;
-- visual-output regressions;
-- evidence-scope / data-integrity behavior;
-- e-commerce dashboards;
-- operations dashboards with hard-stop conditions.
-
-These scenarios are used to test whether an agent follows the method instead of defaulting to generic KPI-card layouts.
+SVG is the compatibility baseline. HTML/CSS is the higher-fidelity output. Both consume the same validated JSON.
 
 ## Repository structure
 
@@ -195,18 +150,35 @@ These scenarios are used to test whether an agent follows the method instead of 
 decision-first-dashboard/
 ├── README.md
 ├── LICENSE
+├── package.json
 ├── examples/
 │   └── saas/
 │       ├── before.png
 │       ├── after.png
+│       ├── input.no-score.json
+│       ├── output.no-score.svg
+│       ├── output.no-score.html
 │       └── reasoning.md
 ├── skills/
 │   └── decision-first-dashboard/
 │       ├── SKILL.md
+│       ├── schemas/
+│       │   └── decision-state.schema.json
+│       ├── scripts/
+│       │   ├── validate.js
+│       │   └── render.js
+│       ├── templates/
+│       │   ├── no-score.svg
+│       │   ├── no-score.html
+│       │   └── dashboard.css
 │       └── references/
 │           ├── visual-pattern.md
 │           └── after-reference.png
 └── tests/
+    ├── compiler/
+    │   ├── schema.test.js
+    │   ├── render-svg.test.js
+    │   └── render-html.test.js
     ├── saas.md
     ├── saas-no-score.md
     ├── visual-output.md
@@ -215,13 +187,26 @@ decision-first-dashboard/
     └── operations.md
 ```
 
+## Development
+
+```bash
+npm test
+npm run validate:saas
+npm run render:saas
+```
+
+GitHub Actions runs the compiler tests, validates the canonical SaaS fixture, renders both outputs, and uploads the generated artifacts for visual QA.
+
 ## What this is not
 
-This is not a chart-style library.
+This is not a generic chart library and not a prompt that asks the model to freestyle a prettier admin dashboard.
 
-It does not prescribe radar charts, gauges, gradients, card styles, or a specific visual language.
+The project separates two responsibilities:
 
-It is intended to change the **decision hierarchy** before changing the visual style.
+- **Agent:** evidence extraction and decision classification.
+- **Compiler:** validation, synthesis, and visual composition.
+
+That separation is what makes the output repeatable across agents.
 
 ## License
 
