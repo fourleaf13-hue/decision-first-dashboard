@@ -1,7 +1,6 @@
 {
   "mode": "no_score",
   "synthesis": {
-    "direction": "improving",
     "targetState": "unknown",
     "exceptionState": "present"
   },
@@ -39,9 +38,6 @@
       "provenance": "source"
     }
   ],
-  "context": {
-    "revenueSeries": [74000, 85000, 99000, 118000, 137000, 159000, 184320]
-  },
   "exceptions": [
     {
       "name": "Dovetail",
