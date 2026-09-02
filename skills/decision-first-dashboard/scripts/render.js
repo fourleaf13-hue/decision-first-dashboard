@@ -493,8 +493,9 @@ if (process.argv[1] === currentFile) {
   const html = renderHtml(data);
   fs.mkdirSync(outputDir, { recursive: true });
 
-  const svgOutput = path.join(outputDir, 'output.no-score.svg');
-  const htmlOutput = path.join(outputDir, 'output.no-score.html');
+  const outputMode = data.mode === 'composite' ? 'composite' : 'no-score';
+  const svgOutput = path.join(outputDir, `output.${outputMode}.svg`);
+  const htmlOutput = path.join(outputDir, `output.${outputMode}.html`);
   fs.writeFileSync(svgOutput, svg);
   fs.writeFileSync(htmlOutput, html);
   console.log(svgOutput);
