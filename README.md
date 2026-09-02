@@ -136,6 +136,22 @@ It distinguishes:
 
 See [`examples/saas/reasoning.md`](examples/saas/reasoning.md).
 
+## Visual translation
+
+The skill now separates **reasoning** from **rendering**.
+
+Reasoning concepts such as `Decision`, `Diagnostic`, `Outcome`, and `Actionable` stay backstage. They determine prominence and grouping; they should not normally appear as UI labels.
+
+For executive dashboards, the preferred composition is:
+
+```text
+WHY / WHERE   →   OVERALL STATE   ←   WHO / TREND / IMPACT
+```
+
+If a defensible composite exists, the overall state can be a score/status. If not, use an evidence-bounded synthesis such as **Improving — target unknown** rather than inventing a score.
+
+See [`skills/decision-first-dashboard/references/visual-pattern.md`](skills/decision-first-dashboard/references/visual-pattern.md).
+
 ## Tests
 
 The repo includes three pressure scenarios:
@@ -154,7 +170,10 @@ decision-first-dashboard/
 ├── LICENSE
 ├── skills/
 │   └── decision-first-dashboard/
-│       └── SKILL.md
+│       ├── SKILL.md
+│       └── references/
+│           ├── visual-pattern.md
+│           └── after-reference.png
 ├── examples/
 │   └── saas/
 │       ├── before.png
@@ -162,6 +181,9 @@ decision-first-dashboard/
 │       └── reasoning.md
 └── tests/
     ├── saas.md
+    ├── saas-no-score.md
+    ├── visual-output.md
+    ├── evidence-scope.md
     ├── ecommerce.md
     └── operations.md
 ```
@@ -172,7 +194,7 @@ This is **not** a dashboard template.
 
 This is **not** a visual-style prompt.
 
-It is a reusable decision-design framework for turning:
+It is a reusable decision-design framework **plus a visual translation grammar** for turning:
 
 **many metrics → minimum sufficient decision signals → diagnosis → action**
 
@@ -185,7 +207,7 @@ It combines:
 - decision hierarchy
 - action-oriented product design
 
-The visual style can change. The decision logic should remain.
+The visual style can change, but the result should preserve a clear visual grammar: one dominant synthesis area, supporting diagnosis, visible action targets, restrained product-native styling, and no exposed framework labels.
 
 ## License
 
