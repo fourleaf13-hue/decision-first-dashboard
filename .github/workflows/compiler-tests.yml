@@ -19,6 +19,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - run: npm install --no-audit --no-fund
       - run: npm test
+      - run: npm run validate:saas
+      - run: npm run render:saas
+      - uses: actions/upload-artifact@v4
+        with:
+          name: saas-no-score-render
+          path: |
+            examples/saas/output.no-score.svg
+            examples/saas/output.no-score.html
+          if-no-files-found: error
