@@ -7,6 +7,13 @@ const fixture = JSON.parse(
   fs.readFileSync(new URL('../../examples/saas/input.no-score.json', import.meta.url), 'utf8')
 );
 
+function extraSignals() {
+  return [
+    { metric: 'nrr', label: 'NRR', value: '96.8%', delta: '-0.4pp', direction: 'deteriorating', provenance: 'source' },
+    { metric: 'expansion', label: 'Expansion', value: '$21,100', delta: '+14%', direction: 'improving', provenance: 'source' }
+  ];
+}
+
 test('renders a dominant no-score synthesis cluster from validated data', () => {
   const svg = renderSvg(fixture);
   assert.match(svg, /Subscription health/);
@@ -20,11 +27,29 @@ test('renders a dominant no-score synthesis cluster from validated data', () => 
 
 test('derives mixed overall direction from conflicting signal directions', () => {
   const mixed = structuredClone(fixture);
-  delete mixed.synthesis.direction;
   mixed.signals[2].direction = 'deteriorating';
   const svg = renderSvg(mixed);
   assert.match(svg, />MIXED</);
   assert.doesNotMatch(svg, />IMPROVING</);
+});
+
+test('renders exactly three signals without inventing a fourth slot', () => {
+  const three = structuredClone(fixture);
+  three.signals = three.signals.slice(0, 3);
+  const svg = renderSvg(three);
+  assert.match(svg, />MRR</);
+  assert.match(svg, />Customers</);
+  assert.match(svg, />Churn</);
+  assert.doesNotMatch(svg, /Trial conversion|Signal 4/);
+});
+
+test('renders all six supported signals instead of silently dropping extras', () => {
+  const six = structuredClone(fixture);
+  six.signals.push(...extraSignals());
+  const svg = renderSvg(six);
+  for (const label of ['MRR', 'Customers', 'Churn', 'Trial conversion', 'NRR', 'Expansion']) {
+    assert.match(svg, new RegExp(`>${label}<`));
+  }
 });
 
 test('keeps confirmed exceptions and events compact on the right', () => {
