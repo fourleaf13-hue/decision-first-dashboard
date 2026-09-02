@@ -7,6 +7,13 @@ const fixture = JSON.parse(
   fs.readFileSync(new URL('../../examples/saas/input.no-score.json', import.meta.url), 'utf8')
 );
 
+function extraSignals() {
+  return [
+    { metric: 'nrr', label: 'NRR', value: '96.8%', delta: '-0.4pp', direction: 'deteriorating', provenance: 'source' },
+    { metric: 'expansion', label: 'Expansion', value: '$21,100', delta: '+14%', direction: 'improving', provenance: 'source' }
+  ];
+}
+
 test('renders the same canonical decision state into a fixed HTML composition', () => {
   const html = renderHtml(fixture);
   assert.match(html, /Subscription health/);
@@ -15,6 +22,21 @@ test('renders the same canonical decision state into a fixed HTML composition', 
   assert.match(html, /\$184,320/);
   assert.match(html, /Dovetail/);
   assert.match(html, /Plan cancelled/);
+});
+
+test('renders every signal in the supported 3 to 6 range', () => {
+  const three = structuredClone(fixture);
+  three.signals = three.signals.slice(0, 3);
+  const threeHtml = renderHtml(three);
+  assert.match(threeHtml, />Churn</);
+  assert.doesNotMatch(threeHtml, /Trial conversion|Signal 4/);
+
+  const six = structuredClone(fixture);
+  six.signals.push(...extraSignals());
+  const sixHtml = renderHtml(six);
+  for (const label of ['MRR', 'Customers', 'Churn', 'Trial conversion', 'NRR', 'Expansion']) {
+    assert.match(sixHtml, new RegExp(`>${label}<`));
+  }
 });
 
 test('renders an intentionally styled unavailable state instead of an invented trend line', () => {
