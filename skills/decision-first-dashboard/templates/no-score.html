@@ -20,7 +20,7 @@
         <article class="card revenue-card">
           <div class="eyebrow">Revenue growth</div>
           <div class="metric-value">{{MRR_VALUE}}</div>
-          <div class="metric-delta positive">{{MRR_DELTA}} <span>vs last month</span></div>
+          <div class="metric-delta {{MRR_DIRECTION_CLASS}}">{{MRR_DELTA}} <span>vs last month</span></div>
           {{HTML_REVENUE_VISUAL}}
           <div class="card-divider"></div>
           <div class="context-row"><span>Current MRR</span><strong>{{MRR_VALUE}}</strong></div>
@@ -28,16 +28,7 @@
 
         <article class="card context-card">
           <div class="eyebrow">Movement context</div>
-          <div class="context-metric">
-            <span>Churn</span>
-            <strong>{{CHURN_VALUE}}</strong>
-            <em class="positive">{{CHURN_DELTA}}</em>
-          </div>
-          <div class="context-metric">
-            <span>Trial conversion</span>
-            <strong>{{TRIAL_VALUE}}</strong>
-            <em class="positive">{{TRIAL_DELTA}}</em>
-          </div>
+          {{HTML_MOVEMENT_ROWS}}
         </article>
       </aside>
 
@@ -47,34 +38,15 @@
           <div class="orbit-ring orbit-ring--outer"></div>
           <div class="orbit-ring orbit-ring--inner"></div>
           <svg viewBox="0 0 620 520" preserveAspectRatio="none">
-            <path d="M310 260 L160 160 M310 260 L460 160 M310 260 L160 360 M310 260 L460 360"></path>
+            <path d="{{HTML_ORBIT_PATHS}}"></path>
           </svg>
         </div>
 
-        <div class="signal signal--1">
-          <strong>{{S1_DELTA}}</strong>
-          <span>{{S1_LABEL}}</span>
-          <small>{{S1_VALUE}}</small>
-        </div>
-        <div class="signal signal--2">
-          <strong>{{S2_DELTA}}</strong>
-          <span>{{S2_LABEL}}</span>
-          <small>{{S2_VALUE}}</small>
-        </div>
-        <div class="signal signal--3">
-          <strong>{{S3_DELTA}}</strong>
-          <span>{{S3_LABEL}}</span>
-          <small>{{S3_VALUE}}</small>
-        </div>
-        <div class="signal signal--4">
-          <strong>{{S4_DELTA}}</strong>
-          <span>{{S4_LABEL}}</span>
-          <small>{{S4_VALUE}}</small>
-        </div>
+        {{HTML_SIGNAL_NODES}}
 
         <div class="synthesis-core">
           <strong>{{SYNTHESIS}}</strong>
-          <span>{{TARGET_COPY}}</span>
+          <span>Target unknown</span>
         </div>
       </section>
 
