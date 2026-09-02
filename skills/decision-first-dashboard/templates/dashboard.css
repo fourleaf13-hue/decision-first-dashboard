@@ -95,6 +95,14 @@ body {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+.trend-unavailable {
+  height: 86px;
+  margin: 22px 0 5px;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+}
 .card-divider { height: 1px; background: #efedf6; margin: 8px 0 17px; }
 .context-row { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
 .context-row strong { color: var(--ink); font-size: 13px; }
