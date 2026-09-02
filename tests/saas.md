@@ -25,4 +25,7 @@ The agent should:
 - distinguish score inputs from outcome metrics;
 - surface enterprise churn as the primary drag;
 - label Net New MRR as outcome impact rather than a score input;
-- surface accounts at risk as the action layer.
+- surface accounts at risk as the action layer;
+- keep framework labels backstage in the final UI;
+- use a dominant synthesis composition instead of defaulting to four equal KPI cards;
+- create the requested visual artifact rather than stopping at reasoning.

@@ -1,297 +1,191 @@
 ---
 name: decision-first-dashboard
-description: Use when redesigning KPI-heavy dashboards where users must scan multiple independent metrics before understanding overall status, the main risk, or what requires action.
+description: Use when redesigning KPI-heavy dashboards where users must scan multiple independent metrics before understanding overall status, the main risk, whether performance is good enough, or what requires action.
 ---
 
 # Decision-First Dashboard
 
 ## Core principle
 
-Do not begin by rearranging cards.
-
-A dashboard should first answer:
-
-> What should the user conclude?
-
-Transform the information model from:
+Design the user's conclusion before designing the cards.
 
 **Many metrics → Minimum sufficient decision signals → Diagnosis → Action**
 
-The goal is not to make the dashboard prettier. The goal is to reduce the amount of mental synthesis required from the user.
+Decision-first is an internal design method. The finished interface should look like a mature product, not a diagram explaining the method.
 
-## 1. Define the decision before designing
+## 1. Define the decision
 
-Identify:
+Before redesigning, identify:
 
 - primary user;
 - primary decision;
 - primary business outcome;
-- decision frequency;
-- conditions that would change the user’s judgment.
+- what evidence would change the judgment.
 
-Do not redesign the dashboard until the primary decision can be stated in one sentence.
+The user's role must change the hierarchy:
+- **Executive / founder:** more synthesis, impact, exceptions.
+- **Operator / analyst:** more diagnosis, segmentation, drill-down.
 
-Example:
+## 2. Classify the data
 
-- User: SaaS founder / revenue leader
-- Decision: Is subscription health good enough, or does something require intervention?
+Assign each item a role:
 
-## 2. Let “who is looking” change the output
+- **Outcome:** result the user ultimately cares about.
+- **Driver:** explains the outcome or overall condition.
+- **Diagnostic:** needed after an abnormal signal appears.
+- **Action data:** entity the user can act on.
 
-The same metrics do not necessarily produce the same first-layer layout.
+Do not invent missing metrics, targets, customer states, events, workflows, or causal relationships.
 
-The primary user determines:
+## 3. Choose composite or multi-signal mode
 
-- information density;
-- level of synthesis vs. detail;
-- how much diagnosability is promoted to the first layer.
+Use one composite signal only when the metrics jointly describe one concept and the normalization, targets/thresholds, and weights are defensible.
 
-Guideline:
+**Never invent score math.**
 
-- **Executives / founders** need synthesis and impact.
-- **Operators / analysts** need diagnosis and drill-down.
+If those rules are missing, use the minimum sufficient primary signals instead.
 
-Do not treat “who is looking?” as a ritual question. It must affect the hierarchy.
+### Resolve the decision to the limit of the evidence
 
-## 3. Classify every metric
+Do not stop at organizing metrics and make the user reconstruct the conclusion.
 
-Classify each metric into one of four roles.
+If evidence supports a judgment, state it.
 
-### Outcome
+If targets or thresholds are missing, use an evidence-bounded status such as:
 
-The result the user ultimately cares about.
+- `Improving — target unknown`
+- `Deteriorating — threshold unknown`
+- `Mixed`
+- `Cannot determine against target`
+- `Insufficient evidence`
 
-Examples: revenue, MRR, production output, conversion, service level.
+Direction is not the same as health. A falling churn rate can be improving while its absolute level is still unevaluable without a threshold.
 
-### Drivers
+## 4. Handle hard stops
 
-Metrics that directly explain the outcome or the main status.
+Critical safety, compliance, security, regulatory, contractual, or outage conditions override normal status.
 
-Examples: retention, acquisition, ARPA, churn, utilization, defect rate.
+Never average a hard stop into a reassuring composite.
 
-### Diagnostics
+When active, promote it to the top level and subordinate normal health interpretation.
 
-Metrics needed only after an abnormal signal is found.
+## 5. Build the visual hierarchy
 
-Examples: churn by plan, conversion by channel, cohort retention, defects by machine.
+Prefer one dominant executive composition instead of a strip of equally weighted KPI cards.
 
-### Action data
+When appropriate, use three zones:
 
-Entities the user can act on.
+- **LEFT — Why / Where:** strongest diagnostics and explanatory context.
+- **CENTER — Overall state:** one defensible composite signal, or a compact multi-signal synthesis.
+- **RIGHT — Who / Trend / Impact:** action targets, movement over time, and business outcome.
 
-Examples: at-risk accounts, failing jobs, campaigns, machines, SKUs, overdue invoices.
+Supporting metrics should visually converge on the central judgment through scale, position, grouping, whitespace, and chart prominence.
 
-## 4. Decide whether one composite signal is appropriate
+See `references/visual-pattern.md`.
 
-This is a branch, not a default.
+## 6. Keep the reasoning backstage
 
-Use **one dominant composite signal** only when:
+Never expose framework labels such as:
 
-- several metrics jointly describe one concept;
-- each dimension has a meaningful target, threshold, baseline, or benchmark;
-- normalization rules are defensible;
-- weights are known or explicitly defined.
+- Decision
+- Diagnostic
+- Outcome
+- Actionable
+- Driver
+- Success Signal
 
-### Never invent score math
+unless they are established product/domain language.
 
-If raw metrics cannot be defensibly mapped to a common scale, do not fabricate a 0–100 score.
+Do not put the design brief itself in the UI.
 
-If thresholds, normalization rules, or weights are missing:
+Use natural product copy. The hierarchy should be visible without explaining the framework.
 
-1. ask for them, or
-2. keep the metrics separate, or
-3. clearly label any example score as illustrative.
+## 7. Separate inputs from outcomes
 
-## 5. If one signal is not defensible, use multi-signal mode
+If a composite score exists, distinguish:
 
-Decision-first does **not** mean everything must collapse into one score.
+- inputs used to calculate it; and
+- business outcomes affected by it.
 
-When metrics cannot responsibly be combined, use:
+Never make an outcome metric look like an extra score component.
 
-**Many metrics → minimum sufficient decision signals**
+## 8. Show diagnosis without overstating causality
 
-For example:
+Make the main explanatory path easy to follow, but only claim causality when supported.
 
-- Growth: +12.4% — Below target
-- Retention: 96.8% NRR — At risk
-- Acquisition: 31.7% — Healthy
+Prefer language such as:
 
-This is still decision-first if the user can immediately understand the top-level state.
+- primary drag
+- associated with
+- likely contributor
+- coincides with
 
-## 6. Handle hard-stop conditions as overrides
+when causality is not established.
 
-Never average critical safety, compliance, security, regulatory, or contractual violations into a reassuring composite score when they independently determine status.
+## 9. Respect evidence scope
 
-A hard-stop condition overrides the composite or normal status.
+Do not generalize a partial table, sample, cohort, or visible subset to the full population.
 
-Examples:
+Example: four displayed accounts out of 8,942 customers do not prove that only one account company-wide is at risk.
 
-- “Critical safety event active”
-- “Compliance breach detected”
-- “Service outage unresolved”
+Label the scope when it matters to the decision.
 
-When a hard-stop condition is active:
+## 10. Do not invent status or actions
 
-- it must be promoted to the top level;
-- it must not be visually buried in secondary content;
-- the dashboard should suspend or subordinate the normal health interpretation.
+Do not label the system `Healthy`, `Marginal`, `At risk`, `Critical`, `Good`, or `Bad` unless thresholds, benchmarks, explicit rules, or hard-stop evidence support that judgment.
 
-## 7. Build the decision hierarchy
+Do not invent buttons or workflows such as `Contact`, `Convert`, `Escalate`, or `Pause campaign` unless the source product or brief supports them.
 
-Recommended sequence:
+If an issue requires attention but the workflow is unknown, surface the issue without fabricating the mechanism.
 
-### Center or primary position: core decision signal
-
-Examples:
-
-- Subscription Health: 68 / 100 — At risk
-- Commerce Health: 76 / 100 — Needs attention
-- Operational Status: Critical
-
-### Around it: drivers
-
-Show the dimensions that create or explain the state.
-
-Examples:
-
-- Growth
-- Retention
-- Conversion
-- ARPA
-- Churn control
-- Trial volume
-
-### Sides: evidence with explicit roles
-
-Supporting panels should answer one of these questions:
-
-- **WHY?** What is driving the state?
-- **WHERE?** Which segment or area is causing it?
-- **WHO?** Which entities require attention?
-- **IMPACT?** What business result is affected?
-
-## 8. Separate score inputs from business outcomes
-
-If a dashboard includes both:
-
-- inputs used to calculate a health signal; and
-- business results affected by that signal,
-
-label them explicitly.
-
-Example:
-
-- “6 weighted inputs used to calculate Health Score”
-- “Outcome impact — Net New MRR”
-- “Not included in Health Score”
-
-Do not leave outcome metrics floating as if they were extra score components.
-
-## 9. Express the main causal chain
-
-If one risk is the main drag, the user should not have to assemble the story from scattered hints.
-
-Prefer a visible causal spine such as:
-
-Enterprise churn 6.8% → Retention weakened → Health Score 68 / At risk → MRR growth below target
-
-Use concise summaries, annotations, or ordered supporting panels to make the chain obvious.
-
-## 10. Explain the status in plain language
-
-Never rely on a number alone.
+## 11. Use restrained product-native visuals
 
 Prefer:
 
-- `68 / 100`
-- `At risk`
-- `Primary drag: Enterprise churn`
-- `-6 vs last month`
+- one dominant focal point;
+- calm neutral surfaces;
+- restrained semantic color;
+- generous whitespace;
+- compact supporting metrics;
+- clear typography;
+- natural product terminology.
 
-instead of only:
+Avoid:
 
-- `68`
+- traffic-light coloring on every card;
+- giant warning banners without evidence;
+- four or more equal KPI cards as the default top row;
+- explanatory prose inside every card;
+- framework labels in parentheses.
 
-The dashboard should translate data into judgment.
+Radar charts are optional. Use them only when normalized dimensions legitimately describe one overall condition.
 
-## 11. Visualize thresholds, not just values
+## 12. Finish at the requested output layer
 
-If a threshold determines whether a metric is healthy, encode it visually.
+If the user asks for a visual redesign or mockup and the host can render/build one, create the actual interface. Do not stop at reasoning or a layout specification.
 
-Examples:
+If implementation is the available output mode, build the interface in code.
 
-- healthy churn is `<2%`
-- target growth is `+15%`
-- compliance breach is a hard-stop
+After rendering, verify every displayed:
 
-Color semantics must match the threshold:
+- number;
+- label;
+- customer state;
+- event;
+- threshold;
+- status;
+- chart value
 
-- green = healthy
-- orange = warning / near threshold
-- red = risk / beyond threshold
+against the source. Do not let values leak into the wrong chart or context.
 
-Do not use semantic colors decoratively.
+## Quick check before delivery
 
-## 12. Use radar charts selectively
+The result should pass all of these:
 
-Radar charts are appropriate when:
-
-- 4–7 normalized dimensions describe one overall condition;
-- the goal is pattern recognition;
-- the user needs to see imbalance across dimensions;
-- current vs. previous period comparison is useful.
-
-Do not use a radar chart when exact quantitative comparison is the primary task.
-
-The SaaS example uses a radar chart only as one possible representation.
-
-## 13. One page can contain multiple decision modules
-
-The atomic unit of this skill is a **decision module**.
-
-A single page may contain:
-
-- one **primary** decision module; and
-- a few **secondary** decision modules.
-
-Do not let multiple modules collapse back into a KPI soup.
-
-Give one module clear primacy.
-
-## 14. End with action
-
-If the dashboard reveals a problem, surface what can be acted upon.
-
-Bad:
-
-- Customers
-- Orders
-- Machines
-
-Better:
-
-- Accounts at risk
-- Orders requiring intervention
-- Machines causing output loss
-
-Action-oriented data should include, when available:
-
-- severity
-- business impact
-- affected entity
-- recommended next action
-
-## Final review
-
-Before finishing, verify that the user can answer these questions quickly:
-
-1. Are we healthy?
-2. Why?
-3. What changed?
-4. Where is the problem?
-5. Who or what requires attention?
-6. What is the business impact?
-7. Is there any hard-stop condition overriding normal status?
-8. What should I inspect or do next?
-
-If the user still needs to scan many unrelated cards and mentally combine them, simplify further.
+1. Can the primary user understand the top-level state in 3–5 seconds?
+2. Does the interface answer the primary decision as far as the evidence allows?
+3. Is the first visual focal point a decision signal rather than a flat KPI strip?
+4. Are diagnosis and action targets easy to find?
+5. Are unsupported scores, statuses, actions, or causal claims absent?
+6. Does the UI look like a real product rather than a decision-framework diagram?
+7. Does every displayed value still match the source?
