@@ -1,134 +1,119 @@
-# Visual Pattern Reference
+# Visual Pattern Reference — v5
 
-Use this as a **composition target**, not a source of business data.
+Use this as an **executable composition target**, not as a source of business data.
 
-The desired executive pattern is the same visual family as `after-reference.png`: a dominant central synthesis region, compact diagnostics on the left, compact exceptions/trend/impact on the right, and no visible decision-framework terminology.
+The intended visual family is `after-reference.png`: one dominant synthesis region, compact supporting areas, restrained product styling, and no visible decision-framework language.
 
-## Reference fidelity protocol
+## Non-negotiable composition rules
 
-When `after-reference.png` or another explicit visual reference is available, inspect it before rendering and preserve these traits:
+For an executive dashboard:
 
-- the center is the largest and strongest continuous region;
-- left and right columns are visibly subordinate;
-- cards are compact rather than report-like;
-- whitespace is generous;
-- the page does not begin with four equal KPI cards;
-- the central synthesis visually integrates supporting signals;
-- the layout feels like one composition, not three independent columns;
-- no full-width operational table dominates the bottom unless the task explicitly requires it.
+- The synthesis region is the unmistakable first focal point.
+- It should normally occupy roughly 40–50% of the main content width or otherwise dominate by scale and whitespace.
+- Left/right support areas must be visually subordinate and may be asymmetric.
+- Do not start with four equal KPI cards.
+- Do not render a full-width customer table unless the task explicitly requires operational account management.
+- Do not use large explanatory paragraphs as the synthesis.
+- Do not label columns with methodology language.
 
-Do not translate this pattern into `Diagnostic Context | Overall State | Required Interventions` headings. Those are reasoning concepts, not product UI.
+## Template A — Composite center
 
-## Composite mode
-
-Use when a real composite score/status model exists.
+Use only when the source provides a defensible score/status model.
 
 ```text
-┌────────────────────────────────────────────────────────────────┐
-│ Subscription health                                            │
-│                                                                │
-│  compact WHY / WHERE       DOMINANT SYNTHESIS      WHO / IMPACT│
-│                                                                │
-│  Revenue / target          contributing signals    Accounts    │
-│  Score composition      ↘       68 / 100      ↙    at risk     │
-│  Segment weakness             At risk               Trend      │
-│                           ↗                 ↖        Outcome    │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│ Subscription health                                              │
+│                                                                  │
+│  compact context          DOMINANT CENTER        compact action  │
+│                                                                  │
+│  MRR / target             Growth   Retention     Accounts at risk│
+│  score composition          ↘       ↓       ↙     Score trend     │
+│  segment weakness           68 / 100              Business impact │
+│                               At risk                            │
+│                            ↗       ↑       ↖                      │
+│                         Conversion  Churn                          │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-### Required behavior
+### Render behavior
 
-- Central synthesis should normally occupy about 40–50% of main content width or otherwise dominate visually.
-- Inputs should feel attached to the central state, not like unrelated KPI cards.
+- The score/status is central and largest.
+- 3–6 validated inputs visually orbit, converge on, or tightly surround the center.
 - Left side explains why/where.
 - Right side answers who/trend/impact.
-- Business outcome remains visible but visually separate from score inputs.
+- Outcome metrics remain visually separate from score inputs.
 
-## Multi-signal mode
+## Template B — Multi-signal center
 
-Use when no defensible composite score can be calculated.
+Use when no defensible composite score exists.
 
-Do **not** fall back to a generic KPI grid and do **not** invent a score.
-
-Instead, keep the same visual grammar:
+**Never replace the missing score with a fabricated one. Never retreat to a standard KPI grid.**
 
 ```text
-┌────────────────────────────────────────────────────────────────┐
-│ Subscription health                                            │
-│                                                                │
-│  Revenue context         ↑ MRR +12.4%          Account exception│
-│                       ↘                    ↙    Dovetail          │
-│                         IMPROVING                               │
-│  Churn context          Target unknown          Recent events   │
-│                       ↗                    ↖                    │
-│                 ↓ Churn -0.6pp   ↑ Conv +3.2%                  │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│ Subscription health                                              │
+│                                                                  │
+│  Revenue growth            ↑ MRR +12.4%         Accounts to watch│
+│  7-month trend                   ╲               Dovetail         │
+│                               IMPROVING           At risk          │
+│  Retention context          target unknown       Recent events    │
+│  Churn 2.84%                   ╱    ╲                               │
+│                         ↓ Churn   ↑ Conversion    MRR context       │
+│                           -0.6pp      +3.2%       $184,320          │
+│                              ↑ Customers +8.1%                    │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-The central synthesis is an **integrated visual cluster**:
+### Render behavior
 
-- one evidence-bounded status in the center;
-- 3–6 compact supporting signals around/adjacent to it;
-- directional markers when the source supports them;
-- no unsupported health threshold.
+- `Improving — target unknown` or another evidence-bounded status sits at the visual center.
+- 3–6 source-supported directional signals form a **single visual cluster** around it.
+- Signals are compact; do not turn each into a large independent card.
+- Left side carries only the minimum context needed to explain the movement.
+- Right side carries only confirmed exceptions, recent events, trend, or business impact.
+- If only one confirmed at-risk account is visible, show that account compactly; do not imply it is the only risk company-wide.
 
-A large text rectangle that simply says `Metric performance is improving` does **not** satisfy this pattern.
+## Product-native language
 
-## Preferred product-language examples
+Good labels when supported:
 
-Use domain-native labels when supported:
+- Subscription health
+- Revenue growth
+- Accounts to watch
+- Recent events
+- Score trend
+- Business impact
+- Churn by plan
 
-- `Subscription health`
-- `Revenue growth`
-- `What is changing`
-- `Accounts to watch`
-- `Health trend`
-- `Business impact`
+Do not render:
 
-Avoid framework-like headings:
+- Executive Decision Dashboard
+- Primary Decision
+- Diagnostic / Diagnostic Context
+- Actionable
+- Required Interventions
+- Overall State
+- Key Health Metrics Context
+- Outcome / Driver / Success Signal
 
-- `Diagnostic Context`
-- `Overall Subscription State`
-- `Required Interventions`
-- `Decision`
-- `Outcome`
-- `Actionable`
+## Reference fidelity
 
-## Executive density
+When `after-reference.png` is available, inspect it before rendering and preserve:
 
-For executive/founder mode:
+- center dominance;
+- compact side cards;
+- whitespace ratio;
+- restrained color usage;
+- card density;
+- asymmetric balance;
+- absence of large operational tables;
+- one coherent page composition.
 
-- prefer 2–4 compact support cards per side;
-- show only the most relevant account exceptions;
-- demote or remove large operational tables;
-- avoid action buttons unless the product already supports the workflow;
-- preserve important source information through compact summaries rather than equal visual weight.
+Do **not** copy its numbers, score, thresholds, or customer facts unless those facts also exist in the source dashboard.
 
-## Visual restraint
+## Data integrity
 
-If the reference style is appropriate to the source brand, match its calm visual tone:
-
-- soft neutral or subtly tinted page surface;
-- white/near-white cards;
-- restrained accent color;
-- light borders or low-elevation shadows;
-- generous internal padding;
-- clear typographic scale;
-- limited warning color reserved for supported exceptions.
-
-Do not color a metric as unhealthy merely because its name is negative. For example, falling churn is an improving direction; health status still requires a threshold.
-
-## Preserve product credibility
-
-If a source dashboard has no target, do not add one.
-If an account is only labeled `At risk`, do not invent `Failed payment`.
-If a trial has already converted in the activity log, do not render a `Convert` action.
-If a list is a sample, do not imply it represents the whole customer base.
-
-## Reference image
-
-When the runtime can inspect local image assets, inspect `after-reference.png` before rendering. Match its **composition, visual balance, central emphasis, compact card scale, whitespace, and restraint** much more literally than a loose inspiration board.
-
-Do not copy its literal numbers, score model, labels, or business facts unless those are also present in the user's source data.
+If a source has no target, do not add one.
+If an account is only `At risk`, do not invent a reason such as failed payment.
+If an event says a trial converted, do not render a `Convert` button.
+If table and event states conflict, preserve the conflict rather than silently resolving it.
