@@ -1,76 +1,124 @@
 # Visual Pattern Reference
 
-Use this as a **composition reference**, not a literal template.
+Use this as a **composition target**, not a source of business data.
 
-The target is a calm, product-native executive dashboard similar to the repository's SaaS After example: one dominant synthesis area, diagnostics to the left, action/trend/impact to the right, and no visible framework terminology.
+The desired executive pattern is the same visual family as `after-reference.png`: a dominant central synthesis region, compact diagnostics on the left, compact exceptions/trend/impact on the right, and no visible decision-framework terminology.
+
+## Reference fidelity protocol
+
+When `after-reference.png` or another explicit visual reference is available, inspect it before rendering and preserve these traits:
+
+- the center is the largest and strongest continuous region;
+- left and right columns are visibly subordinate;
+- cards are compact rather than report-like;
+- whitespace is generous;
+- the page does not begin with four equal KPI cards;
+- the central synthesis visually integrates supporting signals;
+- the layout feels like one composition, not three independent columns;
+- no full-width operational table dominates the bottom unless the task explicitly requires it.
+
+Do not translate this pattern into `Diagnostic Context | Overall State | Required Interventions` headings. Those are reasoning concepts, not product UI.
 
 ## Composite mode
 
-Use when a real composite score or status model exists.
+Use when a real composite score/status model exists.
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│ Product / page title                                         │
-│                                                              │
-│ WHY / WHERE            OVERALL STATE          WHO / IMPACT   │
-│                                                              │
-│ Outcome context        Subscription health    At-risk items  │
-│ MRR / target                 68 / 100          Account list   │
-│                              At risk                         │
-│ Score composition          supporting          Health trend   │
-│ / diagnostics             dimensions           -6 MoM         │
-│                                                              │
-│ Segment risk                                     Outcome      │
-│ Enterprise churn                                 Net New MRR  │
-└──────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│ Subscription health                                            │
+│                                                                │
+│  compact WHY / WHERE       DOMINANT SYNTHESIS      WHO / IMPACT│
+│                                                                │
+│  Revenue / target          contributing signals    Accounts    │
+│  Score composition      ↘       68 / 100      ↙    at risk     │
+│  Segment weakness             At risk               Trend      │
+│                           ↗                 ↖        Outcome    │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-### Visual behavior
+### Required behavior
 
-- The center is the strongest focal point.
-- Supporting inputs visually converge on the central state.
-- Left panels explain **why / where**.
-- Right panels answer **who / trend / impact**.
-- Outcome impact stays visible but is not visually confused with score inputs.
-- Use restrained color and generous whitespace.
+- Central synthesis should normally occupy about 40–50% of main content width or otherwise dominate visually.
+- Inputs should feel attached to the central state, not like unrelated KPI cards.
+- Left side explains why/where.
+- Right side answers who/trend/impact.
+- Business outcome remains visible but visually separate from score inputs.
 
 ## Multi-signal mode
 
 Use when no defensible composite score can be calculated.
 
-Do **not** replace a missing score with a fabricated one. Keep the same visual grammar:
+Do **not** fall back to a generic KPI grid and do **not** invent a score.
+
+Instead, keep the same visual grammar:
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│ Subscription health                                         │
-│                                                              │
-│ WHY / WHERE            OVERALL STATE          WHO / IMPACT   │
-│                                                              │
-│ Revenue trend          IMPROVING              Known exception│
-│                        Target unknown          Dovetail       │
-│                        ↑ MRR  +12.4%            cancellation   │
-│ Churn trend            ↓ Churn -0.6pp                         │
-│                        ↑ Customers +8.1%       Outcome context│
-│ Conversion             ↑ Trial conv +3.2%      MRR $184,320   │
-└──────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│ Subscription health                                            │
+│                                                                │
+│  Revenue context         ↑ MRR +12.4%          Account exception│
+│                       ↘                    ↙    Dovetail          │
+│                         IMPROVING                               │
+│  Churn context          Target unknown          Recent events   │
+│                       ↗                    ↖                    │
+│                 ↓ Churn -0.6pp   ↑ Conv +3.2%                  │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-The center still synthesizes the evidence; it simply uses an evidence-bounded status instead of invented score math.
+The central synthesis is an **integrated visual cluster**:
 
-## Reasoning stays backstage
+- one evidence-bounded status in the center;
+- 3–6 compact supporting signals around/adjacent to it;
+- directional markers when the source supports them;
+- no unsupported health threshold.
 
-These are reasoning concepts, not default UI copy:
+A large text rectangle that simply says `Metric performance is improving` does **not** satisfy this pattern.
 
-- Decision
-- Driver
-- Diagnostic
-- Outcome
-- Actionable
-- Success Signal
-- Composite mode
-- Multi-signal mode
+## Preferred product-language examples
 
-Translate them into hierarchy, not labels.
+Use domain-native labels when supported:
+
+- `Subscription health`
+- `Revenue growth`
+- `What is changing`
+- `Accounts to watch`
+- `Health trend`
+- `Business impact`
+
+Avoid framework-like headings:
+
+- `Diagnostic Context`
+- `Overall Subscription State`
+- `Required Interventions`
+- `Decision`
+- `Outcome`
+- `Actionable`
+
+## Executive density
+
+For executive/founder mode:
+
+- prefer 2–4 compact support cards per side;
+- show only the most relevant account exceptions;
+- demote or remove large operational tables;
+- avoid action buttons unless the product already supports the workflow;
+- preserve important source information through compact summaries rather than equal visual weight.
+
+## Visual restraint
+
+If the reference style is appropriate to the source brand, match its calm visual tone:
+
+- soft neutral or subtly tinted page surface;
+- white/near-white cards;
+- restrained accent color;
+- light borders or low-elevation shadows;
+- generous internal padding;
+- clear typographic scale;
+- limited warning color reserved for supported exceptions.
+
+Do not color a metric as unhealthy merely because its name is negative. For example, falling churn is an improving direction; health status still requires a threshold.
 
 ## Preserve product credibility
 
@@ -81,4 +129,6 @@ If a list is a sample, do not imply it represents the whole customer base.
 
 ## Reference image
 
-When the runtime can inspect local image assets, use `after-reference.png` as a visual composition reference. Match its hierarchy, balance, restraint, and central-synthesis pattern — not its literal numbers or business facts.
+When the runtime can inspect local image assets, inspect `after-reference.png` before rendering. Match its **composition, visual balance, central emphasis, compact card scale, whitespace, and restraint** much more literally than a loose inspiration board.
+
+Do not copy its literal numbers, score model, labels, or business facts unless those are also present in the user's source data.
