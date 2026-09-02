@@ -1,18 +1,16 @@
-# Test: Visual Translation Regression — v5
+# Test: Visual Translation Regression — v6
 
 ## Why this test exists
 
-Earlier revisions improved reasoning but still failed visually.
+Earlier revisions improved reasoning but repeatedly collapsed back into a standard admin dashboard.
 
-Observed failures included:
+Latest observed v5 failure:
 
-- framework labels rendered directly in the UI;
-- unsupported statuses such as `MARGINAL`;
-- invented buttons such as `Intervene`;
-- a giant sentence card used as the center instead of a visual synthesis;
-- generic three-column reports;
-- a full-width customer table dominating the page;
-- visually drifting away from `after-reference.png` despite being told to use it.
+- invented top-level status `HEALTH GOOD` despite no target/threshold;
+- four equal KPI cards across the top;
+- large revenue chart + full-width account table dominating the page;
+- no dominant central synthesis cluster;
+- visual structure drifted far from `after-reference.png`.
 
 ## Test prompt
 
@@ -27,29 +25,29 @@ Create the final visual mockup.
 
 ## Expected behavior
 
-The agent should rely on the skill, not extra prompt coaching.
+Because no score rules or healthy thresholds are provided, the agent must use the no-score executive template.
 
-A passing result should:
+A passing result must:
 
-- choose composite mode only if score rules exist;
-- otherwise use the multi-signal-center template;
-- create a visually dominant central synthesis;
-- cluster 3–6 source-supported signals around/tightly with the center;
-- keep side content compact and subordinate;
-- avoid a four-card KPI strip as the primary hierarchy;
-- avoid large explanatory paragraphs as the central element;
-- avoid full-width customer tables in executive mode;
-- avoid framework/brief labels such as `Primary Decision`, `Diagnostic`, `Actionable`, `Overall State`, `Required Interventions`, or `Executive Decision Dashboard`;
-- use evidence-bounded status language when thresholds are absent;
-- surface confirmed account exceptions without inventing causes or workflow buttons;
-- preserve the source data exactly;
-- feel structurally closer to `after-reference.png` than to a standard admin dashboard.
+- use `Improving — target unknown` or an equivalent evidence-bounded center, never `Healthy`, `Health good`, `Marginal`, or `At risk`;
+- place MRR growth, customer growth, churn direction, and trial-conversion direction as compact signals around/tightly attached to the center;
+- make the center the first focal point;
+- use a small revenue-trend/context area on the left;
+- use compact account exception / recent-event cards on the right;
+- avoid a top strip of four KPI cards;
+- avoid a full-width account table;
+- avoid giant paragraphs as the center;
+- avoid framework labels or invented workflow buttons;
+- preserve every source value and state exactly.
 
-## Visual pass criteria
+## Automatic fail conditions
 
-1. **Center dominance** — first focal point is obvious.
-2. **Integrated synthesis** — central state plus 3–6 attached signals.
-3. **Reference fidelity** — similar balance, density, restraint, and whitespace to the After example.
-4. **Executive compactness** — no large operational table unless explicitly requested.
-5. **Product-native language** — no methodology headings.
-6. **Data integrity** — no invented score, target, status, event, action, or mismatched value.
+Fail the result if any of these appear:
+
+1. four equal KPI cards form the primary top row;
+2. `HEALTH GOOD`, `Healthy`, `Marginal`, or `At risk` is used as overall status without source rules;
+3. a full-width customer table dominates the lower page;
+4. the center is not the strongest visual region;
+5. the center is mainly explanatory prose instead of a signal cluster;
+6. framework terms such as `Primary Decision`, `Diagnostic`, `Outcome`, or `Actionable` appear in the UI;
+7. unsupported buttons/actions or mismatched data appear.
