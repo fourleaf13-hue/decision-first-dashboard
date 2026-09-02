@@ -22,8 +22,8 @@ const base = {
     { name: 'Dovetail', plan: 'Basic', mrr: '$120', status: 'At risk', provenance: 'source' }
   ],
   events: [
-    { subject: 'Dovetail', event: 'Plan cancelled', detail: 'Basic plan', time: '1 hr ago', provenance: 'source' },
-    { subject: 'Orbit Systems', event: 'Trial converted', detail: '43 min ago', time: '43 min ago', provenance: 'source' }
+    { subject: 'Dovetail', event: 'Plan cancelled', time: '1 hr ago', provenance: 'source' },
+    { subject: 'Orbit Systems', event: 'Trial converted', time: '43 min ago', provenance: 'source' }
   ]
 };
 
@@ -53,6 +53,32 @@ test('rejects invented target fields on no-score signals', () => {
   const bad = structuredClone(base);
   bad.signals[0].target = 183000;
   assert.equal(validateDecisionState(bad).valid, false);
+});
+
+test('rejects the recurring hallucination fields seen in visual regressions', () => {
+  const rootFields = ['healthStatus', 'health_good', 'goal', 'workflow'];
+  for (const field of rootFields) {
+    const bad = structuredClone(base);
+    bad[field] = 'invented';
+    assert.equal(validateDecisionState(bad).valid, false, field);
+  }
+
+  const exceptionFields = ['renewalDue', 'riskFactor', 'assignee'];
+  for (const field of exceptionFields) {
+    const bad = structuredClone(base);
+    bad.exceptions[0][field] = 'invented';
+    assert.equal(validateDecisionState(bad).valid, false, field);
+  }
+});
+
+test('requires visible account exceptions and events to come from source evidence', () => {
+  const derivedException = structuredClone(base);
+  derivedException.exceptions[0].provenance = 'derived';
+  assert.equal(validateDecisionState(derivedException).valid, false);
+
+  const derivedEvent = structuredClone(base);
+  derivedEvent.events[0].provenance = 'derived';
+  assert.equal(validateDecisionState(derivedEvent).valid, false);
 });
 
 test('allows source plan names without product-specific enums', () => {
