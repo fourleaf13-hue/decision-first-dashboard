@@ -3,6 +3,7 @@ name: Compiler tests
 on:
   push:
     branches:
+      - main
       - feature/dashboard-compiler-mvp
   pull_request:
     paths:
@@ -30,4 +31,3 @@ jobs:
           path: |
             examples/saas/output.no-score.svg
             examples/saas/output.no-score.html
-          if-no-files-found: error
