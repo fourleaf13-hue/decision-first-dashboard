@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/dashboard-compiler-mvp
+      - feature/composite-mode-compiler
   pull_request:
     paths:
       - 'skills/decision-first-dashboard/**'
