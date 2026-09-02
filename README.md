@@ -8,9 +8,20 @@ Most dashboards organize data. This skill organizes decisions.
 
 ## Before → After
 
-| Before | After |
-|---|---|
-| ![Before](examples/saas/before.png) | ![After](examples/saas/after.png) |
+<table>
+  <tr>
+    <th width="50%">Before</th>
+    <th width="50%">After</th>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="examples/saas/before.png" width="100%">
+    </td>
+    <td width="50%">
+      <img src="examples/saas/after.png" width="100%">
+    </td>
+  </tr>
+</table>
 
 ### Before
 
