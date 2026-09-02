@@ -18,6 +18,15 @@ test('renders a dominant no-score synthesis cluster from validated data', () => 
   assert.match(svg, /\+3\.2%/);
 });
 
+test('derives mixed overall direction from conflicting signal directions', () => {
+  const mixed = structuredClone(fixture);
+  delete mixed.synthesis.direction;
+  mixed.signals[2].direction = 'deteriorating';
+  const svg = renderSvg(mixed);
+  assert.match(svg, />MIXED</);
+  assert.doesNotMatch(svg, />IMPROVING</);
+});
+
 test('keeps confirmed exceptions and events compact on the right', () => {
   const svg = renderSvg(fixture);
   assert.match(svg, /Accounts to watch/);
