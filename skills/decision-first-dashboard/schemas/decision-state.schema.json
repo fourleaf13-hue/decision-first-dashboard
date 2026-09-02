@@ -68,7 +68,7 @@
         "plan": { "type": "string", "maxLength": 24 },
         "mrr": { "type": "string", "maxLength": 24 },
         "status": { "type": "string", "minLength": 1, "maxLength": 24 },
-        "provenance": { "enum": ["source", "derived"] }
+        "provenance": { "const": "source" }
       }
     },
     "event": {
@@ -80,7 +80,7 @@
         "event": { "type": "string", "minLength": 1, "maxLength": 40 },
         "detail": { "type": "string", "maxLength": 50 },
         "time": { "type": "string", "minLength": 1, "maxLength": 24 },
-        "provenance": { "enum": ["source", "derived"] }
+        "provenance": { "const": "source" }
       }
     }
   }
