@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
   <title id="title">Subscription health</title>
-  <desc id="desc">Decision-first subscription health dashboard with a dominant evidence-bounded synthesis cluster.</desc>
+  <desc id="desc">Subscription metrics, revenue context, account exceptions, and recent events.</desc>
   <defs>
     <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#f8f7ff"/>
@@ -35,7 +35,6 @@
     <text x="72" y="76" class="ink" font-size="28" font-weight="700">Subscription health</text>
     <text x="72" y="106" class="muted" font-size="14">A compact view of movement, exceptions, and business context</text>
 
-    <!-- LEFT: compact context -->
     <g filter="url(#cardShadow)">
       <rect x="72" y="150" width="286" height="302" rx="26" class="card"/>
     </g>
@@ -59,7 +58,6 @@
     <text x="98" y="638" class="muted" font-size="12">Trial conversion</text>
     <text x="332" y="638" class="positive" font-size="13" font-weight="650" text-anchor="end">{{TRIAL_DELTA}}</text>
 
-    <!-- CENTER: dominant synthesis -->
     <g filter="url(#cardShadow)">
       <rect x="382" y="150" width="632" height="610" rx="34" class="card"/>
     </g>
@@ -73,37 +71,29 @@
 
     <circle cx="698" cy="464" r="94" fill="#ffffff" stroke="#d7d0ef" stroke-width="2"/>
     <circle cx="698" cy="464" r="82" fill="#f7f4ff"/>
-    <text x="698" y="452" class="accent" font-size="29" font-weight="760" text-anchor="middle">{{SYNTHESIS}}</text>
-    <text x="698" y="484" class="muted" font-size="14" text-anchor="middle">{{TARGET_COPY}}</text>
-    <text x="698" y="511" class="soft" font-size="11" text-anchor="middle">No composite score used</text>
+    <text x="698" y="458" class="accent" font-size="29" font-weight="760" text-anchor="middle">{{SYNTHESIS}}</text>
+    <text x="698" y="490" class="muted" font-size="14" text-anchor="middle">{{TARGET_COPY}}</text>
 
-    <!-- signal 1 -->
     <circle cx="548" cy="388" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
     <text x="520" y="324" class="accent" font-size="26" font-weight="740" text-anchor="middle">{{S1_DELTA}}</text>
     <text x="520" y="349" class="ink" font-size="13" font-weight="650" text-anchor="middle">{{S1_LABEL}}</text>
     <text x="520" y="368" class="muted" font-size="11" text-anchor="middle">{{S1_VALUE}}</text>
 
-    <!-- signal 2 -->
     <circle cx="848" cy="388" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
     <text x="876" y="324" class="accent" font-size="26" font-weight="740" text-anchor="middle">{{S2_DELTA}}</text>
     <text x="876" y="349" class="ink" font-size="13" font-weight="650" text-anchor="middle">{{S2_LABEL}}</text>
     <text x="876" y="368" class="muted" font-size="11" text-anchor="middle">{{S2_VALUE}}</text>
 
-    <!-- signal 3 -->
     <circle cx="548" cy="540" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
     <text x="520" y="606" class="accent" font-size="26" font-weight="740" text-anchor="middle">{{S3_DELTA}}</text>
     <text x="520" y="631" class="ink" font-size="13" font-weight="650" text-anchor="middle">{{S3_LABEL}}</text>
     <text x="520" y="650" class="muted" font-size="11" text-anchor="middle">{{S3_VALUE}}</text>
 
-    <!-- signal 4 -->
     <circle cx="848" cy="540" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
     <text x="876" y="606" class="accent" font-size="26" font-weight="740" text-anchor="middle">{{S4_DELTA}}</text>
     <text x="876" y="631" class="ink" font-size="13" font-weight="650" text-anchor="middle">{{S4_LABEL}}</text>
     <text x="876" y="650" class="muted" font-size="11" text-anchor="middle">{{S4_VALUE}}</text>
 
-    <text x="698" y="706" class="muted" font-size="12" text-anchor="middle">Directional evidence is improving; adequacy against target is not established.</text>
-
-    <!-- RIGHT: compact exceptions -->
     <g filter="url(#cardShadow)">
       <rect x="1038" y="150" width="330" height="278" rx="26" class="card"/>
     </g>
@@ -115,7 +105,5 @@
     </g>
     <text x="1064" y="492" class="ink" font-size="15" font-weight="650">Recent events</text>
     {{EVENT_ROWS}}
-
-    <text x="72" y="836" class="soft" font-size="11">Decision-first view · source-supported values only</text>
   </g>
 </svg>
