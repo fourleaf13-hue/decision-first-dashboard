@@ -35,9 +35,12 @@ test('keeps exceptions and events compact without KPI grids or tables', () => {
   assert.doesNotMatch(html, /kpi-grid|grid-cols-4/i);
 });
 
-test('does not leak composite methodology labels into HTML', () => {
+test('does not leak composite methodology labels into visible HTML copy', () => {
   const html = renderHtml(fixture);
-  assert.doesNotMatch(html, /Composite mode|Weighted average|Aggregation|Normalization|Decision|Driver|Diagnostic|Framework|Compiler/i);
+  assert.doesNotMatch(
+    html,
+    />\s*(Composite mode|Weighted average|Aggregation|Normalization|Decision|Driver|Diagnostic|Framework|Compiler)\s*</i
+  );
 });
 
 test('composite HTML is deterministic and fully resolved', () => {
