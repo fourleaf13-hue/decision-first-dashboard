@@ -27,10 +27,23 @@ test('keeps confirmed exceptions and events compact on the right', () => {
   assert.match(svg, /Trial converted/);
 });
 
-test('does not leak forbidden framework or fabricated verdict copy', () => {
+test('does not leak framework, compiler, or fabricated verdict copy', () => {
   const svg = renderSvg(fixture);
   assert.doesNotMatch(
     svg,
-    /Executive Decision Dashboard|Primary Decision|Diagnostic Context|Required Interventions|HEALTH GOOD|Healthy|Marginal/
+    /Executive Decision Dashboard|Primary Decision|Diagnostic Context|Required Interventions|HEALTH GOOD|Healthy|Marginal|No composite score|Decision-first view|Directional evidence is improving/
   );
+});
+
+test('is deterministic and leaves no unresolved template placeholders', () => {
+  const first = renderSvg(fixture);
+  const second = renderSvg(structuredClone(fixture));
+  assert.equal(first, second);
+  assert.doesNotMatch(first, /{{[^}]+}}/);
+});
+
+test('refuses to render a payload that fails the decision-state schema', () => {
+  const bad = structuredClone(fixture);
+  bad.score = { value: 68 };
+  assert.throws(() => renderSvg(bad), /failed schema validation/);
 });
