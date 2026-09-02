@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Subscription health</title>
+  <style>{{CSS}}</style>
+</head>
+<body>
+  <main class="dashboard-shell">
+    <header class="page-header">
+      <div>
+        <h1>Subscription health</h1>
+        <p>Movement, exceptions, and business context in one view</p>
+      </div>
+    </header>
+
+    <section class="decision-layout">
+      <aside class="support-column support-column--left">
+        <article class="card revenue-card">
+          <div class="eyebrow">Revenue growth</div>
+          <div class="metric-value">{{MRR_VALUE}}</div>
+          <div class="metric-delta positive">{{MRR_DELTA}} <span>vs last month</span></div>
+          <svg class="sparkline" viewBox="0 0 234 86" aria-label="Revenue trend">
+            <path d="{{HTML_REVENUE_PATH}}"></path>
+          </svg>
+          <div class="card-divider"></div>
+          <div class="context-row"><span>Current MRR</span><strong>{{MRR_VALUE}}</strong></div>
+        </article>
+
+        <article class="card context-card">
+          <div class="eyebrow">Movement context</div>
+          <div class="context-metric">
+            <span>Churn</span>
+            <strong>{{CHURN_VALUE}}</strong>
+            <em class="positive">{{CHURN_DELTA}}</em>
+          </div>
+          <div class="context-metric">
+            <span>Trial conversion</span>
+            <strong>{{TRIAL_VALUE}}</strong>
+            <em class="positive">{{TRIAL_DELTA}}</em>
+          </div>
+        </article>
+      </aside>
+
+      <section class="card synthesis-card" aria-label="Overall subscription direction">
+        <div class="eyebrow synthesis-eyebrow">Overall direction</div>
+        <div class="orbit" aria-hidden="true">
+          <div class="orbit-ring orbit-ring--outer"></div>
+          <div class="orbit-ring orbit-ring--inner"></div>
+          <svg viewBox="0 0 620 520" preserveAspectRatio="none">
+            <path d="M310 260 L160 160 M310 260 L460 160 M310 260 L160 360 M310 260 L460 360"></path>
+          </svg>
+        </div>
+
+        <div class="signal signal--1">
+          <strong>{{S1_DELTA}}</strong>
+          <span>{{S1_LABEL}}</span>
+          <small>{{S1_VALUE}}</small>
+        </div>
+        <div class="signal signal--2">
+          <strong>{{S2_DELTA}}</strong>
+          <span>{{S2_LABEL}}</span>
+          <small>{{S2_VALUE}}</small>
+        </div>
+        <div class="signal signal--3">
+          <strong>{{S3_DELTA}}</strong>
+          <span>{{S3_LABEL}}</span>
+          <small>{{S3_VALUE}}</small>
+        </div>
+        <div class="signal signal--4">
+          <strong>{{S4_DELTA}}</strong>
+          <span>{{S4_LABEL}}</span>
+          <small>{{S4_VALUE}}</small>
+        </div>
+
+        <div class="synthesis-core">
+          <strong>{{SYNTHESIS}}</strong>
+          <span>{{TARGET_COPY}}</span>
+        </div>
+      </section>
+
+      <aside class="support-column support-column--right">
+        <article class="card compact-card">
+          <div class="eyebrow">Accounts to watch</div>
+          <div class="exception-list">{{HTML_EXCEPTION_ROWS}}</div>
+        </article>
+
+        <article class="card compact-card events-card">
+          <div class="eyebrow">Recent events</div>
+          <div class="event-list">{{HTML_EVENT_ROWS}}</div>
+        </article>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
