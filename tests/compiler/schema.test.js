@@ -5,7 +5,6 @@ import { validateDecisionState } from '../../skills/decision-first-dashboard/scr
 const base = {
   mode: 'no_score',
   synthesis: {
-    direction: 'improving',
     targetState: 'unknown',
     exceptionState: 'present'
   },
@@ -15,9 +14,6 @@ const base = {
     { metric: 'churn_rate', label: 'Churn', value: '2.84%', delta: '-0.6pp', direction: 'improving', provenance: 'source' },
     { metric: 'trial_conversion', label: 'Trial conversion', value: '31.7%', delta: '+3.2%', direction: 'improving', provenance: 'source' }
   ],
-  context: {
-    revenueSeries: [74000, 85000, 99000, 118000, 137000, 159000, 184320]
-  },
   exceptions: [
     { name: 'Dovetail', plan: 'Basic', mrr: '$120', status: 'At risk', provenance: 'source' }
   ],
@@ -27,19 +23,19 @@ const base = {
   ]
 };
 
-test('accepts the canonical no-score payload', () => {
+test('accepts the canonical no-score payload without caller-supplied overall direction', () => {
   assert.equal(validateDecisionState(base).valid, true);
+});
+
+test('rejects caller-supplied overall direction so the renderer must derive it', () => {
+  const bad = structuredClone(base);
+  bad.synthesis.direction = 'improving';
+  assert.equal(validateDecisionState(bad).valid, false);
 });
 
 test('rejects invented score fields in no-score mode', () => {
   const bad = structuredClone(base);
   bad.score = { value: 68 };
-  assert.equal(validateDecisionState(bad).valid, false);
-});
-
-test('rejects unsupported health verdicts', () => {
-  const bad = structuredClone(base);
-  bad.synthesis.direction = 'healthy';
   assert.equal(validateDecisionState(bad).valid, false);
 });
 
@@ -79,6 +75,20 @@ test('requires visible account exceptions and events to come from source evidenc
   const derivedEvent = structuredClone(base);
   derivedEvent.events[0].provenance = 'derived';
   assert.equal(validateDecisionState(derivedEvent).valid, false);
+});
+
+test('requires explicit source provenance for numeric context series', () => {
+  const missing = structuredClone(base);
+  missing.context = { revenueSeries: [100, 120, 140] };
+  assert.equal(validateDecisionState(missing).valid, false);
+
+  const derived = structuredClone(base);
+  derived.context = { revenueSeries: [100, 120, 140], provenance: 'derived' };
+  assert.equal(validateDecisionState(derived).valid, false);
+
+  const sourced = structuredClone(base);
+  sourced.context = { revenueSeries: [100, 120, 140], provenance: 'source' };
+  assert.equal(validateDecisionState(sourced).valid, true);
 });
 
 test('allows source plan names without product-specific enums', () => {
