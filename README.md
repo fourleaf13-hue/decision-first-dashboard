@@ -46,7 +46,7 @@ Only then should the visual hierarchy be redesigned.
 Once this repository is published on GitHub, install it with an Agent Skills-compatible client, for example:
 
 ```bash
-npx skills add <github-user>/decision-first-dashboard
+npx skills add fourleaf13-hue/decision-first-dashboard
 ```
 
 The skill file lives at:
