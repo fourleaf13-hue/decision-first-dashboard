@@ -28,6 +28,19 @@ function validateNode(value, nodeSchema, instancePath, errors, rootSchema) {
     return;
   }
 
+  if (nodeSchema.oneOf) {
+    let matches = 0;
+    for (const branch of nodeSchema.oneOf) {
+      const branchErrors = [];
+      validateNode(value, branch, instancePath, branchErrors, rootSchema);
+      if (branchErrors.length === 0) matches += 1;
+    }
+    if (matches !== 1) {
+      pushError(errors, instancePath, 'oneOf', 'must match exactly one decision-state mode');
+    }
+    return;
+  }
+
   if (Object.hasOwn(nodeSchema, 'const') && value !== nodeSchema.const) {
     pushError(errors, instancePath, 'const', `must be equal to constant ${JSON.stringify(nodeSchema.const)}`);
     return;
@@ -115,9 +128,84 @@ function validateNode(value, nodeSchema, instancePath, errors, rootSchema) {
   }
 }
 
+function nearlyEqual(a, b, tolerance) {
+  return Math.abs(a - b) <= tolerance;
+}
+
+function validateCompositeSemantics(data, errors) {
+  const { score, model } = data;
+
+  if (!(score.min < score.max)) {
+    pushError(errors, '/score', 'scoreScale', 'score min must be less than score max');
+    return;
+  }
+
+  if (score.value < score.min || score.value > score.max) {
+    pushError(errors, '/score/value', 'scoreScale', 'score value must lie within the declared score scale');
+  }
+
+  let weightSum = 0;
+  let weightedScore = 0;
+  for (const [index, component] of model.components.entries()) {
+    if (!(component.weight > 0 && component.weight <= 1)) {
+      pushError(errors, `/model/components/${index}/weight`, 'weight', 'component weight must be greater than 0 and no greater than 1');
+    }
+    if (component.normalizedScore < score.min || component.normalizedScore > score.max) {
+      pushError(errors, `/model/components/${index}/normalizedScore`, 'scoreScale', 'normalized score must lie within the composite score scale');
+    }
+    weightSum += component.weight;
+    weightedScore += component.normalizedScore * component.weight;
+  }
+
+  if (!nearlyEqual(weightSum, 1, 1e-6)) {
+    pushError(errors, '/model/components', 'weightSum', 'component weights must sum to 1');
+  }
+
+  if (!nearlyEqual(weightedScore, score.value, 0.01)) {
+    pushError(errors, '/score/value', 'weightedAverage', 'score value must equal the weighted average of normalized component scores');
+  }
+
+  const bands = model.bands;
+  if (!nearlyEqual(bands[0].min, score.min, 1e-9)) {
+    pushError(errors, '/model/bands/0/min', 'bandCoverage', 'first band must begin at the score minimum');
+  }
+
+  for (const [index, band] of bands.entries()) {
+    if (!(band.min < band.max)) {
+      pushError(errors, `/model/bands/${index}`, 'bandRange', 'band min must be less than band max');
+    }
+    if (band.min < score.min || band.max > score.max) {
+      pushError(errors, `/model/bands/${index}`, 'bandCoverage', 'band must remain within the score scale');
+    }
+    if (index > 0 && !nearlyEqual(bands[index - 1].max, band.min, 1e-9)) {
+      pushError(errors, `/model/bands/${index}/min`, 'bandContinuity', 'score bands must be contiguous and non-overlapping');
+    }
+  }
+
+  if (!nearlyEqual(bands[bands.length - 1].max, score.max, 1e-9)) {
+    pushError(errors, `/model/bands/${bands.length - 1}/max`, 'bandCoverage', 'last band must end at the score maximum');
+  }
+
+  const selectedBand = bands.find((band, index) => {
+    const isLast = index === bands.length - 1;
+    return score.value >= band.min && (isLast ? score.value <= band.max : score.value < band.max);
+  });
+
+  if (!selectedBand) {
+    pushError(errors, '/score/band', 'bandSelection', 'score value must map to exactly one declared band');
+  } else if (selectedBand.label !== score.band) {
+    pushError(errors, '/score/band', 'bandSelection', 'score band must match the threshold band selected by the score value');
+  }
+}
+
 export function validateDecisionState(data) {
   const errors = [];
   validateNode(data, schema, '', errors, schema);
+
+  if (errors.length === 0 && data.mode === 'composite') {
+    validateCompositeSemantics(data, errors);
+  }
+
   return { valid: errors.length === 0, errors };
 }
 
