@@ -51,12 +51,18 @@
       <rect x="72" y="476" width="286" height="190" rx="26" class="card"/>
     </g>
     <text x="98" y="516" class="ink" font-size="15" font-weight="650">Movement context</text>
-    <text x="98" y="558" class="muted" font-size="12">Churn</text>
-    <text x="98" y="584" class="ink" font-size="22" font-weight="700">2.84%</text>
-    <text x="332" y="582" class="positive" font-size="13" font-weight="650" text-anchor="end">-0.6pp</text>
-    <line x1="98" y1="610" x2="332" y2="610" stroke="#efedf6"/>
-    <text x="98" y="638" class="muted" font-size="12">Trial conversion</text>
-    <text x="332" y="638" class="positive" font-size="13" font-weight="650" text-anchor="end">+3.2%</text>
+    <g>
+      <text x="98" y="552" class="muted" font-size="12">Churn</text>
+      <text x="98" y="579" class="ink" font-size="21" font-weight="700">2.84%</text>
+      <text x="332" y="579" class="positive" font-size="13" font-weight="650" text-anchor="end">-0.6pp</text>
+      <line x1="98" y1="600" x2="332" y2="600" stroke="#efedf6"/>
+    </g>
+<g>
+      <text x="98" y="624" class="muted" font-size="12">Trial conversion</text>
+      <text x="98" y="651" class="ink" font-size="21" font-weight="700">31.7%</text>
+      <text x="332" y="651" class="positive" font-size="13" font-weight="650" text-anchor="end">+3.2%</text>
+      
+    </g>
 
     <g filter="url(#cardShadow)">
       <rect x="382" y="150" width="632" height="610" rx="34" class="card"/>
@@ -66,33 +72,37 @@
 
     <circle cx="698" cy="464" r="188" fill="none" stroke="#e3dff5" stroke-width="1.5" stroke-dasharray="5 8"/>
     <circle cx="698" cy="464" r="132" fill="none" stroke="#ece9f7" stroke-width="1"/>
-    <path d="M698 344 L548 388 M698 344 L848 388 M698 584 L548 540 M698 584 L848 540" stroke="#d6d0ef" stroke-width="1.6"/>
-    <path d="M548 388 L698 464 L848 388 M548 540 L698 464 L848 540" fill="none" stroke="#c7bfee" stroke-width="2" stroke-opacity="0.7"/>
+    <path d="M698 464 L548 330 M698 464 L848 330 M698 464 L548 590 M698 464 L848 590" fill="none" stroke="#d6d0ef" stroke-width="1.6"/>
 
     <circle cx="698" cy="464" r="94" fill="#ffffff" stroke="#d7d0ef" stroke-width="2"/>
     <circle cx="698" cy="464" r="82" fill="#f7f4ff"/>
     <text x="698" y="458" class="accent" font-size="29" font-weight="760" text-anchor="middle">IMPROVING</text>
     <text x="698" y="490" class="muted" font-size="14" text-anchor="middle">Target unknown</text>
 
-    <circle cx="548" cy="388" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
-    <text x="520" y="324" class="accent" font-size="26" font-weight="740" text-anchor="middle">+12.4%</text>
-    <text x="520" y="349" class="ink" font-size="13" font-weight="650" text-anchor="middle">MRR</text>
-    <text x="520" y="368" class="muted" font-size="11" text-anchor="middle">$184,320</text>
-
-    <circle cx="848" cy="388" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
-    <text x="876" y="324" class="accent" font-size="26" font-weight="740" text-anchor="middle">+8.1%</text>
-    <text x="876" y="349" class="ink" font-size="13" font-weight="650" text-anchor="middle">Customers</text>
-    <text x="876" y="368" class="muted" font-size="11" text-anchor="middle">8,942</text>
-
-    <circle cx="548" cy="540" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
-    <text x="520" y="606" class="accent" font-size="26" font-weight="740" text-anchor="middle">-0.6pp</text>
-    <text x="520" y="631" class="ink" font-size="13" font-weight="650" text-anchor="middle">Churn</text>
-    <text x="520" y="650" class="muted" font-size="11" text-anchor="middle">2.84%</text>
-
-    <circle cx="848" cy="540" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
-    <text x="876" y="606" class="accent" font-size="26" font-weight="740" text-anchor="middle">+3.2%</text>
-    <text x="876" y="631" class="ink" font-size="13" font-weight="650" text-anchor="middle">Trial conversion</text>
-    <text x="876" y="650" class="muted" font-size="11" text-anchor="middle">31.7%</text>
+    <g class="signal-node">
+      <circle cx="548" cy="330" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
+      <text x="548" y="268" class="accent" font-size="24" font-weight="740" text-anchor="middle">+12.4%</text>
+      <text x="548" y="293" class="ink" font-size="13" font-weight="650" text-anchor="middle">MRR</text>
+      <text x="548" y="312" class="muted" font-size="11" text-anchor="middle">$184,320</text>
+    </g>
+<g class="signal-node">
+      <circle cx="848" cy="330" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
+      <text x="848" y="268" class="accent" font-size="24" font-weight="740" text-anchor="middle">+8.1%</text>
+      <text x="848" y="293" class="ink" font-size="13" font-weight="650" text-anchor="middle">Customers</text>
+      <text x="848" y="312" class="muted" font-size="11" text-anchor="middle">8,942</text>
+    </g>
+<g class="signal-node">
+      <circle cx="548" cy="590" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
+      <text x="548" y="656" class="accent" font-size="24" font-weight="740" text-anchor="middle">-0.6pp</text>
+      <text x="548" y="681" class="ink" font-size="13" font-weight="650" text-anchor="middle">Churn</text>
+      <text x="548" y="700" class="muted" font-size="11" text-anchor="middle">2.84%</text>
+    </g>
+<g class="signal-node">
+      <circle cx="848" cy="590" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
+      <text x="848" y="656" class="accent" font-size="24" font-weight="740" text-anchor="middle">+3.2%</text>
+      <text x="848" y="681" class="ink" font-size="13" font-weight="650" text-anchor="middle">Trial conversion</text>
+      <text x="848" y="700" class="muted" font-size="11" text-anchor="middle">31.7%</text>
+    </g>
 
     <g filter="url(#cardShadow)">
       <rect x="1038" y="150" width="330" height="278" rx="26" class="card"/>
