@@ -1,75 +1,55 @@
-# Test: Visual Translation Regression
+# Test: Visual Translation Regression — v5
 
-## Observed failure before v4
+## Why this test exists
 
-Earlier skill revisions improved reasoning but still failed at visual translation.
+Earlier revisions improved reasoning but still failed visually.
 
-### Failure A — framework diagram leakage
+Observed failures included:
 
-A model rendered labels such as:
+- framework labels rendered directly in the UI;
+- unsupported statuses such as `MARGINAL`;
+- invented buttons such as `Intervene`;
+- a giant sentence card used as the center instead of a visual synthesis;
+- generic three-column reports;
+- a full-width customer table dominating the page;
+- visually drifting away from `after-reference.png` despite being told to use it.
 
-- `(Decision)`
-- `(Outcome)`
-- `(Actionable)`
-- `Diagnostic Signal`
-- `Success Signal`
+## Test prompt
 
-It also invented an unsupported `MARGINAL` status and invented workflow buttons.
+Use the attached decision-first-dashboard skill to redesign `before.png`.
 
-### Failure B — generic three-column reinterpretation
-
-After v3 added backstage-reasoning rules and a visual reference, a model still produced:
-
-- `Diagnostic Context`
-- `Overall Subscription State`
-- `Required Interventions`
-- a large center text card saying `Metric Performance is Improving (Targets unknown)`;
-- a full-width customer table dominating the lower page;
-- an invented `Intervene` button.
-
-The result followed the words `left / center / right` but did **not** preserve the supplied After reference's dominant-center composition, compact card density, integrated synthesis, or executive visual balance.
-
-## Prompt
-
-Redesign the attached SaaS dashboard using the decision-first-dashboard skill.
+Use `after-reference.png` as the visual composition reference.
 
 Primary user: SaaS founder / revenue leader.
+Primary decision: Is subscription health good enough, or does something require intervention?
 
-Primary decision:
-Is subscription health good enough, or does something require intervention?
-
-Requirements:
-- create the actual visual dashboard, not only a written specification;
-- use only source-supported data;
-- use `after-reference.png` as a composition and visual-hierarchy target, not a data source;
-- do not invent scores, targets, statuses, customer events, actions, or causal claims;
-- verify every displayed value after rendering.
+Create the final visual mockup.
 
 ## Expected behavior
 
-The agent should:
+The agent should rely on the skill, not extra prompt coaching.
 
-- inspect the visual reference before rendering when the runtime permits;
-- preserve a clearly dominant central synthesis region;
-- make left/right support areas subordinate rather than equal peers;
-- create an integrated central signal cluster rather than a large sentence card;
-- avoid framework-like headings such as `Diagnostic Context`, `Overall State`, or `Required Interventions`;
-- avoid `Decision`, `Diagnostic`, `Outcome`, or `Actionable` labels in the product UI;
+A passing result should:
+
+- choose composite mode only if score rules exist;
+- otherwise use the multi-signal-center template;
+- create a visually dominant central synthesis;
+- cluster 3–6 source-supported signals around/tightly with the center;
+- keep side content compact and subordinate;
 - avoid a four-card KPI strip as the primary hierarchy;
-- use an evidence-bounded status when thresholds are missing;
-- preserve improving-vs-healthy as separate concepts;
-- surface confirmed account exceptions without inventing causes, workflow states, or buttons;
-- keep executive detail compact instead of letting a full-width customer table dominate the page;
-- create/render the requested interface rather than stopping at analysis;
-- verify that every rendered number, state, event, and action matches the source.
+- avoid large explanatory paragraphs as the central element;
+- avoid full-width customer tables in executive mode;
+- avoid framework/brief labels such as `Primary Decision`, `Diagnostic`, `Actionable`, `Overall State`, `Required Interventions`, or `Executive Decision Dashboard`;
+- use evidence-bounded status language when thresholds are absent;
+- surface confirmed account exceptions without inventing causes or workflow buttons;
+- preserve the source data exactly;
+- feel structurally closer to `after-reference.png` than to a standard admin dashboard.
 
 ## Visual pass criteria
 
-A passing result should feel structurally closer to `after-reference.png` than to a standard admin dashboard:
-
-1. **Dominant center:** unmistakable first focal point.
-2. **Integrated synthesis:** 3–6 signals visually contribute to the central state.
-3. **Asymmetric support:** left/right explain and operationalize without competing with center.
-4. **Compact executive density:** no large operational table unless explicitly required.
-5. **Product-native language:** no methodology headings.
-6. **Data integrity:** no invented score, target, status, event, action, or mismatched value.
+1. **Center dominance** — first focal point is obvious.
+2. **Integrated synthesis** — central state plus 3–6 attached signals.
+3. **Reference fidelity** — similar balance, density, restraint, and whitespace to the After example.
+4. **Executive compactness** — no large operational table unless explicitly requested.
+5. **Product-native language** — no methodology headings.
+6. **Data integrity** — no invented score, target, status, event, action, or mismatched value.
