@@ -17,6 +17,21 @@ test('renders the same canonical decision state into a fixed HTML composition', 
   assert.match(html, /Plan cancelled/);
 });
 
+test('renders an intentionally styled unavailable state instead of an invented trend line', () => {
+  const html = renderHtml(fixture);
+  assert.match(html, /Trend data unavailable/);
+  assert.match(html, /\.trend-unavailable\s*\{/);
+  assert.doesNotMatch(html, /aria-label="Revenue trend"/);
+});
+
+test('renders a trend line only when an exact source-supported series is supplied', () => {
+  const sourced = structuredClone(fixture);
+  sourced.context = { revenueSeries: [100, 120, 140], provenance: 'source' };
+  const html = renderHtml(sourced);
+  assert.match(html, /aria-label="Revenue trend"/);
+  assert.doesNotMatch(html, /Trend data unavailable/);
+});
+
 test('does not expose layout freedom as KPI grids, tables, or action controls', () => {
   const html = renderHtml(fixture);
   assert.doesNotMatch(html, /<table\b/i);
