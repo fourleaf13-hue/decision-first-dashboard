@@ -49,6 +49,12 @@ test('rejects invented workflow/action fields', () => {
   assert.equal(validateDecisionState(bad).valid, false);
 });
 
+test('rejects invented target fields on no-score signals', () => {
+  const bad = structuredClone(base);
+  bad.signals[0].target = 183000;
+  assert.equal(validateDecisionState(bad).valid, false);
+});
+
 test('allows source plan names without product-specific enums', () => {
   const good = structuredClone(base);
   good.exceptions[0].plan = 'Enterprise Plus';
