@@ -1,0 +1,68 @@
+{
+  "mode": "composite",
+  "score": {
+    "label": "Subscription health",
+    "value": 68,
+    "min": 0,
+    "max": 100,
+    "band": "At risk",
+    "provenance": "source"
+  },
+  "model": {
+    "normalization": "source_provided",
+    "aggregation": "weighted_average",
+    "provenance": "source",
+    "components": [
+      {
+        "metric": "retention",
+        "label": "Retention",
+        "value": "96.8%",
+        "normalizedScore": 60,
+        "weight": 0.4,
+        "provenance": "source"
+      },
+      {
+        "metric": "growth",
+        "label": "Growth",
+        "value": "+12.4%",
+        "normalizedScore": 80,
+        "weight": 0.3,
+        "provenance": "source"
+      },
+      {
+        "metric": "conversion",
+        "label": "Conversion",
+        "value": "31.7%",
+        "normalizedScore": 66.6667,
+        "weight": 0.3,
+        "provenance": "source"
+      }
+    ],
+    "bands": [
+      { "label": "At risk", "min": 0, "max": 70, "provenance": "source" },
+      { "label": "Watch", "min": 70, "max": 85, "provenance": "source" },
+      { "label": "Healthy", "min": 85, "max": 100, "provenance": "source" }
+    ]
+  },
+  "context": {
+    "scoreSeries": [61, 63, 64, 66, 67, 68],
+    "provenance": "source"
+  },
+  "exceptions": [
+    {
+      "name": "Northstar",
+      "plan": "Enterprise",
+      "mrr": "$7,200",
+      "status": "At risk",
+      "provenance": "source"
+    }
+  ],
+  "events": [
+    {
+      "subject": "Northstar",
+      "event": "Plan downgrade requested",
+      "time": "2 hr ago",
+      "provenance": "source"
+    }
+  ]
+}
