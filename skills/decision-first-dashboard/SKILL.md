@@ -7,115 +7,111 @@ description: Use when redesigning KPI-heavy dashboards where users must scan mul
 
 ## Core principle
 
-Design the conclusion first, then render it as a product interface.
+Design the conclusion first, then make the interface visually converge on that conclusion.
 
 **Many metrics → Minimum sufficient decision signals → Diagnosis → Action**
 
-The method stays backstage. The finished dashboard must look like a mature product, not a diagram explaining the method.
+The method stays backstage. The final UI must look like a mature product, not a framework diagram.
 
 ## 1. Define the decision
 
-Identify:
+Identify the primary user, primary decision, business outcome, and evidence that would change the judgment.
 
-- primary user;
-- primary decision;
-- primary business outcome;
-- what evidence would change the judgment.
-
-Role must change the output:
-- **Executive / founder:** synthesis, exceptions, impact, minimal detail.
-- **Operator / analyst:** diagnosis, segmentation, drill-down, operational detail.
+Executive users need synthesis, exceptions, and impact. Operators need more diagnosis and drill-down.
 
 ## 2. Preserve evidence discipline
 
-Do not invent:
+Never invent scores, score math, targets, thresholds, customer states, events, actions, workflows, missing metrics, or causal claims.
 
-- scores or score math;
-- targets or thresholds;
-- customer states or events;
-- workflow buttons or actions;
-- causal relationships;
-- missing metrics.
+Direction is not the same as health.
 
-Do not generalize a visible sample to the full population.
+If no target/threshold exists, the overall status MUST NOT be `Healthy`, `Health good`, `Marginal`, `At risk`, `Good`, or `Bad`.
 
-Direction is not the same as health. If targets are missing, use an evidence-bounded conclusion such as `Improving — target unknown`, `Mixed`, or `Cannot determine against target`.
+Use an evidence-bounded status such as:
 
-## 3. Choose exactly one executive visual template
+- `Improving — target unknown`
+- `Deteriorating — target unknown`
+- `Mixed — target unknown`
+- `Target status unknown`
 
-Read `references/visual-pattern.md` before rendering.
+## 3. Choose one visual mode
 
-### Template A — Composite center
+### A. Composite mode
 
-Use only when a defensible composite score/status model already exists.
+Use only when a defensible score/status model already exists.
 
-The center is the dominant focal point and may show the score/status. Supporting inputs visually converge on it. Compact diagnostics sit to the left; compact exceptions, trend, and business impact sit to the right.
+Make the score/status the dominant center. Arrange validated inputs around it. Keep compact diagnostics on the left and compact exceptions/trend/impact on the right.
 
-### Template B — Multi-signal center
+### B. No-score executive mode
 
 Use when no defensible composite exists.
 
-**Do not fall back to a generic KPI grid.**
+**This mode has a hard visual contract. Do not reinterpret it as a standard dashboard.**
 
-The center is still the dominant focal point, but it becomes a compact signal cluster:
+The center must be the largest visual region and contain a compact synthesis cluster like this:
 
-- one evidence-bounded status in the middle;
-- 3–6 directional signals arranged around or tightly attached to it;
-- left side = compact context that explains the movement;
-- right side = confirmed exceptions, events, trend, or impact.
+```text
+        MRR growth        Customer growth
+          +12.4%              +8.1%
+               \              /
+                IMPROVING
+              target unknown
+               /              \
+        Churn direction    Trial conversion
+           -0.6pp              +3.2%
+```
 
-The central synthesis must be visual, not a large paragraph card.
+Rules:
 
-## 4. Preserve the supplied visual reference
+- Put 3–6 directional signals inside or immediately around the center.
+- Do NOT render those signals as four equal KPI cards across the top.
+- The center must be visual, not a large paragraph.
+- Left support: only 1–2 compact context blocks such as revenue trend or segment diagnosis.
+- Right support: only 1–3 compact blocks such as accounts to watch, recent events, trend, or business impact.
+- Do NOT render a full-width customer table in executive mode unless explicitly requested.
+- Do NOT add a top banner such as `HEALTH GOOD`.
 
-When `after-reference.png` or another explicit reference is available, inspect it before rendering.
+## 4. Follow the visual reference literally enough
 
-Match its **composition**, not its data:
+When `after-reference.png` is provided, inspect it before rendering.
+
+Preserve its geometry and hierarchy:
 
 - dominant center;
-- subordinate asymmetric support areas;
-- compact cards;
+- smaller asymmetric side cards;
+- compact density;
 - generous whitespace;
 - restrained color;
-- no full-width operational table dominating the page;
-- one composition rather than three equal report columns.
+- one coherent composition;
+- no large operational table dominating the page.
 
-Do not reinterpret the reference as a generic `left / center / right` report.
+Match composition, not the reference's numbers or score.
 
-## 5. Keep reasoning language out of the UI
+## 5. Keep framework language out of the UI
 
-Do not expose framework or brief language such as:
+Do not render:
 
-- Decision / Primary Decision
-- Diagnostic
-- Outcome
-- Actionable
-- Driver
-- Required Interventions
-- Overall State
-- Key Health Metrics Context
-- Executive Decision Dashboard
+`Executive Decision Dashboard`, `Primary Decision`, `Diagnostic`, `Diagnostic Context`, `Outcome`, `Actionable`, `Required Interventions`, `Overall State`, `Key Health Metrics Context`, `Driver`, `Success Signal`.
 
-Use domain-native labels such as `Subscription health`, `Revenue growth`, `Accounts to watch`, `Recent events`, `Score trend`, or `Business impact` when supported.
+Use product-native labels such as `Subscription health`, `Revenue growth`, `Accounts to watch`, `Recent events`, `Score trend`, or `Business impact` when supported.
 
-## 6. Hard stops override normal health
+## 6. Hard stops
 
 Critical safety, compliance, security, regulatory, contractual, or outage conditions override normal status. Never average them into a reassuring composite.
 
-## 7. Finish at the requested output layer
+## 7. Render, inspect, and redraw if necessary
 
-If the user asks for a visual redesign and the host can render/build one, create the actual interface. Do not stop at reasoning or a layout specification.
+If the user asks for a visual redesign and the host can render/build one, create the actual interface.
 
-After rendering, verify every displayed number, label, state, event, threshold, status, action, and chart value against the source.
+Before delivering, inspect the rendered result. If ANY condition below is true, redesign it before returning:
 
-## Delivery check
+- four equal KPI cards form the primary top row;
+- overall status says Healthy/Good/Marginal/At risk without source rules;
+- a full-width account table dominates executive mode;
+- the center is not the first focal point;
+- the center is mostly prose rather than a signal cluster;
+- framework labels appear;
+- invented actions/buttons appear;
+- any displayed value/state differs from the source.
 
-A passing executive dashboard should satisfy all of these:
-
-1. Top-level state is understandable in 3–5 seconds.
-2. The center is the unmistakable first focal point.
-3. Supporting signals visually contribute to the center.
-4. Left/right support areas are compact and subordinate.
-5. No unsupported score, status, event, action, or causal claim appears.
-6. No framework terminology leaks into the product UI.
-7. The result feels structurally closer to the supplied After reference than to a standard admin dashboard.
+A passing result should feel structurally closer to `after-reference.png` than to a conventional admin dashboard.
