@@ -7,111 +7,88 @@ description: Use when redesigning KPI-heavy dashboards where users must scan mul
 
 ## Core principle
 
-Design the conclusion first, then make the interface visually converge on that conclusion.
+Separate reasoning from rendering. The agent identifies verified decision evidence; deterministic templates own the visual hierarchy.
 
-**Many metrics → Minimum sufficient decision signals → Diagnosis → Action**
+**Source dashboard → verified facts → decision-state JSON → validate → render**
 
-The method stays backstage. The final UI must look like a mature product, not a framework diagram.
+Never let the rendering step invent business meaning or choose a generic dashboard layout.
 
-## 1. Define the decision
+## Workflow
 
-Identify the primary user, primary decision, business outcome, and evidence that would change the judgment.
+### 1. Extract verified facts only
 
-Executive users need synthesis, exceptions, and impact. Operators need more diagnosis and drill-down.
+Identify the primary user and decision, then capture only source-supported metrics, deltas, account states, events, targets, thresholds, and score rules.
 
-## 2. Preserve evidence discipline
+Never invent scores, targets, thresholds, customer states, events, workflows, actions, or causal claims. Direction is not the same as health.
 
-Never invent scores, score math, targets, thresholds, customer states, events, actions, workflows, missing metrics, or causal claims.
+### 2. Choose the evidence mode
 
-Direction is not the same as health.
+Use a composite only when normalization, weights, thresholds, and status rules are already defensible from the source.
 
-If no target/threshold exists, the overall status MUST NOT be `Healthy`, `Health good`, `Marginal`, `At risk`, `Good`, or `Bad`.
+Otherwise use `no_score`. For no-score executive dashboards, do not create `Healthy`, `Marginal`, `At risk`, or a 0–100 score. The compiler derives overall direction from the individual signal directions.
 
-Use an evidence-bounded status such as:
+### 3. Build the contract, not the layout
 
-- `Improving — target unknown`
-- `Deteriorating — target unknown`
-- `Mixed — target unknown`
-- `Target status unknown`
+For `no_score`, create JSON that matches:
 
-## 3. Choose one visual mode
+`schemas/decision-state.schema.json`
 
-### A. Composite mode
+Important constraints:
 
-Use only when a defensible score/status model already exists.
+- do not supply an overall `direction` field;
+- 3–6 signals carry value, delta, direction, and provenance;
+- numeric context series are optional and require `provenance: "source"`;
+- visible account exceptions and events require source provenance;
+- unsupported keys fail validation.
 
-Make the score/status the dominant center. Arrange validated inputs around it. Keep compact diagnostics on the left and compact exceptions/trend/impact on the right.
+### 4. Validate before rendering
 
-### B. No-score executive mode
+When code execution is available, validation is mandatory:
 
-Use when no defensible composite exists.
-
-**This mode has a hard visual contract. Do not reinterpret it as a standard dashboard.**
-
-The center must be the largest visual region and contain a compact synthesis cluster like this:
-
-```text
-        MRR growth        Customer growth
-          +12.4%              +8.1%
-               \              /
-                IMPROVING
-              target unknown
-               /              \
-        Churn direction    Trial conversion
-           -0.6pp              +3.2%
+```bash
+node scripts/validate.js <decision-state.json>
 ```
 
-Rules:
+Do not render invalid JSON. Fix the evidence payload instead of weakening the schema.
 
-- Put 3–6 directional signals inside or immediately around the center.
-- Do NOT render those signals as four equal KPI cards across the top.
-- The center must be visual, not a large paragraph.
-- Left support: only 1–2 compact context blocks such as revenue trend or segment diagnosis.
-- Right support: only 1–3 compact blocks such as accounts to watch, recent events, trend, or business impact.
-- Do NOT render a full-width customer table in executive mode unless explicitly requested.
-- Do NOT add a top banner such as `HEALTH GOOD`.
+### 5. Render deterministically
 
-## 4. Follow the visual reference literally enough
+For the supported no-score executive mode:
 
-When `after-reference.png` is provided, inspect it before rendering.
+```bash
+node scripts/render.js <decision-state.json> <output-dir>
+```
 
-Preserve its geometry and hierarchy:
+This produces deterministic SVG and HTML/CSS from the same JSON. Do not rewrite the templates, add KPI grids, tables, banners, buttons, or extra business copy unless the user explicitly asks to change the design system itself.
 
-- dominant center;
-- smaller asymmetric side cards;
-- compact density;
-- generous whitespace;
-- restrained color;
-- one coherent composition;
-- no large operational table dominating the page.
+If execution is unavailable, preserve the same contract: populate the schema and use the supplied template structure literally. Do not fall back to free-form image generation. If the template cannot be rendered, return the validated/self-checked JSON rather than inventing a different dashboard.
 
-Match composition, not the reference's numbers or score.
+## Visual contract
 
-## 5. Keep framework language out of the UI
+The no-score renderer owns the layout:
 
-Do not render:
+- dominant center synthesis;
+- 3–6 signals converging on the center;
+- compact left business context;
+- compact right exceptions/events;
+- no four-card KPI strip;
+- no dominant full-width customer table;
+- product-native labels only;
+- restrained color and generous whitespace.
 
-`Executive Decision Dashboard`, `Primary Decision`, `Diagnostic`, `Diagnostic Context`, `Outcome`, `Actionable`, `Required Interventions`, `Overall State`, `Key Health Metrics Context`, `Driver`, `Success Signal`.
+See `references/visual-pattern.md`.
 
-Use product-native labels such as `Subscription health`, `Revenue growth`, `Accounts to watch`, `Recent events`, `Score trend`, or `Business impact` when supported.
+## Hard stops
 
-## 6. Hard stops
+Safety, compliance, security, regulatory, contractual, or outage conditions override ordinary synthesis. Never average them into a reassuring status. Do not force a hard-stop case through the current SaaS no-score renderer.
 
-Critical safety, compliance, security, regulatory, contractual, or outage conditions override normal status. Never average them into a reassuring composite.
+## Final gate
 
-## 7. Render, inspect, and redraw if necessary
+Before delivery, verify:
 
-If the user asks for a visual redesign and the host can render/build one, create the actual interface.
-
-Before delivering, inspect the rendered result. If ANY condition below is true, redesign it before returning:
-
-- four equal KPI cards form the primary top row;
-- overall status says Healthy/Good/Marginal/At risk without source rules;
-- a full-width account table dominates executive mode;
-- the center is not the first focal point;
-- the center is mostly prose rather than a signal cluster;
-- framework labels appear;
-- invented actions/buttons appear;
-- any displayed value/state differs from the source.
-
-A passing result should feel structurally closer to `after-reference.png` than to a conventional admin dashboard.
+- every displayed fact traces to source data or a deterministic derivation allowed by the contract;
+- overall direction matches the signal directions;
+- no unsupported score/status/target/action appears;
+- no framework labels leak into the UI;
+- the center is the first focal point;
+- outputs contain no unresolved template tokens.
