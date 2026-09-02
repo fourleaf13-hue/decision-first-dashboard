@@ -6,8 +6,5 @@
     "test": "node --test tests/compiler/*.test.js",
     "validate:saas": "node skills/decision-first-dashboard/scripts/validate.js examples/saas/input.no-score.json",
     "render:saas": "node skills/decision-first-dashboard/scripts/render.js examples/saas/input.no-score.json examples/saas"
-  },
-  "dependencies": {
-    "ajv": "^8.17.1"
   }
 }
