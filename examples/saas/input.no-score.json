@@ -1,0 +1,68 @@
+{
+  "mode": "no_score",
+  "synthesis": {
+    "direction": "improving",
+    "targetState": "unknown",
+    "exceptionState": "present"
+  },
+  "signals": [
+    {
+      "metric": "mrr",
+      "label": "MRR",
+      "value": "$184,320",
+      "delta": "+12.4%",
+      "direction": "improving",
+      "provenance": "source"
+    },
+    {
+      "metric": "active_customers",
+      "label": "Customers",
+      "value": "8,942",
+      "delta": "+8.1%",
+      "direction": "improving",
+      "provenance": "source"
+    },
+    {
+      "metric": "churn_rate",
+      "label": "Churn",
+      "value": "2.84%",
+      "delta": "-0.6pp",
+      "direction": "improving",
+      "provenance": "source"
+    },
+    {
+      "metric": "trial_conversion",
+      "label": "Trial conversion",
+      "value": "31.7%",
+      "delta": "+3.2%",
+      "direction": "improving",
+      "provenance": "source"
+    }
+  ],
+  "context": {
+    "revenueSeries": [74000, 85000, 99000, 118000, 137000, 159000, 184320]
+  },
+  "exceptions": [
+    {
+      "name": "Dovetail",
+      "plan": "Basic",
+      "mrr": "$120",
+      "status": "At risk",
+      "provenance": "source"
+    }
+  ],
+  "events": [
+    {
+      "subject": "Dovetail",
+      "event": "Plan cancelled",
+      "time": "1 hr ago",
+      "provenance": "source"
+    },
+    {
+      "subject": "Orbit Systems",
+      "event": "Trial converted",
+      "time": "43 min ago",
+      "provenance": "source"
+    }
+  ]
+}
