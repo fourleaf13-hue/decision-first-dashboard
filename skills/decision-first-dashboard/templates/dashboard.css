@@ -195,6 +195,49 @@ body {
 .signal span { display: block; margin-top: 9px; font-weight: 700; font-size: 13px; }
 .signal small { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
 
+.score-card { padding: 26px; min-height: 302px; }
+.score-value-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 26px;
+}
+.score-value-line strong {
+  font-size: 34px;
+  font-weight: 780;
+  letter-spacing: -0.035em;
+}
+.score-value-line span { color: var(--muted); font-size: 14px; }
+.score-band { margin-top: 7px; color: var(--danger); font-size: 13px; font-weight: 700; }
+.composition-card { padding: 26px; min-height: 284px; }
+.composition-list { margin-top: 14px; }
+.composition-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #efedf6;
+}
+.composition-row:last-child { border-bottom: 0; }
+.composition-row span { font-size: 12px; font-weight: 650; }
+.composition-row small { color: var(--muted); font-size: 11px; }
+.score-center .synthesis-core { width: 194px; height: 194px; }
+.score-center .synthesis-core strong {
+  font-size: 48px;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+.score-center .synthesis-core span { margin-top: 5px; }
+.score-center .synthesis-core em {
+  margin-top: 10px;
+  color: var(--danger);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+}
+.score-component strong { font-size: 24px; }
+
 .compact-card { padding: 26px; min-height: 278px; }
 .events-card { min-height: 308px; }
 .exception-list, .event-list { margin-top: 22px; }

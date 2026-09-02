@@ -1,29 +1,56 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["mode", "signals"],
-  "properties": {
-    "mode": { "const": "no_score" },
-    "signals": {
-      "type": "array",
-      "minItems": 3,
-      "maxItems": 6,
-      "items": { "$ref": "#/definitions/signal" }
-    },
-    "context": { "$ref": "#/definitions/context" },
-    "exceptions": {
-      "type": "array",
-      "maxItems": 5,
-      "items": { "$ref": "#/definitions/exception" }
-    },
-    "events": {
-      "type": "array",
-      "maxItems": 5,
-      "items": { "$ref": "#/definitions/event" }
-    }
-  },
+  "oneOf": [
+    { "$ref": "#/definitions/noScoreState" },
+    { "$ref": "#/definitions/compositeState" }
+  ],
   "definitions": {
+    "noScoreState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "signals"],
+      "properties": {
+        "mode": { "const": "no_score" },
+        "signals": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 6,
+          "items": { "$ref": "#/definitions/signal" }
+        },
+        "context": { "$ref": "#/definitions/noScoreContext" },
+        "exceptions": {
+          "type": "array",
+          "maxItems": 5,
+          "items": { "$ref": "#/definitions/exception" }
+        },
+        "events": {
+          "type": "array",
+          "maxItems": 5,
+          "items": { "$ref": "#/definitions/event" }
+        }
+      }
+    },
+    "compositeState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "score", "model"],
+      "properties": {
+        "mode": { "const": "composite" },
+        "score": { "$ref": "#/definitions/score" },
+        "model": { "$ref": "#/definitions/scoreModel" },
+        "context": { "$ref": "#/definitions/scoreContext" },
+        "exceptions": {
+          "type": "array",
+          "maxItems": 5,
+          "items": { "$ref": "#/definitions/exception" }
+        },
+        "events": {
+          "type": "array",
+          "maxItems": 5,
+          "items": { "$ref": "#/definitions/event" }
+        }
+      }
+    },
     "signal": {
       "type": "object",
       "additionalProperties": false,
@@ -37,7 +64,7 @@
         "provenance": { "enum": ["source", "derived"] }
       }
     },
-    "context": {
+    "noScoreContext": {
       "type": "object",
       "additionalProperties": false,
       "required": ["revenueSeries", "provenance"],
@@ -47,6 +74,79 @@
           "minItems": 2,
           "maxItems": 24,
           "items": { "type": "number", "minimum": 0 }
+        },
+        "provenance": { "const": "source" }
+      }
+    },
+    "score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "value", "min", "max", "band", "provenance"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "value": { "type": "number" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "band": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "provenance": { "const": "source" }
+      }
+    },
+    "scoreModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["normalization", "aggregation", "provenance", "components", "bands"],
+      "properties": {
+        "normalization": { "const": "source_provided" },
+        "aggregation": { "const": "weighted_average" },
+        "provenance": { "const": "source" },
+        "components": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 6,
+          "items": { "$ref": "#/definitions/scoreComponent" }
+        },
+        "bands": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "items": { "$ref": "#/definitions/scoreBand" }
+        }
+      }
+    },
+    "scoreComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric", "label", "value", "normalizedScore", "weight", "provenance"],
+      "properties": {
+        "metric": { "type": "string", "pattern": "^[a-z0-9_]{1,40}$" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "value": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "normalizedScore": { "type": "number" },
+        "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+        "provenance": { "const": "source" }
+      }
+    },
+    "scoreBand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "min", "max", "provenance"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "provenance": { "const": "source" }
+      }
+    },
+    "scoreContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scoreSeries", "provenance"],
+      "properties": {
+        "scoreSeries": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 24,
+          "items": { "type": "number" }
         },
         "provenance": { "const": "source" }
       }

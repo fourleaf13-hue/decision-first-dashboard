@@ -11,7 +11,7 @@ verified facts
       ↓
 decision-state JSON
       ↓
-schema validation
+schema + semantic validation
       ↓
 deterministic renderer
       ↓
@@ -34,20 +34,28 @@ Table
 
 The user still has to scan everything and construct the conclusion mentally.
 
-Decision-First Dashboard changes the information hierarchy first. For executive no-score cases, the rendered structure is deliberately constrained:
+Decision-First Dashboard changes the information hierarchy first. The LLM extracts evidence; the compiler validates the evidence mode and owns the layout.
+
+## Two strict evidence modes
+
+The compiler supports two mutually exclusive modes.
+
+### 1. `no_score`
+
+Use this when the source does not provide a defensible composite model.
+
+For executive no-score cases, the rendered structure is deliberately constrained:
 
 ```text
 WHY / CONTEXT  →  DOMINANT SYNTHESIS  ←  WHO / EVENTS
 ```
 
-The LLM extracts evidence. The renderer controls the layout.
-
-## Before → deterministic no-score output
+The output does **not** invent a Health Score. Overall direction is derived deterministically from source-supported signal directions.
 
 <table>
   <tr>
     <th width="50%">Before</th>
-    <th width="50%">Compiler output</th>
+    <th width="50%">Deterministic no-score output</th>
   </tr>
   <tr>
     <td width="50%"><img src="examples/saas/before.png" width="100%"></td>
@@ -55,15 +63,27 @@ The LLM extracts evidence. The renderer controls the layout.
   </tr>
 </table>
 
-The no-score output does **not** invent a Health Score. Its overall direction is derived deterministically from the source-supported signal directions.
+### 2. `composite`
 
-## Composite reference
+Use this only when the source already provides a complete, defensible score model.
 
-When a real score model exists, a dominant composite can be appropriate. The repository also includes a composite visual reference:
+Composite v1 requires all of the following:
+
+- an overall score and score scale;
+- source-provided normalized component scores;
+- source-provided component weights;
+- a weighted-average aggregation rule;
+- complete source-provided score bands / thresholds.
+
+The validator checks that weights sum to 1, the displayed score matches the weighted average, component scores stay inside the declared scale, score bands are contiguous and cover the full scale, and the displayed band matches the score.
+
+If any required model fact is missing, the correct fallback is `no_score` — not an inferred formula, guessed weight, or fabricated threshold.
+
+The existing `examples/saas/after.png` remains a visual reference for a dominant score composition. It is **not** treated as proof that the canonical SaaS source fixture contains a real composite model.
 
 <img src="examples/saas/after.png" width="760">
 
-A composite is valid only when normalization, weights, thresholds, and status rules are defensible. The current compiler MVP implements the deterministic **no-score executive** branch; it will not fabricate a score just to imitate the composite reference.
+The repository's composite JSON fixture lives under `tests/compiler/fixtures/` and is synthetic contract data used only for automated validation and rendering tests.
 
 ## Install
 
@@ -82,10 +102,11 @@ Give the agent a dashboard screenshot, Figma frame, existing dashboard code, or 
 The intended execution path is:
 
 1. Extract verified facts only.
-2. Build `decision-state.json` matching the bundled schema.
-3. Validate it.
-4. Render SVG and HTML from the same JSON.
-5. Inspect the output for evidence and visual integrity.
+2. Decide whether the evidence supports `no_score` or strict `composite` mode.
+3. Build `decision-state.json` matching the bundled closed schema.
+4. Validate schema and mode-specific semantics.
+5. Render SVG and HTML from the same JSON.
+6. Inspect the output for evidence and visual integrity.
 
 From the skill directory:
 
@@ -94,52 +115,84 @@ node scripts/validate.js path/to/decision-state.json
 node scripts/render.js path/to/decision-state.json path/to/output-directory
 ```
 
+The renderer writes mode-specific filenames:
+
+```text
+no_score   → output.no-score.svg / output.no-score.html
+composite  → output.composite.svg / output.composite.html
+```
+
 ## Anti-hallucination contract
 
-The no-score schema intentionally makes common dashboard hallucinations structurally invalid.
+The schema is closed with mutually exclusive `no_score` and `composite` states.
 
-It rejects unsupported fields such as:
+### No-score safeguards
+
+The no-score branch rejects unsupported fields such as:
 
 - invented `score` / health score;
 - caller-supplied overall direction;
 - invented target or goal fields;
 - renewal/workflow/action/assignee fields;
-- derived account exceptions or events presented as source facts.
+- derived account exceptions or events presented as source facts;
+- composite model fields.
 
 Numeric trend series are optional. If exact source-supported points are unavailable, the renderer says `Trend data unavailable` instead of drawing a plausible-looking line.
 
-## Overall direction is derived
+### Composite safeguards
 
-The agent does not provide `IMPROVING`, `MIXED`, or `DETERIORATING` as a top-level verdict.
+The composite branch accepts only source-supported score-model facts. It rejects, among other cases:
 
-The renderer derives it from the validated signal directions:
+- missing component weights;
+- weights that do not sum to 1;
+- a score that does not equal the weighted average;
+- component scores outside the declared score scale;
+- score-band gaps or overlaps;
+- a displayed status that does not match the source thresholds;
+- unsupported normalization or aggregation methods.
+
+Composite validation failure is never repaired by inventing the missing model.
+
+## Direction is not health
+
+In `no_score`, the agent does not provide `IMPROVING`, `MIXED`, or `DETERIORATING` as a top-level verdict. The renderer derives it from validated signal directions:
 
 ```text
-all improving          → IMPROVING
+all improving             → IMPROVING
 improving + deteriorating → MIXED
-all deteriorating      → DETERIORATING
-flat only              → FLAT
-no known direction     → UNKNOWN
+all deteriorating         → DETERIORATING
+flat only                 → FLAT
+no known direction        → UNKNOWN
 ```
-
-This keeps directional synthesis separate from health status.
 
 > `Improving` does not mean `Healthy`.
 
-If targets or healthy ranges are unknown, the UI says `Target unknown` rather than inventing adequacy.
+If targets or healthy ranges are unknown, the no-score UI says `Target unknown` rather than inventing adequacy.
 
 ## Deterministic visual contract
 
-The bundled no-score renderers enforce:
+Both rendering branches use fixed templates and the same shared visual system.
 
-- one dominant center synthesis area;
+### No-score composition
+
+- one dominant center directional synthesis area;
 - 3–6 signals converging on the center;
 - compact left business context;
-- compact right account exceptions and events;
+- compact right account exceptions and events.
+
+### Composite composition
+
+- one dominant center source-supported score and band;
+- 3–6 weighted score components converging on the center;
+- compact left score trend and score composition;
+- compact right account exceptions and events.
+
+### Shared constraints
+
 - no four-equal-KPI top row;
-- no full-width customer table;
+- no dominant full-width customer table;
 - no invented action buttons;
-- no framework labels in the UI;
+- no compiler/framework labels in visible UI;
 - restrained SaaS visual styling.
 
 SVG is the compatibility baseline. HTML/CSS is the higher-fidelity output. Both consume the same validated JSON.
@@ -170,15 +223,23 @@ decision-first-dashboard/
 │       ├── templates/
 │       │   ├── no-score.svg
 │       │   ├── no-score.html
+│       │   ├── composite.svg
+│       │   ├── composite.html
 │       │   └── dashboard.css
 │       └── references/
 │           ├── visual-pattern.md
 │           └── after-reference.png
 └── tests/
     ├── compiler/
+    │   ├── fixtures/
+    │   │   └── composite.valid.json
     │   ├── schema.test.js
+    │   ├── composite-schema.test.js
     │   ├── render-svg.test.js
-    │   └── render-html.test.js
+    │   ├── render-html.test.js
+    │   ├── render-composite-svg.test.js
+    │   ├── render-composite-html.test.js
+    │   └── render-cli.test.js
     ├── saas.md
     ├── saas-no-score.md
     ├── visual-output.md
@@ -195,7 +256,7 @@ npm run validate:saas
 npm run render:saas
 ```
 
-GitHub Actions runs the compiler tests, validates the canonical SaaS fixture, renders both outputs, and uploads the generated artifacts for visual QA.
+GitHub Actions runs the complete compiler test suite, validates the canonical SaaS no-score fixture, renders its SVG/HTML outputs, and uploads those generated artifacts for visual QA.
 
 ## What this is not
 
@@ -203,8 +264,8 @@ This is not a generic chart library and not a prompt that asks the model to free
 
 The project separates two responsibilities:
 
-- **Agent:** evidence extraction and decision classification.
-- **Compiler:** validation, synthesis, and visual composition.
+- **Agent:** evidence extraction and mode classification.
+- **Compiler:** contract validation, deterministic synthesis, and visual composition.
 
 That separation is what makes the output repeatable across agents.
 
