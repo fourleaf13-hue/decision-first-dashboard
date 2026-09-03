@@ -18,12 +18,12 @@
     <section class="decision-layout">
       <aside class="support-column support-column--left">
         <article class="card revenue-card">
-          <div class="eyebrow">Revenue growth</div>
-          <div class="metric-value">{{MRR_VALUE}}</div>
-          <div class="metric-delta {{MRR_DIRECTION_CLASS}}">{{MRR_DELTA}} <span>vs last month</span></div>
+          <div class="eyebrow">{{REVENUE_TITLE}}</div>
+          <div class="metric-value">{{REVENUE_VALUE}}</div>
+          {{HTML_REVENUE_DELTA_BLOCK}}
           {{HTML_REVENUE_VISUAL}}
           <div class="card-divider"></div>
-          <div class="context-row"><span>Current MRR</span><strong>{{MRR_VALUE}}</strong></div>
+          <div class="context-row"><span>{{CURRENT_REVENUE_LABEL}}</span><strong>{{REVENUE_VALUE}}</strong></div>
         </article>
 
         <article class="card context-card">
