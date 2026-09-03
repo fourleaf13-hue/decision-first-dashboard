@@ -111,3 +111,18 @@ test('allows source plan names without product-specific enums', () => {
   good.exceptions[0].plan = 'Enterprise Plus';
   assert.equal(validateDecisionState(good).valid, true);
 });
+
+test('accepts point-in-time source signals when the source exposes no delta or direction', () => {
+  const good = structuredClone(base);
+  good.signals = [
+    { metric: 'arr', label: 'ARR', value: '$4.98M', provenance: 'source' },
+    { metric: 'ndr', label: 'NDR', value: '80.7%', provenance: 'source' },
+    { metric: 'gross_margin', label: 'Gross margin', value: '88.9%', provenance: 'source' },
+    { metric: 'cac_payback', label: 'CAC payback', value: '9.4 mo', provenance: 'source' },
+    { metric: 'burn_multiple', label: 'Burn multiple', value: '1.5x', provenance: 'source' }
+  ];
+  delete good.exceptions;
+  delete good.events;
+
+  assert.equal(validateDecisionState(good).valid, true);
+});

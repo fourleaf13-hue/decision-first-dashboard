@@ -54,7 +54,7 @@
     "signal": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["metric", "label", "value", "delta", "direction", "provenance"],
+      "required": ["metric", "label", "value", "provenance"],
       "properties": {
         "metric": { "type": "string", "pattern": "^[a-z0-9_]{1,40}$" },
         "label": { "type": "string", "minLength": 1, "maxLength": 24 },
