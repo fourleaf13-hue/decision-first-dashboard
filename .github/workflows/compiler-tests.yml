@@ -26,9 +26,15 @@ jobs:
       - run: npm test
       - run: npm run validate:saas
       - run: npm run render:saas
+      - name: Validate SaaSGrid real-world fixture
+        run: node skills/decision-first-dashboard/scripts/validate.js examples/saas/real-world/saasgrid/input.no-score.json
+      - name: Render SaaSGrid real-world fixture
+        run: node skills/decision-first-dashboard/scripts/render.js examples/saas/real-world/saasgrid/input.no-score.json examples/saas/real-world/saasgrid
       - uses: actions/upload-artifact@v4
         with:
           name: saas-no-score-render
           path: |
             examples/saas/output.no-score.svg
             examples/saas/output.no-score.html
+            examples/saas/real-world/saasgrid/output.no-score.svg
+            examples/saas/real-world/saasgrid/output.no-score.html
