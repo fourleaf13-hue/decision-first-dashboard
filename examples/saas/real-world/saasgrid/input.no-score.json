@@ -1,0 +1,35 @@
+{
+  "mode": "no_score",
+  "signals": [
+    {
+      "metric": "arr",
+      "label": "ARR",
+      "value": "$4.98M",
+      "provenance": "source"
+    },
+    {
+      "metric": "ndr",
+      "label": "NDR",
+      "value": "80.7%",
+      "provenance": "source"
+    },
+    {
+      "metric": "gross_margin",
+      "label": "Gross Margin",
+      "value": "88.9%",
+      "provenance": "source"
+    },
+    {
+      "metric": "cac_payback",
+      "label": "CAC Payback",
+      "value": "9.4 mo",
+      "provenance": "source"
+    },
+    {
+      "metric": "burn_multiple",
+      "label": "Burn Multiple",
+      "value": "1.5x",
+      "provenance": "source"
+    }
+  ]
+}
