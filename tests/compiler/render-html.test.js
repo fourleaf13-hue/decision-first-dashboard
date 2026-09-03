@@ -14,6 +14,19 @@ function extraSignals() {
   ];
 }
 
+function pointInTimeFixture() {
+  return {
+    mode: 'no_score',
+    signals: [
+      { metric: 'arr', label: 'ARR', value: '$4.98M', provenance: 'source' },
+      { metric: 'ndr', label: 'NDR', value: '80.7%', provenance: 'source' },
+      { metric: 'gross_margin', label: 'Gross Margin', value: '88.9%', provenance: 'source' },
+      { metric: 'cac_payback', label: 'CAC Payback', value: '9.4 mo', provenance: 'source' },
+      { metric: 'burn_multiple', label: 'Burn Multiple', value: '1.5x', provenance: 'source' }
+    ]
+  };
+}
+
 test('renders the same canonical decision state into a fixed HTML composition', () => {
   const html = renderHtml(fixture);
   assert.match(html, /Subscription health/);
@@ -75,4 +88,13 @@ test('refuses to render a payload that fails the decision-state schema', () => {
   const bad = structuredClone(fixture);
   bad.exceptions[0].action = 'Contact';
   assert.throws(() => renderHtml(bad), /failed schema validation/);
+});
+
+test('uses ARR as source-driven HTML revenue context without inventing MRR movement', () => {
+  const html = renderHtml(pointInTimeFixture());
+  assert.match(html, /ARR context/);
+  assert.match(html, /Current ARR/);
+  assert.match(html, /\$4\.98M/);
+  assert.doesNotMatch(html, /Current MRR/);
+  assert.doesNotMatch(html, /vs last month/);
 });

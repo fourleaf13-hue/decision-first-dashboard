@@ -71,6 +71,30 @@ function signalDisplay(signal) {
   };
 }
 
+function selectRevenueSignal(signals) {
+  return signals.find((signal) => signal.metric === 'mrr')
+    ?? signals.find((signal) => signal.metric === 'arr')
+    ?? null;
+}
+
+function revenueTitle(signal) {
+  return signal ? `${signal.label} context` : 'Revenue context';
+}
+
+function currentRevenueLabel(signal) {
+  return signal ? `Current ${signal.label}` : 'Revenue metric unavailable';
+}
+
+function svgRevenueDeltaBlock(signal) {
+  if (!signal?.delta) return '';
+  return `<text x="98" y="252" class="${directionClass(signal.direction)}" font-size="14" font-weight="650">${escapeMarkup(signal.delta)}</text>`;
+}
+
+function htmlRevenueDeltaBlock(signal) {
+  if (!signal?.delta) return '';
+  return `<div class="metric-delta ${directionClass(signal.direction)}">${escapeMarkup(signal.delta)}</div>`;
+}
+
 function pathForSeries(series, { left, right, top, bottom }) {
   const min = Math.min(...series);
   const max = Math.max(...series);
@@ -280,7 +304,7 @@ function htmlCompositionRows(components) {
   </div>`).join('\n');
 }
 
-function movementSignals(signals) {
+function movementSignals(signals, revenueMetric = null) {
   const eligible = signals.filter((signal) => signal.delta);
   const preferred = ['churn_rate', 'trial_conversion'];
   const selected = [];
@@ -292,7 +316,7 @@ function movementSignals(signals) {
 
   for (const signal of eligible) {
     if (selected.length >= 2) break;
-    if (signal.metric !== 'mrr' && !selected.includes(signal)) selected.push(signal);
+    if (signal.metric !== revenueMetric && !selected.includes(signal)) selected.push(signal);
   }
 
   return selected.slice(0, 2);
@@ -400,22 +424,23 @@ function fillTemplate(template, replacements) {
 }
 
 function noScoreViewModel(data) {
-  const mrr = data.signals.find((signal) => signal.metric === 'mrr');
+  const revenue = selectRevenueSignal(data.signals);
   const synthesis = synthesisCopy(data.signals);
   const revenueSeries = data.context?.provenance === 'source' ? data.context.revenueSeries : null;
-  const movement = movementSignals(data.signals);
-  return { mrr, synthesis, revenueSeries, movement };
+  const movement = movementSignals(data.signals, revenue?.metric ?? null);
+  return { revenue, synthesis, revenueSeries, movement };
 }
 
 function renderNoScoreSvg(data) {
   const template = fs.readFileSync(noScoreSvgTemplatePath, 'utf8');
-  const { mrr, synthesis, revenueSeries, movement } = noScoreViewModel(data);
+  const { revenue, synthesis, revenueSeries, movement } = noScoreViewModel(data);
   const signalCluster = svgSignalCluster(data.signals);
 
   return fillTemplate(template, {
-    MRR_VALUE: escapeMarkup(mrr?.value ?? '—'),
-    MRR_DELTA: escapeMarkup(mrr?.delta ?? '—'),
-    MRR_DIRECTION_CLASS: directionClass(mrr?.direction),
+    REVENUE_TITLE: escapeMarkup(revenueTitle(revenue)),
+    REVENUE_VALUE: escapeMarkup(revenue?.value ?? '—'),
+    REVENUE_DELTA_BLOCK: svgRevenueDeltaBlock(revenue),
+    CURRENT_REVENUE_LABEL: escapeMarkup(currentRevenueLabel(revenue)),
     REVENUE_VISUAL: svgRevenueVisual(revenueSeries),
     MOVEMENT_ROWS: svgMovementRows(movement),
     SYNTHESIS: synthesis.direction,
@@ -429,14 +454,15 @@ function renderNoScoreSvg(data) {
 function renderNoScoreHtml(data) {
   const template = fs.readFileSync(noScoreHtmlTemplatePath, 'utf8');
   const css = fs.readFileSync(cssTemplatePath, 'utf8');
-  const { mrr, synthesis, revenueSeries, movement } = noScoreViewModel(data);
+  const { revenue, synthesis, revenueSeries, movement } = noScoreViewModel(data);
   const signalCluster = htmlSignalCluster(data.signals);
 
   return fillTemplate(template, {
     CSS: css,
-    MRR_VALUE: escapeMarkup(mrr?.value ?? '—'),
-    MRR_DELTA: escapeMarkup(mrr?.delta ?? '—'),
-    MRR_DIRECTION_CLASS: directionClass(mrr?.direction),
+    REVENUE_TITLE: escapeMarkup(revenueTitle(revenue)),
+    REVENUE_VALUE: escapeMarkup(revenue?.value ?? '—'),
+    HTML_REVENUE_DELTA_BLOCK: htmlRevenueDeltaBlock(revenue),
+    CURRENT_REVENUE_LABEL: escapeMarkup(currentRevenueLabel(revenue)),
     HTML_REVENUE_VISUAL: htmlRevenueVisual(revenueSeries),
     HTML_MOVEMENT_ROWS: htmlMovementRows(movement),
     SYNTHESIS: synthesis.direction,
