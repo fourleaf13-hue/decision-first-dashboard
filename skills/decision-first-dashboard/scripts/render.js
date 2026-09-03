@@ -62,6 +62,15 @@ function directionClass(direction) {
   return 'muted';
 }
 
+function signalDisplay(signal) {
+  const hasMovement = Boolean(signal.delta);
+  return {
+    primary: hasMovement ? signal.delta : signal.value,
+    detail: hasMovement ? signal.value : null,
+    hasMovement
+  };
+}
+
 function pathForSeries(series, { left, right, top, bottom }) {
   const min = Math.min(...series);
   const max = Math.max(...series);
@@ -147,14 +156,18 @@ function svgSignalCluster(signals) {
 
   const nodes = placed.map(({ signal, x, y, rowName }) => {
     const topRow = rowName === 'top';
-    const deltaY = topRow ? y - 62 : y + 66;
+    const primaryY = topRow ? y - 62 : y + 66;
     const labelY = topRow ? y - 37 : y + 91;
-    const valueY = topRow ? y - 18 : y + 110;
+    const detailY = topRow ? y - 18 : y + 110;
+    const display = signalDisplay(signal);
+    const detailNode = display.detail
+      ? `<text x="${x}" y="${detailY}" class="muted" font-size="11" text-anchor="middle">${escapeMarkup(display.detail)}</text>`
+      : '';
     return `<g class="signal-node">
       <circle cx="${x}" cy="${y}" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
-      <text x="${x}" y="${deltaY}" class="accent" font-size="24" font-weight="740" text-anchor="middle">${escapeMarkup(signal.delta)}</text>
+      <text x="${x}" y="${primaryY}" class="accent" font-size="24" font-weight="740" text-anchor="middle">${escapeMarkup(display.primary)}</text>
       <text x="${x}" y="${labelY}" class="ink" font-size="13" font-weight="650" text-anchor="middle">${escapeMarkup(signal.label)}</text>
-      <text x="${x}" y="${valueY}" class="muted" font-size="11" text-anchor="middle">${escapeMarkup(signal.value)}</text>
+      ${detailNode}
     </g>`;
   }).join('\n');
 
@@ -176,11 +189,15 @@ function htmlSignalCluster(signals) {
     return `M310 260 L${px} ${py}`;
   }).join(' ');
 
-  const nodes = placed.map(({ signal, x, y }) => `<div class="signal" style="left:${x}%;top:${y}%">
-    <strong>${escapeMarkup(signal.delta)}</strong>
+  const nodes = placed.map(({ signal, x, y }) => {
+    const display = signalDisplay(signal);
+    const detailNode = display.detail ? `<small>${escapeMarkup(display.detail)}</small>` : '';
+    return `<div class="signal" style="left:${x}%;top:${y}%">
+    <strong>${escapeMarkup(display.primary)}</strong>
     <span>${escapeMarkup(signal.label)}</span>
-    <small>${escapeMarkup(signal.value)}</small>
-  </div>`).join('\n');
+    ${detailNode}
+  </div>`;
+  }).join('\n');
 
   return { paths, nodes };
 }
@@ -264,15 +281,16 @@ function htmlCompositionRows(components) {
 }
 
 function movementSignals(signals) {
+  const eligible = signals.filter((signal) => signal.delta);
   const preferred = ['churn_rate', 'trial_conversion'];
   const selected = [];
 
   for (const metric of preferred) {
-    const match = signals.find((signal) => signal.metric === metric);
+    const match = eligible.find((signal) => signal.metric === metric);
     if (match && !selected.includes(match)) selected.push(match);
   }
 
-  for (const signal of signals) {
+  for (const signal of eligible) {
     if (selected.length >= 2) break;
     if (signal.metric !== 'mrr' && !selected.includes(signal)) selected.push(signal);
   }

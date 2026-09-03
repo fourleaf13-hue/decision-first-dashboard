@@ -81,3 +81,24 @@ test('refuses to render a payload that fails the decision-state schema', () => {
   bad.score = { value: 68 };
   assert.throws(() => renderSvg(bad), /failed schema validation/);
 });
+
+test('renders point-in-time KPI values prominently without blank movement labels', () => {
+  const pointInTime = {
+    mode: 'no_score',
+    signals: [
+      { metric: 'arr', label: 'ARR', value: '$4.98M', provenance: 'source' },
+      { metric: 'ndr', label: 'NDR', value: '80.7%', provenance: 'source' },
+      { metric: 'gross_margin', label: 'Gross Margin', value: '88.9%', provenance: 'source' },
+      { metric: 'cac_payback', label: 'CAC Payback', value: '9.4 mo', provenance: 'source' },
+      { metric: 'burn_multiple', label: 'Burn Multiple', value: '1.5x', provenance: 'source' }
+    ]
+  };
+
+  const svg = renderSvg(pointInTime);
+  for (const value of ['$4.98M', '80.7%', '88.9%', '9.4 mo', '1.5x']) {
+    assert.match(svg, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+  assert.match(svg, />UNKNOWN</);
+  assert.doesNotMatch(svg, />\s*<\/text>/);
+  assert.doesNotMatch(svg, /undefined/);
+});
