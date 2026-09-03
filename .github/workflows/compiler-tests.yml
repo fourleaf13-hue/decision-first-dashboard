@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -38,3 +40,9 @@ jobs:
             examples/saas/output.no-score.html
             examples/saas/real-world/saasgrid/output.no-score.svg
             examples/saas/real-world/saasgrid/output.no-score.html
+      - name: Export exact main source
+        run: git archive --format=zip --output=decision-first-dashboard-main-ff15e6e1.zip ff15e6e1e9c5d6e611d83c73204f3b97024e3751
+      - uses: actions/upload-artifact@v4
+        with:
+          name: decision-first-dashboard-main-ff15e6e1
+          path: decision-first-dashboard-main-ff15e6e1.zip
