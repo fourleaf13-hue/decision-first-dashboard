@@ -14,6 +14,19 @@ function extraSignals() {
   ];
 }
 
+function pointInTimeFixture() {
+  return {
+    mode: 'no_score',
+    signals: [
+      { metric: 'arr', label: 'ARR', value: '$4.98M', provenance: 'source' },
+      { metric: 'ndr', label: 'NDR', value: '80.7%', provenance: 'source' },
+      { metric: 'gross_margin', label: 'Gross Margin', value: '88.9%', provenance: 'source' },
+      { metric: 'cac_payback', label: 'CAC Payback', value: '9.4 mo', provenance: 'source' },
+      { metric: 'burn_multiple', label: 'Burn Multiple', value: '1.5x', provenance: 'source' }
+    ]
+  };
+}
+
 test('renders a dominant no-score synthesis cluster from validated data', () => {
   const svg = renderSvg(fixture);
   assert.match(svg, /Subscription health/);
@@ -83,22 +96,20 @@ test('refuses to render a payload that fails the decision-state schema', () => {
 });
 
 test('renders point-in-time KPI values prominently without blank movement labels', () => {
-  const pointInTime = {
-    mode: 'no_score',
-    signals: [
-      { metric: 'arr', label: 'ARR', value: '$4.98M', provenance: 'source' },
-      { metric: 'ndr', label: 'NDR', value: '80.7%', provenance: 'source' },
-      { metric: 'gross_margin', label: 'Gross Margin', value: '88.9%', provenance: 'source' },
-      { metric: 'cac_payback', label: 'CAC Payback', value: '9.4 mo', provenance: 'source' },
-      { metric: 'burn_multiple', label: 'Burn Multiple', value: '1.5x', provenance: 'source' }
-    ]
-  };
-
-  const svg = renderSvg(pointInTime);
+  const svg = renderSvg(pointInTimeFixture());
   for (const value of ['$4.98M', '80.7%', '88.9%', '9.4 mo', '1.5x']) {
     assert.match(svg, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
   assert.match(svg, />UNKNOWN</);
   assert.doesNotMatch(svg, />\s*<\/text>/);
   assert.doesNotMatch(svg, /undefined/);
+});
+
+test('uses ARR as source-driven revenue context without inventing MRR movement', () => {
+  const svg = renderSvg(pointInTimeFixture());
+  assert.match(svg, /ARR context/);
+  assert.match(svg, /Current ARR/);
+  assert.match(svg, /\$4\.98M/);
+  assert.doesNotMatch(svg, /Current MRR/);
+  assert.doesNotMatch(svg, /vs last month/);
 });
