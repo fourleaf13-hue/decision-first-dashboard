@@ -98,6 +98,7 @@ test('renders point-in-time KPI values prominently without blank movement labels
   for (const value of ['$4.98M', '80.7%', '88.9%', '9.4 mo', '1.5x']) {
     assert.match(svg, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
+  assert.match(svg, />UNKNOWN</);
   assert.doesNotMatch(svg, />\s*<\/text>/);
   assert.doesNotMatch(svg, /undefined/);
 });
