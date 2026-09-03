@@ -38,14 +38,13 @@
     <g filter="url(#cardShadow)">
       <rect x="72" y="150" width="286" height="302" rx="26" class="card"/>
     </g>
-    <text x="98" y="190" class="ink" font-size="15" font-weight="650">Revenue growth</text>
-    <text x="98" y="228" class="ink" font-size="30" font-weight="720">{{MRR_VALUE}}</text>
-    <text x="98" y="252" class="{{MRR_DIRECTION_CLASS}}" font-size="14" font-weight="650">{{MRR_DELTA}}</text>
-    <text x="156" y="252" class="muted" font-size="13">vs last month</text>
+    <text x="98" y="190" class="ink" font-size="15" font-weight="650">{{REVENUE_TITLE}}</text>
+    <text x="98" y="228" class="ink" font-size="30" font-weight="720">{{REVENUE_VALUE}}</text>
+    {{REVENUE_DELTA_BLOCK}}
     {{REVENUE_VISUAL}}
     <line x1="98" y1="392" x2="332" y2="392" stroke="#efedf6"/>
-    <text x="98" y="421" class="muted" font-size="12">Current MRR</text>
-    <text x="332" y="421" class="ink" font-size="13" font-weight="650" text-anchor="end">{{MRR_VALUE}}</text>
+    <text x="98" y="421" class="muted" font-size="12">{{CURRENT_REVENUE_LABEL}}</text>
+    <text x="332" y="421" class="ink" font-size="13" font-weight="650" text-anchor="end">{{REVENUE_VALUE}}</text>
 
     <g filter="url(#cardShadow)">
       <rect x="72" y="476" width="286" height="190" rx="26" class="card"/>
