@@ -18,6 +18,11 @@ function baseDirPath(baseDir) {
   return path.resolve(String(baseDir));
 }
 
+function isPathInside(basePath, targetPath) {
+  const relative = path.relative(basePath, targetPath);
+  return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
+}
+
 function decodePointerPart(part) {
   return part.replaceAll('~1', '/').replaceAll('~0', '~');
 }
@@ -151,9 +156,41 @@ function readSource(bundle, baseDir, errors) {
     return null;
   }
 
-  const sourcePath = path.resolve(baseDirPath(baseDir), source.path);
-  if (!fs.existsSync(sourcePath)) {
+  const requestedBase = baseDirPath(baseDir);
+  let basePath;
+  try {
+    basePath = fs.realpathSync(requestedBase);
+  } catch {
+    pushError(errors, 'SOURCE_FILE_NOT_FOUND', '/source/path', 'grounding base directory does not exist');
+    return null;
+  }
+
+  if (path.isAbsolute(source.path)) {
+    pushError(errors, 'SOURCE_PATH_OUTSIDE_BASE', '/source/path', 'grounding source path must stay inside the bundle base directory');
+    return null;
+  }
+
+  const requestedSourcePath = path.resolve(basePath, source.path);
+  if (!isPathInside(basePath, requestedSourcePath)) {
+    pushError(errors, 'SOURCE_PATH_OUTSIDE_BASE', '/source/path', 'grounding source path must stay inside the bundle base directory');
+    return null;
+  }
+
+  if (!fs.existsSync(requestedSourcePath)) {
     pushError(errors, 'SOURCE_FILE_NOT_FOUND', '/source/path', 'grounding source file does not exist');
+    return null;
+  }
+
+  let sourcePath;
+  try {
+    sourcePath = fs.realpathSync(requestedSourcePath);
+  } catch {
+    pushError(errors, 'SOURCE_FILE_NOT_FOUND', '/source/path', 'grounding source file does not exist');
+    return null;
+  }
+
+  if (!isPathInside(basePath, sourcePath)) {
+    pushError(errors, 'SOURCE_PATH_OUTSIDE_BASE', '/source/path', 'grounding source real path escapes the bundle base directory');
     return null;
   }
 
