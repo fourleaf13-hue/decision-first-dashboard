@@ -1,0 +1,5 @@
+ARR: $4.98M
+NDR: 80.7%
+Gross Margin: 88.9%
+CAC Payback: 9.4 mo
+Burn Multiple: 1.5x

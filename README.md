@@ -5,13 +5,13 @@ Turn KPI-heavy dashboards into decision-first dashboards without letting the age
 Most dashboard prompts ask an LLM to **design**. This project treats dashboard redesign more like a small compiler:
 
 ```text
-source dashboard
+source dashboard / verified source file
       ↓
-verified facts
+agent extraction + mode proposal
       ↓
-decision-state JSON
+grounded evidence bundle
       ↓
-schema + semantic validation
+grounding + decision-state validation
       ↓
 deterministic renderer
       ↓
@@ -34,7 +34,7 @@ Table
 
 The user still has to scan everything and construct the conclusion mentally.
 
-Decision-First Dashboard changes the information hierarchy first. The LLM extracts evidence; the compiler validates the evidence mode and owns the layout.
+Decision-First Dashboard changes the information hierarchy first. The agent extracts evidence; the compiler verifies that the evidence can be mechanically grounded back to source bytes before the deterministic renderer owns the layout.
 
 ## Two strict evidence modes
 
@@ -85,6 +85,30 @@ The existing `examples/saas/after.png` remains a visual reference for a dominant
 
 The repository's composite JSON fixture lives under `tests/compiler/fixtures/` and is synthetic contract data used only for automated validation and rendering tests.
 
+## V3 evidence grounding
+
+V3 adds a hard grounding layer in front of the existing `no_score` / `composite` compiler. A source claim is no longer accepted merely because an agent writes `provenance: "source"`.
+
+The production input is a **grounded bundle** containing:
+
+- a source file path, source kind, and SHA-256;
+- the closed `decisionState`;
+- an evidence ledger;
+- claim references from exact decision-state JSON Pointer paths to evidence IDs.
+
+The compiler supports mechanically verifiable JSON Pointer grounding and exact text-span grounding. Composite scoring facts must all be grounded. Any missing or mismatched composite scoring evidence returns `FALLBACK_TO_NO_SCORE` and produces no composite dashboard.
+
+Machine-readable transitions are:
+
+```text
+PASS
+RETURN_TO_EVIDENCE_EXTRACTION
+FALLBACK_TO_NO_SCORE
+FIX_DECISION_STATE
+```
+
+Image-only/bounding-box claims are not treated as strong composite evidence in V3 because the repository does not currently ship a deterministic OCR/token extractor. Screenshot workflows should first create a verifiable text/JSON sidecar.
+
 ## Install
 
 ```bash
@@ -99,21 +123,23 @@ Give the agent a dashboard screenshot, Figma frame, existing dashboard code, or 
 
 > Redesign this dashboard using the `decision-first-dashboard` skill. Preserve source evidence and produce the deterministic decision-first output.
 
-The intended execution path is:
+The intended production execution path is:
 
 1. Extract verified facts only.
 2. Decide whether the evidence supports `no_score` or strict `composite` mode.
-3. Build `decision-state.json` matching the bundled closed schema.
-4. Validate schema and mode-specific semantics.
-5. Render SVG and HTML from the same JSON.
-6. Inspect the output for evidence and visual integrity.
+3. Build a closed `decisionState`.
+4. Build the source hash, evidence ledger, and claim references in a grounded bundle.
+5. Run the grounding compiler gate.
+6. Render SVG and HTML only after `PASS`.
+7. Inspect the output for evidence and visual integrity.
 
 From the skill directory:
 
 ```bash
-node scripts/validate.js path/to/decision-state.json
-node scripts/render.js path/to/decision-state.json path/to/output-directory
+node scripts/compile.js path/to/grounded-bundle.json path/to/output-directory
 ```
+
+`validate.js` and `render.js` remain lower-level Layer 2 / Layer 3 tools for tests and internal compiler use; V3 agent workflows should not bypass `compile.js`.
 
 The renderer writes mode-specific filenames:
 
@@ -124,7 +150,7 @@ composite  → output.composite.svg / output.composite.html
 
 ## Anti-hallucination contract
 
-The schema is closed with mutually exclusive `no_score` and `composite` states.
+Both contracts are closed: `grounded-bundle.schema.json` constrains source/evidence/claim structure, and `decision-state.schema.json` constrains mutually exclusive `no_score` and `composite` states.
 
 ### No-score safeguards
 
@@ -216,8 +242,11 @@ decision-first-dashboard/
 │   └── decision-first-dashboard/
 │       ├── SKILL.md
 │       ├── schemas/
+│       │   ├── grounded-bundle.schema.json
 │       │   └── decision-state.schema.json
 │       ├── scripts/
+│       │   ├── grounding.js
+│       │   ├── compile.js
 │       │   ├── validate.js
 │       │   └── render.js
 │       ├── templates/
@@ -232,7 +261,12 @@ decision-first-dashboard/
 └── tests/
     ├── compiler/
     │   ├── fixtures/
-    │   │   └── composite.valid.json
+    │   │   ├── composite.valid.json
+    │   │   └── grounding/
+    │   ├── golden/
+    │   ├── grounding.test.js
+    │   ├── compile-cli.test.js
+    │   ├── golden-snapshot.test.js
     │   ├── schema.test.js
     │   ├── composite-schema.test.js
     │   ├── render-svg.test.js
@@ -256,18 +290,19 @@ npm run validate:saas
 npm run render:saas
 ```
 
-GitHub Actions runs the complete compiler test suite, validates the canonical SaaS no-score fixture, renders its SVG/HTML outputs, and uploads those generated artifacts for visual QA.
+GitHub Actions runs the complete compiler test suite, including grounded composite/no-score compilation and byte-level golden snapshots, then renders the canonical SaaS and SaaSGrid fixtures and uploads generated artifacts for visual QA.
 
 ## What this is not
 
 This is not a generic chart library and not a prompt that asks the model to freestyle a prettier admin dashboard.
 
-The project separates two responsibilities:
+The project separates three responsibilities:
 
-- **Agent:** evidence extraction and mode classification.
-- **Compiler:** contract validation, deterministic synthesis, and visual composition.
+- **Layer 1 / Agent:** evidence extraction and mode proposal.
+- **Layer 2 / Compiler contract:** source grounding, claim coverage, schema/semantic validation, and machine-readable retry/fallback decisions.
+- **Layer 3 / Renderer:** deterministic SVG/HTML composition only.
 
-That separation is what makes the output repeatable across agents.
+That separation is what makes the output repeatable across agents while making source support auditable.
 
 ## License
 

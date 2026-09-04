@@ -1,0 +1,75 @@
+{
+  "score": {
+    "label": "Subscription health",
+    "value": 68,
+    "min": 0,
+    "max": 100,
+    "band": "At risk"
+  },
+  "model": {
+    "normalization": "source_provided",
+    "aggregation": "weighted_average",
+    "components": [
+      {
+        "label": "Retention",
+        "value": "96.8%",
+        "normalizedScore": 60,
+        "weight": 0.4
+      },
+      {
+        "label": "Growth",
+        "value": "+12.4%",
+        "normalizedScore": 80,
+        "weight": 0.3
+      },
+      {
+        "label": "Conversion",
+        "value": "31.7%",
+        "normalizedScore": 66.6667,
+        "weight": 0.3
+      }
+    ],
+    "bands": [
+      {
+        "label": "At risk",
+        "min": 0,
+        "max": 70
+      },
+      {
+        "label": "Watch",
+        "min": 70,
+        "max": 85
+      },
+      {
+        "label": "Healthy",
+        "min": 85,
+        "max": 100
+      }
+    ]
+  },
+  "context": {
+    "scoreSeries": [
+      61,
+      63,
+      64,
+      66,
+      67,
+      68
+    ]
+  },
+  "exceptions": [
+    {
+      "name": "Northstar",
+      "plan": "Enterprise",
+      "mrr": "$7,200",
+      "status": "At risk"
+    }
+  ],
+  "events": [
+    {
+      "subject": "Northstar",
+      "event": "Plan downgrade requested",
+      "time": "2 hr ago"
+    }
+  ]
+}
