@@ -6,6 +6,7 @@ on:
       - main
       - feature/dashboard-compiler-mvp
       - feature/composite-mode-compiler
+      - feature/v3-evidence-grounding
   pull_request:
     paths:
       - 'skills/decision-first-dashboard/**'
@@ -30,6 +31,10 @@ jobs:
         run: node skills/decision-first-dashboard/scripts/validate.js examples/saas/real-world/saasgrid/input.no-score.json
       - name: Render SaaSGrid real-world fixture
         run: node skills/decision-first-dashboard/scripts/render.js examples/saas/real-world/saasgrid/input.no-score.json examples/saas/real-world/saasgrid
+      - name: Compile grounded composite fixture
+        run: node skills/decision-first-dashboard/scripts/compile.js tests/compiler/fixtures/grounding/composite.grounded.json tests/compiler/generated/v3-composite
+      - name: Compile grounded no-score fixture
+        run: node skills/decision-first-dashboard/scripts/compile.js tests/compiler/fixtures/grounding/no-score.grounded.json tests/compiler/generated/v3-no-score
       - uses: actions/upload-artifact@v4
         with:
           name: saas-no-score-render
@@ -38,3 +43,7 @@ jobs:
             examples/saas/output.no-score.html
             examples/saas/real-world/saasgrid/output.no-score.svg
             examples/saas/real-world/saasgrid/output.no-score.html
+            tests/compiler/generated/v3-composite/output.composite.svg
+            tests/compiler/generated/v3-composite/output.composite.html
+            tests/compiler/generated/v3-no-score/output.no-score.svg
+            tests/compiler/generated/v3-no-score/output.no-score.html
