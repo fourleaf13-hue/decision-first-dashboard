@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Subscription health</title>
+  <style>:root {
+  color-scheme: light;
+  --bg-a: #f8f7ff;
+  --bg-b: #f2f4fb;
+  --card: #ffffff;
+  --border: #ebe9f5;
+  --ink: #242338;
+  --muted: #858398;
+  --soft: #aaa7ba;
+  --accent: #7264ca;
+  --accent-soft: #f3efff;
+  --accent-line: #d6d0ef;
+  --positive: #3e8a69;
+  --danger: #b95e69;
+  --danger-bg: #fff1f3;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--bg-a), var(--bg-b));
+  color: var(--ink);
+}
+
+.dashboard-shell {
+  width: min(1320px, calc(100vw - 72px));
+  margin: 0 auto;
+  padding: 48px 0 56px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.page-header p {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.decision-layout {
+  display: grid;
+  grid-template-columns: minmax(238px, 22fr) minmax(520px, 48fr) minmax(280px, 30fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.support-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  box-shadow: 0 18px 50px rgba(69, 61, 111, 0.08);
+}
+
+.eyebrow {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.revenue-card { padding: 26px; min-height: 302px; }
+.metric-value { margin-top: 26px; font-size: 32px; font-weight: 760; letter-spacing: -0.035em; }
+.metric-delta { margin-top: 6px; font-size: 13px; font-weight: 700; }
+.metric-delta span { color: var(--muted); font-weight: 500; margin-left: 6px; }
+.positive { color: var(--positive); }
+.danger { color: var(--danger); }
+.muted { color: var(--muted); }
+
+.sparkline { width: 100%; height: 86px; margin: 22px 0 5px; overflow: visible; }
+.sparkline path { fill: none; stroke: #8274d5; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.trend-unavailable { height: 86px; margin: 22px 0 5px; display: flex; align-items: center; color: var(--muted); font-size: 12px; }
+.card-divider { height: 1px; background: #efedf6; margin: 8px 0 17px; }
+.context-row { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
+.context-row strong { color: var(--ink); font-size: 13px; }
+
+.context-card { padding: 26px; min-height: 190px; }
+.context-metric { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "label delta" "value delta"; align-items: center; gap: 4px 12px; padding: 20px 0; border-bottom: 1px solid #efedf6; }
+.context-metric:last-child { border-bottom: 0; padding-bottom: 0; }
+.context-metric span { grid-area: label; color: var(--muted); font-size: 12px; }
+.context-metric strong { grid-area: value; font-size: 21px; }
+.context-metric em { grid-area: delta; font-style: normal; font-size: 12px; font-weight: 700; }
+
+.synthesis-card { min-height: 610px; position: relative; overflow: hidden; background: radial-gradient(circle at 50% 44%, rgba(238, 233, 255, 0.96), rgba(249, 248, 255, 0.22) 47%, rgba(255,255,255,0) 70%), #fff; }
+.synthesis-eyebrow { position: absolute; top: 28px; left: 30px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: 11px; }
+.orbit { position: absolute; inset: 62px 32px 24px; pointer-events: none; }
+.orbit-ring { position: absolute; left: 50%; top: 50%; border: 1px solid var(--accent-line); border-radius: 50%; transform: translate(-50%, -50%); }
+.orbit-ring--outer { width: 72%; aspect-ratio: 1; border-style: dashed; opacity: .8; }
+.orbit-ring--inner { width: 50%; aspect-ratio: 1; opacity: .62; }
+.orbit svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.orbit path { fill: none; stroke: var(--accent-line); stroke-width: 1.6; }
+
+.synthesis-core { position: absolute; left: 50%; top: 50%; width: 184px; height: 184px; transform: translate(-50%, -47%); border-radius: 50%; border: 2px solid #d7d0ef; background: rgba(255,255,255,.88); box-shadow: 0 16px 36px rgba(96, 82, 174, .10), inset 0 0 0 12px #f7f4ff; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.synthesis-core strong { color: var(--accent); font-size: 28px; letter-spacing: .03em; }
+.synthesis-core span { color: var(--muted); margin-top: 8px; font-size: 13px; }
+
+.signal { position: absolute; width: 142px; text-align: center; z-index: 2; transform: translate(-50%, -50%); }
+.signal strong { display: block; color: var(--accent); font-size: 24px; line-height: 1; letter-spacing: -0.025em; }
+.signal span { display: block; margin-top: 9px; font-weight: 700; font-size: 13px; }
+.signal small { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
+
+.score-card { padding: 26px; min-height: 302px; }
+.score-value-line { display: flex; align-items: baseline; gap: 8px; margin-top: 26px; }
+.score-value-line strong { font-size: 34px; font-weight: 780; letter-spacing: -0.035em; }
+.score-value-line span { color: var(--muted); font-size: 14px; }
+.score-band { margin-top: 7px; color: var(--danger); font-size: 13px; font-weight: 700; }
+.composition-card { padding: 26px; min-height: 284px; }
+.composition-list { margin-top: 14px; }
+.composition-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid #efedf6; }
+.composition-row:last-child { border-bottom: 0; }
+.composition-row span { font-size: 12px; font-weight: 650; }
+.composition-row small { color: var(--muted); font-size: 11px; }
+.score-center .synthesis-core { width: 194px; height: 194px; }
+.score-center .synthesis-core strong { font-size: 48px; line-height: 1; letter-spacing: -0.035em; }
+.score-center .synthesis-core span { margin-top: 5px; }
+.score-center .synthesis-core em { margin-top: 10px; color: var(--danger); font-size: 13px; font-style: normal; font-weight: 700; }
+.score-component strong { font-size: 24px; }
+
+.compact-card { padding: 26px; min-height: 278px; }
+.events-card { min-height: 308px; }
+.exception-list, .event-list { margin-top: 22px; }
+.exception-row, .event-row { display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: start; padding: 16px 0; border-bottom: 1px solid #efedf6; }
+.exception-row:last-child, .event-row:last-child { border-bottom: 0; }
+.dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; background: #8d7fda; }
+.dot--risk { background: #c96e79; }
+.row-copy strong { display: block; font-size: 13px; }
+.row-copy span { display: block; color: var(--muted); font-size: 11px; margin-top: 5px; }
+.badge { align-self: start; padding: 6px 10px; border-radius: 999px; background: var(--danger-bg); color: var(--danger); font-size: 10px; font-weight: 700; white-space: nowrap; }
+.event-time { color: var(--soft); font-size: 10px; white-space: nowrap; margin-top: 2px; }
+.empty-state { color: var(--muted); font-size: 12px; margin-top: 24px; }
+
+@media (max-width: 1050px) {
+  .dashboard-shell { width: min(900px, calc(100vw - 40px)); }
+  .decision-layout { grid-template-columns: 1fr; }
+  .support-column { display: grid; grid-template-columns: 1fr 1fr; }
+  .synthesis-card { order: -1; min-height: 570px; }
+}
+</style>
+</head>
+<body>
+  <main class="dashboard-shell">
+    <header class="page-header">
+      <div>
+        <h1>Subscription health</h1>
+        <p>Score movement, composition, exceptions, and recent events</p>
+      </div>
+    </header>
+
+    <section class="decision-layout">
+      <aside class="support-column support-column--left">
+        <article class="card score-card">
+          <div class="eyebrow">Score trend</div>
+          <div class="score-value-line"><strong>68</strong><span>/ 100</span></div>
+          <div class="score-band">At risk</div>
+          <svg class="sparkline" viewBox="0 0 234 86" aria-label="Score trend"><path d="M0.0 80.0 L46.8 58.9 L93.6 48.3 L140.4 27.1 L187.2 16.6 L234.0 6.0"></path></svg>
+          <div class="card-divider"></div>
+          <div class="context-row"><span>Current score</span><strong>68 / 100</strong></div>
+        </article>
+        <article class="card composition-card">
+          <div class="eyebrow">Score composition</div>
+          <div class="composition-list"><div class="composition-row"><span>Retention</span><small>60 · 40%</small></div>
+<div class="composition-row"><span>Growth</span><small>80 · 30%</small></div>
+<div class="composition-row"><span>Conversion</span><small>66.7 · 30%</small></div></div>
+        </article>
+      </aside>
+
+      <section class="card synthesis-card score-center" aria-label="Subscription health score">
+        <div class="eyebrow synthesis-eyebrow">Current score</div>
+        <div class="orbit" aria-hidden="true">
+          <div class="orbit-ring orbit-ring--outer"></div>
+          <div class="orbit-ring orbit-ring--inner"></div>
+          <svg viewBox="0 0 620 520" preserveAspectRatio="none"><path d="M310 260 L161.2 145.6 M310 260 L458.8 145.6 M310 260 L310.0 374.4"></path></svg>
+        </div>
+        <div class="signal score-component" style="left:26%;top:28%"><strong>60</strong><span>Retention</span><small>40% · 96.8%</small></div>
+<div class="signal score-component" style="left:74%;top:28%"><strong>80</strong><span>Growth</span><small>30% · +12.4%</small></div>
+<div class="signal score-component" style="left:50%;top:72%"><strong>66.7</strong><span>Conversion</span><small>30% · 31.7%</small></div>
+        <div class="synthesis-core"><strong>68</strong><span>/ 100</span><em>At risk</em></div>
+      </section>
+
+      <aside class="support-column support-column--right">
+        <article class="card compact-card">
+          <div class="eyebrow">Accounts to watch</div>
+          <div class="exception-list"><div class="exception-row"><span class="dot dot--risk" aria-hidden="true"></span><div class="row-copy"><strong>Northstar</strong><span>Enterprise · $7,200 MRR</span></div><span class="badge">At risk</span></div></div>
+        </article>
+        <article class="card compact-card events-card">
+          <div class="eyebrow">Recent events</div>
+          <div class="event-list"><div class="event-row"><span class="dot" aria-hidden="true"></span><div class="row-copy"><strong>Northstar</strong><span>Plan downgrade requested</span></div><span class="event-time">2 hr ago</span></div></div>
+        </article>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
