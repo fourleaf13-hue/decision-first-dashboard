@@ -60,7 +60,9 @@ V3.1 semantic planning adds:
 
 `render.js` consumes only validated decision state and fills fixed SVG/HTML templates. It does not inspect source data or invent business meaning.
 
-The V3.1 planner owns the render-plan IR and fixed layout coordinates. The renderer remains visually deterministic and does not reinterpret the plan.
+For V3.1, `render-plan.js` is a thin deterministic adapter around the legacy renderer. It receives the validated render plan and surfaces deferred requirements as a visible `Data needed` state without changing legacy V3 output bytes.
+
+The V3.1 planner owns the render-plan IR and fixed layout coordinates. The renderer does not reinterpret source evidence or invent a replacement quantity.
 
 ## Workflow
 
@@ -164,11 +166,13 @@ Use V3.1 when the compiler must enforce the dashboard's audience/decision and ma
 }
 ```
 
-`audienceType` is one of:
+The contract recognizes these `audienceType` values:
 
 - `executive`;
 - `operational`;
 - `diagnostic`.
+
+**Current deterministic rendering support is intentionally narrower:** only `executive` is implemented. `operational` and `diagnostic` fail planning with `AUDIENCE_RENDERER_UNSUPPORTED` instead of silently reusing the executive layout. Add a dedicated renderer before enabling either audience type.
 
 `refreshCadence` is one of:
 
@@ -223,7 +227,7 @@ Allowed blockers:
 - `unsupported_computation`;
 - `unsupported_renderer`.
 
-A deferred requirement is a valid, auditable result. Silent omission or substitution is not.
+A deferred requirement is a valid, auditable result. Silent omission or substitution is not. V3.1 keeps the full defer record in `plan.json` and makes the unresolved state visible in final SVG/HTML as `Data needed`, including the requested output label and the condition required to unblock it.
 
 ### 7. Required grounding coverage
 
@@ -255,6 +259,7 @@ grounding gate
   → decision-state validation
   → V3.1 semantic planner when enabled
   → deterministic renderer
+  → V3.1 render-plan adapter when enabled
 ```
 
 On legacy V3 `PASS`, the CLI writes:
@@ -271,7 +276,7 @@ The agent never authors `plan.json` coordinates. `planner.js` owns the fixed 12-
 
 On any non-`PASS` transition, the compiler exits non-zero and does not render dashboard output.
 
-Treat `validate.js`, `planner.js`, and `render.js` as lower-level compiler/renderer tools. Do not use direct rendering as a substitute for the grounded production path.
+Treat `validate.js`, `planner.js`, `render.js`, and `render-plan.js` as lower-level compiler/renderer tools. Do not use direct rendering as a substitute for the grounded production path.
 
 ### 9. Follow failure transitions literally
 
@@ -285,7 +290,7 @@ Do not turn a failed compiler check into an invitation to guess.
 
 ## Deterministic render-plan contract
 
-For V3.1, `planner.js` emits a fixed three-zone 12-column plan matching the existing visual grammar:
+For V3.1, `planner.js` emits a fixed three-zone 12-column plan matching the existing executive visual grammar:
 
 ```text
 | context 3 cols | decision 6 cols | evidence 3 cols |
@@ -301,7 +306,8 @@ It validates:
 - positive integer layout dimensions;
 - 12-column bounds;
 - no overlapping layout slots;
-- center decision focal point.
+- center decision focal point;
+- explicit rejection of audience types without a dedicated deterministic renderer.
 
 Canonical serialization recursively sorts object keys while preserving requirement array order. Identical semantic input therefore produces byte-identical plan JSON.
 
@@ -322,6 +328,12 @@ For `composite`:
 - 3–6 weighted score components converging on the center;
 - compact left score trend and score composition;
 - compact right exceptions/events.
+
+For V3.1 with deferred requirements:
+
+- keep the primary executive hierarchy unchanged;
+- append a restrained `Data needed` strip rather than replacing a requested metric with another quantity;
+- keep all defer metadata in canonical `plan.json`.
 
 For both modes:
 
@@ -347,7 +359,9 @@ Before delivery, verify:
 - every required visible/source scoring fact has a resolvable claim and evidence anchor;
 - every grounded value matches the referenced decision-state value under allowed deterministic normalization only;
 - V3.1 has exactly one primary audience, purpose, and decision;
+- the current V3.1 audience type is `executive` until a dedicated operational/diagnostic renderer exists;
 - every V3.1 requested output is either an exact computed decision path or an explicit deferral;
+- every V3.1 deferral remains visible in final output as `Data needed` and retains its full audit record in `plan.json`;
 - V3.1 plan validation passes with no overlap/out-of-bounds slots;
 - `no_score` overall direction matches the signal directions;
 - `composite` weights, weighted score, score scale, and score band pass semantic validation;
