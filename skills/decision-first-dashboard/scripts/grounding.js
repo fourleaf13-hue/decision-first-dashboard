@@ -50,6 +50,11 @@ function pointerParent(pointer) {
   return index === 0 ? '' : pointer.slice(0, index);
 }
 
+function pointerLeaf(pointer) {
+  if (typeof pointer !== 'string' || !pointer.startsWith('/')) return null;
+  return decodePointerPart(pointer.slice(pointer.lastIndexOf('/') + 1));
+}
+
 function sha256(bytes) {
   return crypto.createHash('sha256').update(bytes).digest('hex');
 }
@@ -270,6 +275,18 @@ function validateJsonGroupCoherence(claims, evidenceById, errors) {
   for (const claim of claims) {
     const evidence = evidenceById.get(claim.evidenceRef);
     if (evidence?.anchor?.type !== 'json_pointer') continue;
+
+    const decisionLeaf = pointerLeaf(claim.decisionPath);
+    const sourceLeaf = pointerLeaf(evidence.anchor.pointer);
+    if (decisionLeaf !== null && sourceLeaf !== null && decisionLeaf !== sourceLeaf) {
+      pushError(
+        errors,
+        'SOURCE_FIELD_MISMATCH',
+        claim.decisionPath,
+        `JSON source field ${sourceLeaf} does not match decision field ${decisionLeaf}`,
+        claim.evidenceRef
+      );
+    }
 
     const decisionParent = pointerParent(claim.decisionPath);
     const sourceParent = pointerParent(evidence.anchor.pointer);
