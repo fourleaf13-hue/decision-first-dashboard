@@ -343,6 +343,7 @@ export function validateGroundedBundle(bundle, { baseDir = process.cwd() } = {})
   }
 
   const claimsByPath = new Map();
+  const decisionPathByEvidenceRef = new Map();
   for (const claim of bundle.claims) {
     if (claimsByPath.has(claim.decisionPath)) {
       pushError(
@@ -355,6 +356,19 @@ export function validateGroundedBundle(bundle, { baseDir = process.cwd() } = {})
       continue;
     }
     claimsByPath.set(claim.decisionPath, claim);
+
+    const existingPath = decisionPathByEvidenceRef.get(claim.evidenceRef);
+    if (existingPath !== undefined && existingPath !== claim.decisionPath) {
+      pushError(
+        errors,
+        'EVIDENCE_REF_REUSED',
+        claim.decisionPath,
+        `evidence is already assigned to ${existingPath}`,
+        claim.evidenceRef
+      );
+      continue;
+    }
+    decisionPathByEvidenceRef.set(claim.evidenceRef, claim.decisionPath);
   }
 
   const requiredPaths = mode === 'composite' ? requiredCompositePaths(decisionState) : requiredNoScorePaths(decisionState);
