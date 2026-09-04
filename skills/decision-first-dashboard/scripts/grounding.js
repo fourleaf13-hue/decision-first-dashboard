@@ -39,6 +39,12 @@ function resolvePointer(root, pointer) {
   return { found: true, value: node };
 }
 
+function pointerParent(pointer) {
+  if (typeof pointer !== 'string' || !pointer.startsWith('/')) return null;
+  const index = pointer.lastIndexOf('/');
+  return index === 0 ? '' : pointer.slice(0, index);
+}
+
 function sha256(bytes) {
   return crypto.createHash('sha256').update(bytes).digest('hex');
 }
@@ -185,6 +191,35 @@ function anchorValue(source, evidence, decisionPath, errors) {
   return { found: false };
 }
 
+function validateJsonGroupCoherence(claims, evidenceById, errors) {
+  const sourceParentByDecisionParent = new Map();
+
+  for (const claim of claims) {
+    const evidence = evidenceById.get(claim.evidenceRef);
+    if (evidence?.anchor?.type !== 'json_pointer') continue;
+
+    const decisionParent = pointerParent(claim.decisionPath);
+    const sourceParent = pointerParent(evidence.anchor.pointer);
+    if (decisionParent === null || sourceParent === null) continue;
+
+    const existing = sourceParentByDecisionParent.get(decisionParent);
+    if (existing === undefined) {
+      sourceParentByDecisionParent.set(decisionParent, sourceParent);
+      continue;
+    }
+
+    if (existing !== sourceParent) {
+      pushError(
+        errors,
+        'SOURCE_GROUP_MISMATCH',
+        claim.decisionPath,
+        'claims from the same decision object must resolve within the same source object',
+        claim.evidenceRef
+      );
+    }
+  }
+}
+
 export function validateGroundedBundle(bundle, { baseDir = process.cwd() } = {}) {
   const bundleResult = validateAgainstSchema(bundle, groundingSchema);
   if (!bundleResult.valid) {
@@ -228,6 +263,10 @@ export function validateGroundedBundle(bundle, { baseDir = process.cwd() } = {})
       continue;
     }
     evidenceById.set(evidence.id, evidence);
+  }
+
+  if (source.kind === 'json') {
+    validateJsonGroupCoherence(bundle.claims, evidenceById, errors);
   }
 
   const claimsByPath = new Map();
