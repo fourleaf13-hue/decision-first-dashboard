@@ -49,6 +49,17 @@ function sha256(bytes) {
   return crypto.createHash('sha256').update(bytes).digest('hex');
 }
 
+function textOccurrenceCount(text, literal) {
+  let count = 0;
+  let fromIndex = 0;
+  while (true) {
+    const index = text.indexOf(literal, fromIndex);
+    if (index === -1) return count;
+    count += 1;
+    fromIndex = index + Math.max(literal.length, 1);
+  }
+}
+
 function parseNumericText(value) {
   if (typeof value !== 'string') return null;
   const normalized = value.trim().replaceAll(',', '');
@@ -180,10 +191,21 @@ function anchorValue(source, evidence, decisionPath, errors) {
   }
 
   if (anchor.type === 'text_span' && source.kind === 'text') {
-    if (typeof anchor.literal !== 'string' || typeof anchor.valueText !== 'string' || !source.text.includes(anchor.literal) || !anchor.literal.includes(anchor.valueText)) {
+    if (typeof anchor.literal !== 'string' || typeof anchor.valueText !== 'string' || !anchor.literal.includes(anchor.valueText)) {
       pushError(errors, 'SOURCE_ANCHOR_NOT_FOUND', decisionPath, 'exact text span/valueText was not found in source', evidence.id);
       return { found: false };
     }
+
+    const occurrenceCount = textOccurrenceCount(source.text, anchor.literal);
+    if (occurrenceCount === 0) {
+      pushError(errors, 'SOURCE_ANCHOR_NOT_FOUND', decisionPath, 'exact text span/valueText was not found in source', evidence.id);
+      return { found: false };
+    }
+    if (occurrenceCount > 1) {
+      pushError(errors, 'AMBIGUOUS_TEXT_ANCHOR', decisionPath, 'text literal occurs more than once and requires an explicit location', evidence.id);
+      return { found: false };
+    }
+
     return { found: true, value: anchor.valueText };
   }
 
