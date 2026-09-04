@@ -344,7 +344,17 @@ export function validateGroundedBundle(bundle, { baseDir = process.cwd() } = {})
 
   const claimsByPath = new Map();
   for (const claim of bundle.claims) {
-    if (!claimsByPath.has(claim.decisionPath)) claimsByPath.set(claim.decisionPath, claim);
+    if (claimsByPath.has(claim.decisionPath)) {
+      pushError(
+        errors,
+        'DUPLICATE_CLAIM',
+        claim.decisionPath,
+        'each decision path may have only one grounding claim',
+        claim.evidenceRef
+      );
+      continue;
+    }
+    claimsByPath.set(claim.decisionPath, claim);
   }
 
   const requiredPaths = mode === 'composite' ? requiredCompositePaths(decisionState) : requiredNoScorePaths(decisionState);
