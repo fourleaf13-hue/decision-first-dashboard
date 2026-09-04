@@ -84,3 +84,18 @@ test('accepts an exact start/end location for a duplicated text literal', () => 
 
   assert.equal(result.transition, 'PASS');
 });
+
+test('rejects a grounding source path that escapes the bundle base directory', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-first-grounding-'));
+  const bundleDir = path.join(tempRoot, 'bundle');
+  fs.mkdirSync(bundleDir);
+
+  const bundle = structuredClone(compositeFixture);
+  bundle.source.path = '../outside.json';
+  bundle.source.sha256 = writeJson(tempRoot, 'outside.json', compositeSource);
+
+  const result = validateGroundedBundle(bundle, { baseDir: bundleDir });
+
+  assert.equal(result.transition, 'FALLBACK_TO_NO_SCORE');
+  assert.ok(result.errors.some((error) => error.code === 'SOURCE_PATH_OUTSIDE_BASE'));
+});
