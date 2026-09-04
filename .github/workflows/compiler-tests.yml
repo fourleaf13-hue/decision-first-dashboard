@@ -35,9 +35,55 @@ jobs:
         run: node skills/decision-first-dashboard/scripts/compile.js tests/compiler/fixtures/grounding/composite.grounded.json tests/compiler/generated/v3-composite
       - name: Compile grounded no-score fixture
         run: node skills/decision-first-dashboard/scripts/compile.js tests/compiler/fixtures/grounding/no-score.grounded.json tests/compiler/generated/v3-no-score
+      - name: Build V3.1 semantic fixture
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const sourcePath = 'tests/compiler/fixtures/grounding/composite.grounded.json';
+          const outputPath = 'tests/compiler/fixtures/grounding/composite.v31.grounded.json';
+          const bundle = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+          bundle.contractVersion = '3.1';
+          bundle.intent = {
+            audience: 'VP Revenue',
+            audienceType: 'executive',
+            purpose: 'Monitor subscription health',
+            primaryDecision: 'Is subscription health good enough to stay on plan?',
+            refreshCadence: 'daily',
+            requirements: [
+              {
+                id: 'req_health_score',
+                label: 'Subscription health score',
+                kind: 'single_value',
+                resolution: { type: 'decision_path', path: '/score/value' }
+              },
+              {
+                id: 'req_external_benchmark',
+                label: 'External benchmark comparison',
+                kind: 'comparison',
+                resolution: {
+                  type: 'deferred',
+                  blockedBy: 'missing_source_fact',
+                  originalSpec: 'Compare the health score with an approved external benchmark',
+                  toUnblock: 'Provide a source-backed benchmark and comparison rule'
+                }
+              }
+            ]
+          };
+          fs.writeFileSync(outputPath, `${JSON.stringify(bundle, null, 2)}\n`);
+          NODE
+      - name: Compile V3.1 twice and verify byte determinism
+        shell: bash
+        run: |
+          node skills/decision-first-dashboard/scripts/compile.js tests/compiler/fixtures/grounding/composite.v31.grounded.json tests/compiler/generated/v3.1-a
+          node skills/decision-first-dashboard/scripts/compile.js tests/compiler/fixtures/grounding/composite.v31.grounded.json tests/compiler/generated/v3.1-b
+          cmp tests/compiler/generated/v3.1-a/output.composite.plan.json tests/compiler/generated/v3.1-b/output.composite.plan.json
+          cmp tests/compiler/generated/v3.1-a/output.composite.svg tests/compiler/generated/v3.1-b/output.composite.svg
+          cmp tests/compiler/generated/v3.1-a/output.composite.html tests/compiler/generated/v3.1-b/output.composite.html
+          sha256sum tests/compiler/generated/v3.1-a/output.composite.plan.json tests/compiler/generated/v3.1-a/output.composite.svg tests/compiler/generated/v3.1-a/output.composite.html
       - uses: actions/upload-artifact@v4
         with:
-          name: saas-no-score-render
+          name: decision-first-dashboard-renders
           path: |
             examples/saas/output.no-score.svg
             examples/saas/output.no-score.html
@@ -47,3 +93,6 @@ jobs:
             tests/compiler/generated/v3-composite/output.composite.html
             tests/compiler/generated/v3-no-score/output.no-score.svg
             tests/compiler/generated/v3-no-score/output.no-score.html
+            tests/compiler/generated/v3.1-a/output.composite.plan.json
+            tests/compiler/generated/v3.1-a/output.composite.svg
+            tests/compiler/generated/v3.1-a/output.composite.html
