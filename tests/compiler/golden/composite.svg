@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Subscription health</title>
+  <desc id="desc">Score movement, score composition, account exceptions, and recent events.</desc>
+  <defs>
+    <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8f7ff"/>
+      <stop offset="1" stop-color="#f2f4fb"/>
+    </linearGradient>
+    <radialGradient id="centerGlow" cx="50%" cy="45%" r="58%">
+      <stop offset="0" stop-color="#eee9ff" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#f9f8ff" stop-opacity="0.16"/>
+    </radialGradient>
+    <linearGradient id="accentLine" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8172d8"/>
+      <stop offset="1" stop-color="#a99ce9"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="20" flood-color="#554d86" flood-opacity="0.08"/>
+    </filter>
+    <style>
+      .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .ink { fill: #242338; }
+      .muted { fill: #858398; }
+      .soft { fill: #aaa7ba; }
+      .accent { fill: #7264ca; }
+      .danger { fill: #b95e69; }
+      .card { fill: #ffffff; stroke: #ebe9f5; stroke-width: 1; }
+    </style>
+  </defs>
+
+  <rect width="1440" height="900" fill="url(#pageBg)"/>
+
+  <g class="sans">
+    <text x="72" y="76" class="ink" font-size="28" font-weight="700">Subscription health</text>
+    <text x="72" y="106" class="muted" font-size="14">Score movement, composition, exceptions, and recent events</text>
+
+    <g filter="url(#cardShadow)">
+      <rect x="72" y="150" width="286" height="302" rx="26" class="card"/>
+    </g>
+    <text x="98" y="190" class="ink" font-size="15" font-weight="650">Score trend</text>
+    <text x="98" y="230" class="ink" font-size="31" font-weight="740">68</text>
+    <text x="140" y="230" class="muted" font-size="14">/ 100</text>
+    <text x="98" y="255" class="danger" font-size="13" font-weight="650">At risk</text>
+    <path d="M98.0 360.0 L144.8 338.9 L191.6 328.3 L238.4 307.1 L285.2 296.6 L332.0 286.0" fill="none" stroke="url(#accentLine)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="98" y1="392" x2="332" y2="392" stroke="#efedf6"/>
+    <text x="98" y="421" class="muted" font-size="12">Current score</text>
+    <text x="332" y="421" class="ink" font-size="13" font-weight="650" text-anchor="end">68 / 100</text>
+
+    <g filter="url(#cardShadow)">
+      <rect x="72" y="476" width="286" height="284" rx="26" class="card"/>
+    </g>
+    <text x="98" y="516" class="ink" font-size="15" font-weight="650">Score composition</text>
+    <g>
+      <text x="98" y="552" class="ink" font-size="12" font-weight="650">Retention</text>
+      <text x="332" y="552" class="muted" font-size="11" text-anchor="end">60 · 40%</text>
+    </g>
+<g>
+      <text x="98" y="586" class="ink" font-size="12" font-weight="650">Growth</text>
+      <text x="332" y="586" class="muted" font-size="11" text-anchor="end">80 · 30%</text>
+    </g>
+<g>
+      <text x="98" y="620" class="ink" font-size="12" font-weight="650">Conversion</text>
+      <text x="332" y="620" class="muted" font-size="11" text-anchor="end">66.7 · 30%</text>
+    </g>
+
+    <g filter="url(#cardShadow)">
+      <rect x="382" y="150" width="632" height="610" rx="34" class="card"/>
+    </g>
+    <rect x="406" y="174" width="584" height="562" rx="30" fill="url(#centerGlow)"/>
+    <text x="414" y="204" class="muted" font-size="12" font-weight="650" letter-spacing="1.5">CURRENT SCORE</text>
+
+    <circle cx="698" cy="464" r="188" fill="none" stroke="#e3dff5" stroke-width="1.5" stroke-dasharray="5 8"/>
+    <circle cx="698" cy="464" r="132" fill="none" stroke="#ece9f7" stroke-width="1"/>
+    <path d="M698 464 L548 330 M698 464 L848 330 M698 464 L698 590" fill="none" stroke="#d6d0ef" stroke-width="1.6"/>
+
+    <circle cx="698" cy="464" r="98" fill="#ffffff" stroke="#d7d0ef" stroke-width="2"/>
+    <circle cx="698" cy="464" r="86" fill="#f7f4ff"/>
+    <text x="698" y="454" class="accent" font-size="48" font-weight="780" text-anchor="middle">68</text>
+    <text x="698" y="481" class="muted" font-size="14" text-anchor="middle">/ 100</text>
+    <text x="698" y="511" class="danger" font-size="14" font-weight="700" text-anchor="middle">At risk</text>
+
+    <g class="score-component-node">
+      <circle cx="548" cy="330" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
+      <text x="548" y="268" class="accent" font-size="24" font-weight="740" text-anchor="middle">60</text>
+      <text x="548" y="293" class="ink" font-size="13" font-weight="650" text-anchor="middle">Retention</text>
+      <text x="548" y="312" class="muted" font-size="11" text-anchor="middle">40% · 96.8%</text>
+    </g>
+<g class="score-component-node">
+      <circle cx="848" cy="330" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
+      <text x="848" y="268" class="accent" font-size="24" font-weight="740" text-anchor="middle">80</text>
+      <text x="848" y="293" class="ink" font-size="13" font-weight="650" text-anchor="middle">Growth</text>
+      <text x="848" y="312" class="muted" font-size="11" text-anchor="middle">30% · +12.4%</text>
+    </g>
+<g class="score-component-node">
+      <circle cx="698" cy="590" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
+      <text x="698" y="656" class="accent" font-size="24" font-weight="740" text-anchor="middle">66.7</text>
+      <text x="698" y="681" class="ink" font-size="13" font-weight="650" text-anchor="middle">Conversion</text>
+      <text x="698" y="700" class="muted" font-size="11" text-anchor="middle">30% · 31.7%</text>
+    </g>
+
+    <g filter="url(#cardShadow)">
+      <rect x="1038" y="150" width="330" height="278" rx="26" class="card"/>
+    </g>
+    <text x="1064" y="190" class="ink" font-size="15" font-weight="650">Accounts to watch</text>
+    <g>
+      <circle cx="1072" cy="228" r="5" fill="#c96e79"/>
+      <text x="1088" y="232" class="ink" font-size="14" font-weight="650">Northstar</text>
+      <text x="1088" y="254" class="muted" font-size="12">Enterprise · $7,200 MRR</text>
+      <rect x="1268" y="213" width="74" height="26" rx="13" fill="#fff1f3"/>
+      <text x="1305" y="231" class="danger" font-size="11" font-weight="650" text-anchor="middle">At risk</text>
+    </g>
+
+    <g filter="url(#cardShadow)">
+      <rect x="1038" y="452" width="330" height="308" rx="26" class="card"/>
+    </g>
+    <text x="1064" y="492" class="ink" font-size="15" font-weight="650">Recent events</text>
+    <g>
+      <circle cx="1072" cy="530" r="4" fill="#8d7fda"/>
+      <text x="1088" y="534" class="ink" font-size="13" font-weight="650">Northstar</text>
+      <text x="1088" y="555" class="muted" font-size="12">Plan downgrade requested</text>
+      <text x="1342" y="555" class="soft" font-size="11" text-anchor="end">2 hr ago</text>
+    </g>
+  </g>
+</svg>
