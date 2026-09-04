@@ -196,6 +196,20 @@ function anchorValue(source, evidence, decisionPath, errors) {
       return { found: false };
     }
 
+    const hasStart = Object.hasOwn(anchor, 'start');
+    const hasEnd = Object.hasOwn(anchor, 'end');
+    if (hasStart || hasEnd) {
+      if (!hasStart || !hasEnd || !Number.isInteger(anchor.start) || !Number.isInteger(anchor.end) || anchor.start < 0 || anchor.end <= anchor.start) {
+        pushError(errors, 'TEXT_SPAN_LOCATION_MISMATCH', decisionPath, 'text span start/end must be a valid exact range', evidence.id);
+        return { found: false };
+      }
+      if (source.text.slice(anchor.start, anchor.end) !== anchor.literal) {
+        pushError(errors, 'TEXT_SPAN_LOCATION_MISMATCH', decisionPath, 'text span start/end does not resolve to the declared literal', evidence.id);
+        return { found: false };
+      }
+      return { found: true, value: anchor.valueText };
+    }
+
     const occurrenceCount = textOccurrenceCount(source.text, anchor.literal);
     if (occurrenceCount === 0) {
       pushError(errors, 'SOURCE_ANCHOR_NOT_FOUND', decisionPath, 'exact text span/valueText was not found in source', evidence.id);
