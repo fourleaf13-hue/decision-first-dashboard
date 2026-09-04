@@ -92,6 +92,16 @@ test('intent requires contractVersion 3.1', () => {
   assert.equal(result.errors[0].code, 'CONTRACT_VERSION_REQUIRED');
 });
 
+test('current V3.1 renderer rejects operational and diagnostic audience types explicitly', () => {
+  for (const audienceType of ['operational', 'diagnostic']) {
+    const bundle = v31Bundle();
+    bundle.intent.audienceType = audienceType;
+    const result = buildRenderPlan(bundle);
+    assert.equal(result.valid, false, `${audienceType} must not silently use the executive renderer`);
+    assert.equal(result.errors.some((error) => error.code === 'AUDIENCE_RENDERER_UNSUPPORTED'), true);
+  }
+});
+
 test('computed and deferred requirements are preserved without substitution', () => {
   const result = buildRenderPlan(v31Bundle());
   assert.equal(result.valid, true, JSON.stringify(result.errors));
