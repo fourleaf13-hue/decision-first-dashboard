@@ -1,21 +1,23 @@
 # Decision-First Dashboard
 
-Turn KPI-heavy dashboards into decision-first dashboards without letting the agent invent the visual hierarchy.
+Turn KPI-heavy dashboards into decision-first dashboards without letting the agent invent the visual hierarchy or silently replace missing metrics.
 
 Most dashboard prompts ask an LLM to **design**. This project treats dashboard redesign more like a small compiler:
 
 ```text
 source dashboard / verified source file
       ↓
-agent extraction + mode proposal
+agent extraction + decision intent
       ↓
 grounded evidence bundle
       ↓
 grounding + decision-state validation
       ↓
+V3.1 semantic planner (opt-in)
+      ↓
 deterministic renderer
       ↓
-SVG / HTML dashboard
+SVG / HTML dashboard + canonical plan JSON
 ```
 
 > **Many metrics → minimum sufficient decision signals → diagnosis → action**
@@ -34,11 +36,41 @@ Table
 
 The user still has to scan everything and construct the conclusion mentally.
 
-Decision-First Dashboard changes the information hierarchy first. The agent extracts evidence; the compiler verifies that the evidence can be mechanically grounded back to source bytes before the deterministic renderer owns the layout.
+Decision-First Dashboard changes the information hierarchy first. The agent extracts evidence and states the decision intent; the compiler verifies source support and semantic requirements; deterministic code owns the layout and rendering.
+
+## Three-layer architecture
+
+### Layer 1 — Agent judgment
+
+The agent is allowed to:
+
+- extract literal source facts;
+- identify one primary audience, one purpose, and one primary decision;
+- propose `no_score` or `composite` mode;
+- list requested outputs;
+- create evidence anchors and claim references.
+
+The agent is **not** allowed to invent score-model evidence, bypass grounding, author free-form layout coordinates, or substitute a nearby metric for a requested one.
+
+### Layer 2 — Compiler contract
+
+The compiler owns:
+
+- the closed grounded-bundle contract;
+- the closed decision-state contract;
+- SHA-256 source verification;
+- evidence and claim integrity;
+- exact JSON Pointer / text-span grounding;
+- composite score mathematics;
+- V3.1 semantic intent;
+- Compute-or-Defer requirement resolution;
+- deterministic render-plan validation.
+
+### Layer 3 — Deterministic renderer
+
+The renderer consumes validated decision state and fills fixed SVG/HTML templates. It does not inspect source data or invent business meaning.
 
 ## Two strict evidence modes
-
-The compiler supports two mutually exclusive modes.
 
 ### 1. `no_score`
 
@@ -67,7 +99,7 @@ The output does **not** invent a Health Score. Overall direction is derived dete
 
 Use this only when the source already provides a complete, defensible score model.
 
-Composite v1 requires all of the following:
+Composite requires all of the following:
 
 - an overall score and score scale;
 - source-provided normalized component scores;
@@ -79,26 +111,24 @@ The validator checks that weights sum to 1, the displayed score matches the weig
 
 If any required model fact is missing, the correct fallback is `no_score` — not an inferred formula, guessed weight, or fabricated threshold.
 
-The existing `examples/saas/after.png` remains a visual reference for a dominant score composition. It is **not** treated as proof that the canonical SaaS source fixture contains a real composite model.
-
 <img src="examples/saas/after.png" width="760">
 
-The repository's composite JSON fixture lives under `tests/compiler/fixtures/` and is synthetic contract data used only for automated validation and rendering tests.
+The repository's composite JSON fixture is synthetic contract data used for automated validation and rendering tests.
 
 ## V3 evidence grounding
 
-V3 adds a hard grounding layer in front of the existing `no_score` / `composite` compiler. A source claim is no longer accepted merely because an agent writes `provenance: "source"`.
+V3 adds a hard grounding layer in front of the existing `no_score` / `composite` compiler. A source claim is not accepted merely because an agent writes `provenance: "source"`.
 
 The production input is a **grounded bundle** containing:
 
-- a source file path, source kind, and SHA-256;
+- source file path, source kind, and SHA-256;
 - the closed `decisionState`;
 - an evidence ledger;
 - claim references from exact decision-state JSON Pointer paths to evidence IDs.
 
 The compiler supports mechanically verifiable JSON Pointer grounding and exact text-span grounding. Composite scoring facts must all be grounded. Any missing or mismatched composite scoring evidence returns `FALLBACK_TO_NO_SCORE` and produces no composite dashboard.
 
-Machine-readable transitions are:
+Grounding transitions are:
 
 ```text
 PASS
@@ -107,7 +137,131 @@ FALLBACK_TO_NO_SCORE
 FIX_DECISION_STATE
 ```
 
-Image-only/bounding-box claims are not treated as strong composite evidence in V3 because the repository does not currently ship a deterministic OCR/token extractor. Screenshot workflows should first create a verifiable text/JSON sidecar.
+Image-only/bounding-box claims are not treated as strong composite evidence because the repository does not ship a deterministic OCR/token extractor. Screenshot workflows should first create a verifiable text/JSON sidecar.
+
+## V3.1 semantic planner
+
+V3.1 is an **opt-in extension**. Existing V3 grounded bundles compile unchanged.
+
+Enable it with:
+
+```json
+{
+  "contractVersion": "3.1",
+  "intent": {
+    "audience": "Head of Growth",
+    "audienceType": "executive",
+    "purpose": "Monitor subscription health",
+    "primaryDecision": "Is growth healthy enough to stay on plan?",
+    "refreshCadence": "daily",
+    "requirements": []
+  },
+  "source": {},
+  "decisionState": {},
+  "evidence": [],
+  "claims": []
+}
+```
+
+### One Dashboard, One Audience, One Purpose
+
+V3.1 makes decision intent part of the compiler input. A dashboard has one primary audience, one purpose, and one primary decision.
+
+If executives, operators, analysts, engineers, or other groups need materially different answers or time horizons, split them before compilation instead of adding more panels to one screen.
+
+Supported audience types:
+
+```text
+executive
+operational
+diagnostic
+```
+
+Supported refresh cadences:
+
+```text
+realtime
+hourly
+daily
+weekly
+monthly
+```
+
+### Compute or Defer
+
+Every requested output must be explicit in `intent.requirements`.
+
+If it can be computed from the validated `decisionState`, point to the exact value:
+
+```json
+{
+  "id": "req_mrr",
+  "label": "Current MRR",
+  "kind": "single_value",
+  "resolution": {
+    "type": "decision_path",
+    "path": "/signals/0/value"
+  }
+}
+```
+
+If it cannot be computed, defer it explicitly:
+
+```json
+{
+  "id": "req_target",
+  "label": "MRR versus target",
+  "kind": "comparison",
+  "resolution": {
+    "type": "deferred",
+    "blockedBy": "missing_source_fact",
+    "originalSpec": "Compare current MRR with the approved target",
+    "toUnblock": "Provide a source-backed MRR target"
+  }
+}
+```
+
+The compiler never substitutes another metric for the requested quantity. A nonexistent `decision_path` stops compilation with:
+
+```text
+stage: planning
+transition: FIX_COMPILER_INTENT
+```
+
+Allowed deferral reasons are:
+
+- `missing_source_fact`;
+- `ambiguous_source`;
+- `unsupported_computation`;
+- `unsupported_renderer`.
+
+### Deterministic render-plan IR
+
+After grounding and semantic validation pass, V3.1 emits a canonical intermediate representation before rendering.
+
+The layout is compiler-owned:
+
+```text
+12-column grid
+
+| context 3 cols | decision 6 cols | evidence 3 cols |
+```
+
+The agent supplies semantic priority, not coordinates.
+
+The planner validates:
+
+- exact contract versions;
+- unique requirement IDs;
+- exact computed JSON Pointers;
+- complete deferral metadata;
+- renderer/mode agreement;
+- positive integer dimensions;
+- 12-column bounds;
+- no overlapping slots;
+- center decision focal point.
+
+Object keys are canonically sorted while array order is preserved, so identical semantic input produces byte-identical plan JSON.
 
 ## Install
 
@@ -115,7 +269,7 @@ Image-only/bounding-box claims are not treated as strong composite evidence in V
 npx skills add fourleaf13-hue/decision-first-dashboard
 ```
 
-The skill directory contains its own schema, validator, templates, and renderer. Runtime validation has no third-party dependency.
+The skill directory contains its schema, grounding gate, semantic planner, validator, templates, and renderer. Runtime validation has no third-party dependency.
 
 ## Use
 
@@ -123,15 +277,17 @@ Give the agent a dashboard screenshot, Figma frame, existing dashboard code, or 
 
 > Redesign this dashboard using the `decision-first-dashboard` skill. Preserve source evidence and produce the deterministic decision-first output.
 
-The intended production execution path is:
+The production execution path is:
 
-1. Extract verified facts only.
-2. Decide whether the evidence supports `no_score` or strict `composite` mode.
-3. Build a closed `decisionState`.
-4. Build the source hash, evidence ledger, and claim references in a grounded bundle.
-5. Run the grounding compiler gate.
-6. Render SVG and HTML only after `PASS`.
-7. Inspect the output for evidence and visual integrity.
+1. Identify one audience, one purpose, and one primary decision.
+2. Extract verified facts only.
+3. Decide whether evidence supports `no_score` or strict `composite` mode.
+4. Build a closed `decisionState`.
+5. Build source hash, evidence ledger, and claims in a grounded bundle.
+6. For V3.1, enumerate every requested output as exact Compute-or-Defer requirements.
+7. Run `compile.js`.
+8. Render only after grounding and planning gates pass.
+9. Inspect output for evidence, semantic, and visual integrity.
 
 From the skill directory:
 
@@ -139,18 +295,25 @@ From the skill directory:
 node scripts/compile.js path/to/grounded-bundle.json path/to/output-directory
 ```
 
-`validate.js` and `render.js` remain lower-level Layer 2 / Layer 3 tools for tests and internal compiler use; V3 agent workflows should not bypass `compile.js`.
-
-The renderer writes mode-specific filenames:
+Legacy V3 output:
 
 ```text
 no_score   → output.no-score.svg / output.no-score.html
 composite  → output.composite.svg / output.composite.html
 ```
 
+V3.1 additionally emits:
+
+```text
+no_score   → output.no-score.plan.json
+composite  → output.composite.plan.json
+```
+
+`validate.js`, `planner.js`, and `render.js` remain lower-level compiler/renderer tools. Production agent workflows should not bypass `compile.js`.
+
 ## Anti-hallucination contract
 
-Both contracts are closed: `grounded-bundle.schema.json` constrains source/evidence/claim structure, and `decision-state.schema.json` constrains mutually exclusive `no_score` and `composite` states.
+Both data contracts are closed: `grounded-bundle.schema.json` constrains source/evidence/claim structure and optional V3.1 semantic intent; `decision-state.schema.json` constrains mutually exclusive `no_score` and `composite` states.
 
 ### No-score safeguards
 
@@ -167,17 +330,30 @@ Numeric trend series are optional. If exact source-supported points are unavaila
 
 ### Composite safeguards
 
-The composite branch accepts only source-supported score-model facts. It rejects, among other cases:
+The composite branch rejects, among other cases:
 
 - missing component weights;
 - weights that do not sum to 1;
 - a score that does not equal the weighted average;
 - component scores outside the declared score scale;
 - score-band gaps or overlaps;
-- a displayed status that does not match the source thresholds;
+- a displayed status that does not match source thresholds;
 - unsupported normalization or aggregation methods.
 
 Composite validation failure is never repaired by inventing the missing model.
+
+### Semantic safeguards
+
+The V3.1 planner rejects or explicitly defers:
+
+- missing requested quantities;
+- duplicate requirement identities;
+- unresolved decision-state paths;
+- unsupported computations;
+- ambiguous source interpretations;
+- unsupported renderer requests.
+
+It never silently swaps in an easier quantity.
 
 ## Direction is not health
 
@@ -219,7 +395,7 @@ Both rendering branches use fixed templates and the same shared visual system.
 - no dominant full-width customer table;
 - no invented action buttons;
 - no compiler/framework labels in visible UI;
-- restrained SaaS visual styling.
+- restrained visual styling.
 
 SVG is the compatibility baseline. HTML/CSS is the higher-fidelity output. Both consume the same validated JSON.
 
@@ -232,12 +408,6 @@ decision-first-dashboard/
 ├── package.json
 ├── examples/
 │   └── saas/
-│       ├── before.png
-│       ├── after.png
-│       ├── input.no-score.json
-│       ├── output.no-score.svg
-│       ├── output.no-score.html
-│       └── reasoning.md
 ├── skills/
 │   └── decision-first-dashboard/
 │       ├── SKILL.md
@@ -247,39 +417,20 @@ decision-first-dashboard/
 │       ├── scripts/
 │       │   ├── grounding.js
 │       │   ├── compile.js
+│       │   ├── planner.js
 │       │   ├── validate.js
 │       │   └── render.js
 │       ├── templates/
-│       │   ├── no-score.svg
-│       │   ├── no-score.html
-│       │   ├── composite.svg
-│       │   ├── composite.html
-│       │   └── dashboard.css
 │       └── references/
-│           ├── visual-pattern.md
-│           └── after-reference.png
 └── tests/
-    ├── compiler/
-    │   ├── fixtures/
-    │   │   ├── composite.valid.json
-    │   │   └── grounding/
-    │   ├── golden/
-    │   ├── grounding.test.js
-    │   ├── compile-cli.test.js
-    │   ├── golden-snapshot.test.js
-    │   ├── schema.test.js
-    │   ├── composite-schema.test.js
-    │   ├── render-svg.test.js
-    │   ├── render-html.test.js
-    │   ├── render-composite-svg.test.js
-    │   ├── render-composite-html.test.js
-    │   └── render-cli.test.js
-    ├── saas.md
-    ├── saas-no-score.md
-    ├── visual-output.md
-    ├── evidence-scope.md
-    ├── ecommerce.md
-    └── operations.md
+    └── compiler/
+        ├── fixtures/
+        ├── golden/
+        ├── semantic-planner.test.js
+        ├── grounding.test.js
+        ├── compile-cli.test.js
+        ├── golden-snapshot.test.js
+        └── render-*.test.js
 ```
 
 ## Development
@@ -290,19 +441,19 @@ npm run validate:saas
 npm run render:saas
 ```
 
-GitHub Actions runs the complete compiler test suite, including grounded composite/no-score compilation and byte-level golden snapshots, then renders the canonical SaaS and SaaSGrid fixtures and uploads generated artifacts for visual QA.
+GitHub Actions runs the compiler suite, grounded composite/no-score compilation, byte-level golden snapshots, and a V3.1 determinism check. The same V3.1 input is compiled twice and `plan.json`, SVG, and HTML must be byte-identical before the workflow succeeds. Generated artifacts are uploaded for visual QA.
 
 ## What this is not
 
 This is not a generic chart library and not a prompt that asks the model to freestyle a prettier admin dashboard.
 
-The project separates three responsibilities:
+It is a constrained dashboard compiler where:
 
-- **Layer 1 / Agent:** evidence extraction and mode proposal.
-- **Layer 2 / Compiler contract:** source grounding, claim coverage, schema/semantic validation, and machine-readable retry/fallback decisions.
-- **Layer 3 / Renderer:** deterministic SVG/HTML composition only.
+- **Layer 1 / Agent** owns evidence extraction and decision intent;
+- **Layer 2 / Compiler** owns grounding, semantic contracts, Compute-or-Defer, deterministic plan assembly, and validation;
+- **Layer 3 / Renderer** owns deterministic SVG/HTML composition only.
 
-That separation is what makes the output repeatable across agents while making source support auditable.
+That separation makes source support auditable and output reproducible across agents.
 
 ## License
 
