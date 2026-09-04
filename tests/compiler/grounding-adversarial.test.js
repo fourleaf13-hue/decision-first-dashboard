@@ -121,3 +121,22 @@ test('rejects one evidence record reused for two decision paths', () => {
   assert.equal(result.transition, 'FALLBACK_TO_NO_SCORE');
   assert.ok(result.errors.some((error) => error.code === 'EVIDENCE_REF_REUSED'));
 });
+
+test('rejects a same-valued JSON field with the wrong semantic leaf name', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-first-grounding-'));
+  const source = structuredClone(compositeSource);
+  source.model.components[0].ratio = source.model.components[0].weight;
+
+  const bundle = structuredClone(compositeFixture);
+  bundle.source.path = 'source.json';
+  bundle.source.sha256 = writeJson(tempDir, 'source.json', source);
+
+  const weightClaim = bundle.claims.find((claim) => claim.decisionPath === '/model/components/0/weight');
+  const weightEvidence = bundle.evidence.find((evidence) => evidence.id === weightClaim.evidenceRef);
+  weightEvidence.anchor.pointer = '/model/components/0/ratio';
+
+  const result = validateGroundedBundle(bundle, { baseDir: tempDir });
+
+  assert.equal(result.transition, 'FALLBACK_TO_NO_SCORE');
+  assert.ok(result.errors.some((error) => error.code === 'SOURCE_FIELD_MISMATCH'));
+});
