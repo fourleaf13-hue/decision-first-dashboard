@@ -199,7 +199,25 @@ function readSource(bundle, baseDir, errors) {
     return null;
   }
 
-  const bytes = fs.readFileSync(sourcePath);
+  let sourceStat;
+  try {
+    sourceStat = fs.statSync(sourcePath);
+  } catch {
+    pushError(errors, 'SOURCE_FILE_READ_FAILED', '/source/path', 'grounding source metadata could not be read');
+    return null;
+  }
+  if (!sourceStat.isFile()) {
+    pushError(errors, 'SOURCE_NOT_FILE', '/source/path', 'grounding source must be a regular file');
+    return null;
+  }
+
+  let bytes;
+  try {
+    bytes = fs.readFileSync(sourcePath);
+  } catch {
+    pushError(errors, 'SOURCE_FILE_READ_FAILED', '/source/path', 'grounding source bytes could not be read');
+    return null;
+  }
   if (sha256(bytes) !== source.sha256) {
     pushError(errors, 'SOURCE_HASH_MISMATCH', '/source/sha256', 'grounding source hash does not match source bytes');
     return null;
