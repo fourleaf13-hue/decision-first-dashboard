@@ -48,6 +48,12 @@ function validateIntentShape(intent, errors) {
 
   if (!['executive', 'operational', 'diagnostic'].includes(intent.audienceType)) {
     errors.push(plannerError('AUDIENCE_TYPE_INVALID', '/intent/audienceType', 'audienceType must be executive, operational, or diagnostic'));
+  } else if (intent.audienceType !== 'executive') {
+    errors.push(plannerError(
+      'AUDIENCE_RENDERER_UNSUPPORTED',
+      '/intent/audienceType',
+      `the current deterministic renderer supports executive dashboards only; ${intent.audienceType} requires a dedicated renderer`
+    ));
   }
 
   if (!['realtime', 'hourly', 'daily', 'weekly', 'monthly'].includes(intent.refreshCadence)) {
