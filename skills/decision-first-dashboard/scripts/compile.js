@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateGroundedBundle } from './grounding.js';
 import { buildRenderPlan, serializeRenderPlan } from './planner.js';
-import { renderHtml, renderSvg } from './render.js';
+import { renderHtml, renderSvg } from './render-plan.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 
@@ -47,8 +47,8 @@ export function compileGroundedBundle(bundle, { baseDir = process.cwd() } = {}) 
 
   return {
     result: groundingResult,
-    svg: renderSvg(data),
-    html: renderHtml(data),
+    svg: renderSvg(data, { renderPlan }),
+    html: renderHtml(data, { renderPlan }),
     outputMode,
     renderPlan,
     renderPlanJson: renderPlan ? serializeRenderPlan(renderPlan) : null
