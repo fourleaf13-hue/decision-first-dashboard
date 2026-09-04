@@ -198,9 +198,14 @@ function validateCompositeSemantics(data, errors) {
   }
 }
 
-export function validateDecisionState(data) {
+export function validateAgainstSchema(data, targetSchema) {
   const errors = [];
-  validateNode(data, schema, '', errors, schema);
+  validateNode(data, targetSchema, '', errors, targetSchema);
+  return { valid: errors.length === 0, errors };
+}
+
+export function validateDecisionState(data) {
+  const { errors } = validateAgainstSchema(data, schema);
 
   if (errors.length === 0 && data.mode === 'composite') {
     validateCompositeSemantics(data, errors);
