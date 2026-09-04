@@ -7,11 +7,49 @@ description: Use when redesigning KPI-heavy dashboards where users must scan mul
 
 ## Core principle
 
-Separate reasoning from rendering. The agent identifies verified decision evidence; deterministic templates own the visual hierarchy.
+Separate agent judgment from compiler judgment and deterministic rendering.
 
-**Source dashboard → verified facts → decision-state JSON → validate → render**
+**Source → grounded evidence bundle → compiler gate → deterministic renderer → SVG / HTML**
 
-Never let the rendering step invent business meaning or choose a generic dashboard layout.
+The agent may extract and classify evidence. It may not invent source support, bypass grounding, or choose a free-form dashboard layout.
+
+## Three layers
+
+### Layer 1 — Agent intelligence
+
+The agent may:
+
+- extract literal source facts;
+- classify decision roles;
+- choose a proposed mode;
+- create evidence anchors and claim references.
+
+The agent must not render UI or fabricate score-model evidence.
+
+### Layer 2 — Compiler contract
+
+Code decides whether the grounded bundle can proceed.
+
+The compiler validates:
+
+- the closed grounded-bundle contract;
+- the closed `decision-state` contract;
+- source file SHA-256;
+- evidence reference integrity;
+- exact JSON Pointer or text-span grounding;
+- required claim coverage;
+- composite score mathematics and score-band semantics.
+
+It returns one of four machine-readable transitions:
+
+- `PASS`;
+- `RETURN_TO_EVIDENCE_EXTRACTION`;
+- `FALLBACK_TO_NO_SCORE`;
+- `FIX_DECISION_STATE`.
+
+### Layer 3 — Deterministic renderer
+
+`render.js` consumes only validated decision state and fills fixed SVG/HTML templates. It does not inspect source data or invent business meaning.
 
 ## Workflow
 
@@ -23,7 +61,7 @@ Never invent scores, targets, thresholds, customer states, events, workflows, ac
 
 ### 2. Choose the evidence mode
 
-The compiler supports two mutually exclusive modes.
+The compiler supports two mutually exclusive decision-state modes.
 
 Use `composite` only when the source already provides **all** of the following:
 
@@ -33,72 +71,92 @@ Use `composite` only when the source already provides **all** of the following:
 - a weighted-average aggregation rule;
 - complete score bands / thresholds that determine the displayed status.
 
-Composite v1 accepts only:
+Composite accepts only:
 
 - `normalization: "source_provided"`;
 - `aggregation: "weighted_average"`;
-- source-provided score, component, weight, band, exception, event, and trend facts.
+- source-grounded score, component, weight, band, exception, event, and trend facts.
 
-Do not infer normalization formulas, weights, thresholds, or bands. If any required composite-model fact is missing or cannot be defended from the source, use `no_score` instead.
+If any required composite scoring fact cannot be mechanically grounded, the transition is `FALLBACK_TO_NO_SCORE`. Do not fill the gap with an inferred formula, guessed weight, or benchmark.
 
-For `no_score` executive dashboards, do not create `Healthy`, `Marginal`, `At risk`, or a 0–100 score. The compiler derives overall direction from the individual signal directions.
+For `no_score`, do not create `Healthy`, `Marginal`, `At risk`, or a 0–100 score. Overall direction remains a deterministic renderer derivation from validated signal directions.
 
-### 3. Build the contract, not the layout
+### 3. Build a grounded bundle
 
-Create JSON that matches:
+The production contract has four top-level fields:
+
+```json
+{
+  "source": {
+    "kind": "json",
+    "path": "source.json",
+    "sha256": "..."
+  },
+  "decisionState": {},
+  "evidence": [],
+  "claims": []
+}
+```
+
+The envelope must match:
+
+`schemas/grounded-bundle.schema.json`
+
+`decisionState` must independently match:
 
 `schemas/decision-state.schema.json`
 
-The root contract is closed and accepts exactly one of `no_score` or `composite`.
+`evidence` is a ledger of source anchors. `claims` maps exact decision-state JSON Pointer paths to evidence IDs.
 
-For `no_score`:
+Supported source grounding in V3:
 
-- do not supply an overall `direction` field;
-- 3–6 signals carry value, delta, direction, and provenance;
-- numeric context series are optional and require `provenance: "source"`;
-- visible account exceptions and events require source provenance;
-- score/model fields are structurally invalid;
-- unsupported keys fail validation.
+- JSON source → `json_pointer` anchor;
+- text source → exact `text_span` anchor with `literal` and `valueText`.
 
-For `composite`:
+The compiler verifies the source file hash before checking any claim.
 
-- `score` must include source label, value, min, max, band, and provenance;
-- `model.components` contains 3–6 source-provided normalized scores and weights;
-- component weights must sum to 1;
-- the score must equal the weighted average of normalized component scores within compiler tolerance;
-- source-provided bands must be contiguous, non-overlapping, and cover the full score scale;
-- the displayed band must match the band selected by the score value;
-- optional score trend data requires source provenance;
-- unsupported normalization or aggregation methods fail validation.
+Image-only coordinates are not strong composite grounding in V3 because this repository has no deterministic OCR/token extractor. For screenshot inputs, first produce a verifiable text/JSON sidecar. Do not represent an unverified screenshot interpretation as strong composite evidence.
 
-Validation failure is never repaired by inventing missing score-model facts. Fall back to `no_score` or request the missing source evidence.
+### 4. Required grounding coverage
 
-### 4. Validate before rendering
+For `composite`, ground all source-dependent scoring facts:
 
-When code execution is available, validation is mandatory:
+- score label/value/min/max/band;
+- normalization and aggregation;
+- each component label/value/normalized score/weight;
+- each score-band label/min/max;
+- score-series values when present;
+- visible exception/event fields when present.
 
-```bash
-node scripts/validate.js <decision-state.json>
-```
+For `no_score`, ground each visible signal label/value, optional source delta/direction, source series values, and visible exception/event fields.
 
-Do not render invalid JSON. Fix the evidence payload instead of weakening the schema.
+Do not ground deterministic renderer synthesis as if it were a source fact.
 
-### 5. Render deterministically
+### 5. Compile through the grounding gate
 
-For either supported mode:
+Production execution is:
 
 ```bash
-node scripts/render.js <decision-state.json> <output-dir>
+node scripts/compile.js <grounded-bundle.json> <output-dir>
 ```
 
-The CLI writes mode-specific outputs:
+On `PASS`, the CLI writes:
 
 - `no_score` → `output.no-score.svg` and `output.no-score.html`;
 - `composite` → `output.composite.svg` and `output.composite.html`.
 
-Both SVG and HTML/CSS consume the same validated JSON. Do not rewrite the templates, add KPI grids, tables, banners, buttons, or extra business copy unless the user explicitly asks to change the design system itself.
+On any non-`PASS` transition, it exits non-zero and does not render dashboard output.
 
-If execution is unavailable, preserve the same contract: populate the schema and use the supplied template structure literally. Do not fall back to free-form image generation. If the template cannot be rendered, return the validated/self-checked JSON rather than inventing a different dashboard.
+Treat `validate.js` and `render.js` as lower-level compiler/renderer tools. Do not use direct rendering as a substitute for the V3 grounded production path.
+
+### 6. Follow failure transitions literally
+
+- `FIX_DECISION_STATE` → repair contract/schema errors only; do not weaken validation.
+- `RETURN_TO_EVIDENCE_EXTRACTION` → re-read the source and repair evidence/claims.
+- `FALLBACK_TO_NO_SCORE` → abandon composite and rebuild a grounded no-score state from available evidence.
+- `PASS` → render deterministically.
+
+Do not turn a failed grounding check into an invitation to guess.
 
 ## Visual contract
 
@@ -137,7 +195,10 @@ Safety, compliance, security, regulatory, contractual, or outage conditions over
 
 Before delivery, verify:
 
-- every displayed fact traces to source data or a deterministic derivation allowed by the contract;
+- the grounded-bundle schema passes;
+- the source SHA-256 matches the actual source bytes;
+- every required visible/source scoring fact has a resolvable claim and evidence anchor;
+- every grounded value matches the referenced decision-state value under allowed deterministic normalization only;
 - `no_score` overall direction matches the signal directions;
 - `composite` weights, weighted score, score scale, and score band pass semantic validation;
 - no unsupported score/status/target/action appears;
