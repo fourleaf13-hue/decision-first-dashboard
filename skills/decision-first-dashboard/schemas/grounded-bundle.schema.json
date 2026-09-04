@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source", "decisionState", "evidence", "claims"],
+  "properties": {
+    "source": { "$ref": "#/definitions/source" },
+    "decisionState": { "type": "object" },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/evidence" }
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/claim" }
+    }
+  },
+  "definitions": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "sha256"],
+      "properties": {
+        "kind": { "enum": ["json", "text"] },
+        "path": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "anchor"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^ev_[A-Za-z0-9_~.-]{1,120}$" },
+        "anchor": {
+          "oneOf": [
+            { "$ref": "#/definitions/jsonAnchor" },
+            { "$ref": "#/definitions/textAnchor" }
+          ]
+        }
+      }
+    },
+    "jsonAnchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "pointer"],
+      "properties": {
+        "type": { "const": "json_pointer" },
+        "pointer": { "type": "string", "pattern": "^/" }
+      }
+    },
+    "textAnchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "literal", "valueText"],
+      "properties": {
+        "type": { "const": "text_span" },
+        "literal": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "valueText": { "type": "string", "minLength": 1, "maxLength": 200 }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decisionPath", "evidenceRef"],
+      "properties": {
+        "decisionPath": { "type": "string", "pattern": "^/" },
+        "evidenceRef": { "type": "string", "pattern": "^ev_[A-Za-z0-9_~.-]{1,120}$" }
+      }
+    }
+  }
+}
