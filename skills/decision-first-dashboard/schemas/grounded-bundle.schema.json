@@ -58,7 +58,9 @@
       "properties": {
         "type": { "const": "text_span" },
         "literal": { "type": "string", "minLength": 1, "maxLength": 500 },
-        "valueText": { "type": "string", "minLength": 1, "maxLength": 200 }
+        "valueText": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "start": { "type": "integer", "minimum": 0 },
+        "end": { "type": "integer", "minimum": 1 }
       }
     },
     "claim": {
