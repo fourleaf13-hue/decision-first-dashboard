@@ -157,3 +157,16 @@ test('rejects a same-valued JSON field with the wrong semantic leaf name', () =>
   assert.equal(result.transition, 'FALLBACK_TO_NO_SCORE');
   assert.ok(result.errors.some((error) => error.code === 'SOURCE_FIELD_MISMATCH'));
 });
+
+test('rejects unused evidence records that pad the audit ledger', () => {
+  const bundle = structuredClone(compositeFixture);
+  bundle.evidence.push({
+    id: 'ev_unused_padding',
+    anchor: { type: 'json_pointer', pointer: '/score/value' }
+  });
+
+  const result = validateGroundedBundle(bundle, { baseDir: fixtureDir });
+
+  assert.equal(result.transition, 'FALLBACK_TO_NO_SCORE');
+  assert.ok(result.errors.some((error) => error.code === 'UNUSED_EVIDENCE'));
+});
