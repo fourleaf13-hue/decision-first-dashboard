@@ -406,6 +406,18 @@ export function validateGroundedBundle(bundle, { baseDir = process.cwd() } = {})
     decisionPathByEvidenceRef.set(claim.evidenceRef, claim.decisionPath);
   }
 
+  for (const evidence of bundle.evidence) {
+    if (!decisionPathByEvidenceRef.has(evidence.id)) {
+      pushError(
+        errors,
+        'UNUSED_EVIDENCE',
+        '/evidence',
+        'every evidence record must be referenced by exactly one claim',
+        evidence.id
+      );
+    }
+  }
+
   const requiredPaths = mode === 'composite' ? requiredCompositePaths(decisionState) : requiredNoScorePaths(decisionState);
   for (const requiredPath of requiredPaths) {
     if (!claimsByPath.has(requiredPath)) {
