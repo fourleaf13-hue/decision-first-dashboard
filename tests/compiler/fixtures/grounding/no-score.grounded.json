@@ -1,0 +1,41 @@
+{
+  "source": {
+    "kind": "text",
+    "path": "no-score.source.txt",
+    "sha256": "4d98a86ec3f70c558e0f8fe3cbe457a2ec39ee380e93eecd08e6bd57b5e747e6"
+  },
+  "decisionState": {
+    "mode": "no_score",
+    "signals": [
+      { "metric": "arr", "label": "ARR", "value": "$4.98M", "provenance": "source" },
+      { "metric": "ndr", "label": "NDR", "value": "80.7%", "provenance": "source" },
+      { "metric": "gross_margin", "label": "Gross Margin", "value": "88.9%", "provenance": "source" },
+      { "metric": "cac_payback", "label": "CAC Payback", "value": "9.4 mo", "provenance": "source" },
+      { "metric": "burn_multiple", "label": "Burn Multiple", "value": "1.5x", "provenance": "source" }
+    ]
+  },
+  "evidence": [
+    { "id": "ev_signal_0_label", "anchor": { "type": "text_span", "literal": "ARR: $4.98M", "valueText": "ARR" } },
+    { "id": "ev_signal_0_value", "anchor": { "type": "text_span", "literal": "ARR: $4.98M", "valueText": "$4.98M" } },
+    { "id": "ev_signal_1_label", "anchor": { "type": "text_span", "literal": "NDR: 80.7%", "valueText": "NDR" } },
+    { "id": "ev_signal_1_value", "anchor": { "type": "text_span", "literal": "NDR: 80.7%", "valueText": "80.7%" } },
+    { "id": "ev_signal_2_label", "anchor": { "type": "text_span", "literal": "Gross Margin: 88.9%", "valueText": "Gross Margin" } },
+    { "id": "ev_signal_2_value", "anchor": { "type": "text_span", "literal": "Gross Margin: 88.9%", "valueText": "88.9%" } },
+    { "id": "ev_signal_3_label", "anchor": { "type": "text_span", "literal": "CAC Payback: 9.4 mo", "valueText": "CAC Payback" } },
+    { "id": "ev_signal_3_value", "anchor": { "type": "text_span", "literal": "CAC Payback: 9.4 mo", "valueText": "9.4 mo" } },
+    { "id": "ev_signal_4_label", "anchor": { "type": "text_span", "literal": "Burn Multiple: 1.5x", "valueText": "Burn Multiple" } },
+    { "id": "ev_signal_4_value", "anchor": { "type": "text_span", "literal": "Burn Multiple: 1.5x", "valueText": "1.5x" } }
+  ],
+  "claims": [
+    { "decisionPath": "/signals/0/label", "evidenceRef": "ev_signal_0_label" },
+    { "decisionPath": "/signals/0/value", "evidenceRef": "ev_signal_0_value" },
+    { "decisionPath": "/signals/1/label", "evidenceRef": "ev_signal_1_label" },
+    { "decisionPath": "/signals/1/value", "evidenceRef": "ev_signal_1_value" },
+    { "decisionPath": "/signals/2/label", "evidenceRef": "ev_signal_2_label" },
+    { "decisionPath": "/signals/2/value", "evidenceRef": "ev_signal_2_value" },
+    { "decisionPath": "/signals/3/label", "evidenceRef": "ev_signal_3_label" },
+    { "decisionPath": "/signals/3/value", "evidenceRef": "ev_signal_3_value" },
+    { "decisionPath": "/signals/4/label", "evidenceRef": "ev_signal_4_label" },
+    { "decisionPath": "/signals/4/value", "evidenceRef": "ev_signal_4_value" }
+  ]
+}
