@@ -109,3 +109,15 @@ test('rejects duplicate claims for the same decision path', () => {
   assert.equal(result.transition, 'FALLBACK_TO_NO_SCORE');
   assert.ok(result.errors.some((error) => error.code === 'DUPLICATE_CLAIM'));
 });
+
+test('rejects one evidence record reused for two decision paths', () => {
+  const bundle = structuredClone(compositeFixture);
+  const scoreMin = bundle.claims.find((claim) => claim.decisionPath === '/score/min');
+  const bandMin = bundle.claims.find((claim) => claim.decisionPath === '/model/bands/0/min');
+  bandMin.evidenceRef = scoreMin.evidenceRef;
+
+  const result = validateGroundedBundle(bundle, { baseDir: fixtureDir });
+
+  assert.equal(result.transition, 'FALLBACK_TO_NO_SCORE');
+  assert.ok(result.errors.some((error) => error.code === 'EVIDENCE_REF_REUSED'));
+});
