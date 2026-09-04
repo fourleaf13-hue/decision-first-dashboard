@@ -100,6 +100,23 @@ test('rejects a grounding source path that escapes the bundle base directory', (
   assert.ok(result.errors.some((error) => error.code === 'SOURCE_PATH_OUTSIDE_BASE'));
 });
 
+test('rejects a directory used as the grounding source with a machine-readable error', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-first-grounding-'));
+  fs.mkdirSync(path.join(tempDir, 'source-dir'));
+
+  const bundle = structuredClone(compositeFixture);
+  bundle.source.path = 'source-dir';
+  bundle.source.sha256 = '0'.repeat(64);
+
+  let result;
+  assert.doesNotThrow(() => {
+    result = validateGroundedBundle(bundle, { baseDir: tempDir });
+  });
+
+  assert.equal(result.transition, 'FALLBACK_TO_NO_SCORE');
+  assert.ok(result.errors.some((error) => error.code === 'SOURCE_NOT_FILE'));
+});
+
 test('rejects duplicate claims for the same decision path', () => {
   const bundle = structuredClone(compositeFixture);
   bundle.claims.push(structuredClone(bundle.claims[0]));
