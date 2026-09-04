@@ -62,3 +62,25 @@ test('rejects an unlocated text anchor when its literal occurs more than once', 
   assert.equal(result.transition, 'RETURN_TO_EVIDENCE_EXTRACTION');
   assert.ok(result.errors.some((error) => error.code === 'AMBIGUOUS_TEXT_ANCHOR'));
 });
+
+test('accepts an exact start/end location for a duplicated text literal', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-first-grounding-'));
+  const duplicateLine = 'ARR: $4.98M';
+  const sourceText = `${noScoreSource.trimEnd()}\n${duplicateLine}\n`;
+  const start = sourceText.indexOf(duplicateLine);
+  const end = start + duplicateLine.length;
+
+  const bundle = structuredClone(noScoreFixture);
+  bundle.source.path = 'source.txt';
+  bundle.source.sha256 = writeText(tempDir, 'source.txt', sourceText);
+
+  for (const evidenceId of ['ev_signal_0_label', 'ev_signal_0_value']) {
+    const evidence = bundle.evidence.find((item) => item.id === evidenceId);
+    evidence.anchor.start = start;
+    evidence.anchor.end = end;
+  }
+
+  const result = validateGroundedBundle(bundle, { baseDir: tempDir });
+
+  assert.equal(result.transition, 'PASS');
+});
