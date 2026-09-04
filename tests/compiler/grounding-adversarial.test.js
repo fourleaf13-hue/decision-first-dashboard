@@ -99,3 +99,13 @@ test('rejects a grounding source path that escapes the bundle base directory', (
   assert.equal(result.transition, 'FALLBACK_TO_NO_SCORE');
   assert.ok(result.errors.some((error) => error.code === 'SOURCE_PATH_OUTSIDE_BASE'));
 });
+
+test('rejects duplicate claims for the same decision path', () => {
+  const bundle = structuredClone(compositeFixture);
+  bundle.claims.push(structuredClone(bundle.claims[0]));
+
+  const result = validateGroundedBundle(bundle, { baseDir: fixtureDir });
+
+  assert.equal(result.transition, 'FALLBACK_TO_NO_SCORE');
+  assert.ok(result.errors.some((error) => error.code === 'DUPLICATE_CLAIM'));
+});
