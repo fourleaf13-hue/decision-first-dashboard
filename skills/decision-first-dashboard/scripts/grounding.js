@@ -18,6 +18,11 @@ function baseDirPath(baseDir) {
   return path.resolve(String(baseDir));
 }
 
+function isPathInside(basePath, targetPath) {
+  const relative = path.relative(basePath, targetPath);
+  return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
+}
+
 function decodePointerPart(part) {
   return part.replaceAll('~1', '/').replaceAll('~0', '~');
 }
@@ -39,8 +44,30 @@ function resolvePointer(root, pointer) {
   return { found: true, value: node };
 }
 
+function pointerParent(pointer) {
+  if (typeof pointer !== 'string' || !pointer.startsWith('/')) return null;
+  const index = pointer.lastIndexOf('/');
+  return index === 0 ? '' : pointer.slice(0, index);
+}
+
+function pointerLeaf(pointer) {
+  if (typeof pointer !== 'string' || !pointer.startsWith('/')) return null;
+  return decodePointerPart(pointer.slice(pointer.lastIndexOf('/') + 1));
+}
+
 function sha256(bytes) {
   return crypto.createHash('sha256').update(bytes).digest('hex');
+}
+
+function textOccurrenceCount(text, literal) {
+  let count = 0;
+  let fromIndex = 0;
+  while (true) {
+    const index = text.indexOf(literal, fromIndex);
+    if (index === -1) return count;
+    count += 1;
+    fromIndex = index + Math.max(literal.length, 1);
+  }
 }
 
 function parseNumericText(value) {
@@ -134,13 +161,63 @@ function readSource(bundle, baseDir, errors) {
     return null;
   }
 
-  const sourcePath = path.resolve(baseDirPath(baseDir), source.path);
-  if (!fs.existsSync(sourcePath)) {
+  const requestedBase = baseDirPath(baseDir);
+  let basePath;
+  try {
+    basePath = fs.realpathSync(requestedBase);
+  } catch {
+    pushError(errors, 'SOURCE_FILE_NOT_FOUND', '/source/path', 'grounding base directory does not exist');
+    return null;
+  }
+
+  if (path.isAbsolute(source.path)) {
+    pushError(errors, 'SOURCE_PATH_OUTSIDE_BASE', '/source/path', 'grounding source path must stay inside the bundle base directory');
+    return null;
+  }
+
+  const requestedSourcePath = path.resolve(basePath, source.path);
+  if (!isPathInside(basePath, requestedSourcePath)) {
+    pushError(errors, 'SOURCE_PATH_OUTSIDE_BASE', '/source/path', 'grounding source path must stay inside the bundle base directory');
+    return null;
+  }
+
+  if (!fs.existsSync(requestedSourcePath)) {
     pushError(errors, 'SOURCE_FILE_NOT_FOUND', '/source/path', 'grounding source file does not exist');
     return null;
   }
 
-  const bytes = fs.readFileSync(sourcePath);
+  let sourcePath;
+  try {
+    sourcePath = fs.realpathSync(requestedSourcePath);
+  } catch {
+    pushError(errors, 'SOURCE_FILE_NOT_FOUND', '/source/path', 'grounding source file does not exist');
+    return null;
+  }
+
+  if (!isPathInside(basePath, sourcePath)) {
+    pushError(errors, 'SOURCE_PATH_OUTSIDE_BASE', '/source/path', 'grounding source real path escapes the bundle base directory');
+    return null;
+  }
+
+  let sourceStat;
+  try {
+    sourceStat = fs.statSync(sourcePath);
+  } catch {
+    pushError(errors, 'SOURCE_FILE_READ_FAILED', '/source/path', 'grounding source metadata could not be read');
+    return null;
+  }
+  if (!sourceStat.isFile()) {
+    pushError(errors, 'SOURCE_NOT_FILE', '/source/path', 'grounding source must be a regular file');
+    return null;
+  }
+
+  let bytes;
+  try {
+    bytes = fs.readFileSync(sourcePath);
+  } catch {
+    pushError(errors, 'SOURCE_FILE_READ_FAILED', '/source/path', 'grounding source bytes could not be read');
+    return null;
+  }
   if (sha256(bytes) !== source.sha256) {
     pushError(errors, 'SOURCE_HASH_MISMATCH', '/source/sha256', 'grounding source hash does not match source bytes');
     return null;
@@ -174,15 +251,81 @@ function anchorValue(source, evidence, decisionPath, errors) {
   }
 
   if (anchor.type === 'text_span' && source.kind === 'text') {
-    if (typeof anchor.literal !== 'string' || typeof anchor.valueText !== 'string' || !source.text.includes(anchor.literal) || !anchor.literal.includes(anchor.valueText)) {
+    if (typeof anchor.literal !== 'string' || typeof anchor.valueText !== 'string' || !anchor.literal.includes(anchor.valueText)) {
       pushError(errors, 'SOURCE_ANCHOR_NOT_FOUND', decisionPath, 'exact text span/valueText was not found in source', evidence.id);
       return { found: false };
     }
+
+    const hasStart = Object.hasOwn(anchor, 'start');
+    const hasEnd = Object.hasOwn(anchor, 'end');
+    if (hasStart || hasEnd) {
+      if (!hasStart || !hasEnd || !Number.isInteger(anchor.start) || !Number.isInteger(anchor.end) || anchor.start < 0 || anchor.end <= anchor.start) {
+        pushError(errors, 'TEXT_SPAN_LOCATION_MISMATCH', decisionPath, 'text span start/end must be a valid exact range', evidence.id);
+        return { found: false };
+      }
+      if (source.text.slice(anchor.start, anchor.end) !== anchor.literal) {
+        pushError(errors, 'TEXT_SPAN_LOCATION_MISMATCH', decisionPath, 'text span start/end does not resolve to the declared literal', evidence.id);
+        return { found: false };
+      }
+      return { found: true, value: anchor.valueText };
+    }
+
+    const occurrenceCount = textOccurrenceCount(source.text, anchor.literal);
+    if (occurrenceCount === 0) {
+      pushError(errors, 'SOURCE_ANCHOR_NOT_FOUND', decisionPath, 'exact text span/valueText was not found in source', evidence.id);
+      return { found: false };
+    }
+    if (occurrenceCount > 1) {
+      pushError(errors, 'AMBIGUOUS_TEXT_ANCHOR', decisionPath, 'text literal occurs more than once and requires an explicit location', evidence.id);
+      return { found: false };
+    }
+
     return { found: true, value: anchor.valueText };
   }
 
   pushError(errors, 'SOURCE_ANCHOR_NOT_FOUND', decisionPath, 'evidence anchor type does not match source kind', evidence.id);
   return { found: false };
+}
+
+function validateJsonGroupCoherence(claims, evidenceById, errors) {
+  const sourceParentByDecisionParent = new Map();
+
+  for (const claim of claims) {
+    const evidence = evidenceById.get(claim.evidenceRef);
+    if (evidence?.anchor?.type !== 'json_pointer') continue;
+
+    const decisionLeaf = pointerLeaf(claim.decisionPath);
+    const sourceLeaf = pointerLeaf(evidence.anchor.pointer);
+    if (decisionLeaf !== null && sourceLeaf !== null && decisionLeaf !== sourceLeaf) {
+      pushError(
+        errors,
+        'SOURCE_FIELD_MISMATCH',
+        claim.decisionPath,
+        `JSON source field ${sourceLeaf} does not match decision field ${decisionLeaf}`,
+        claim.evidenceRef
+      );
+    }
+
+    const decisionParent = pointerParent(claim.decisionPath);
+    const sourceParent = pointerParent(evidence.anchor.pointer);
+    if (decisionParent === null || sourceParent === null) continue;
+
+    const existing = sourceParentByDecisionParent.get(decisionParent);
+    if (existing === undefined) {
+      sourceParentByDecisionParent.set(decisionParent, sourceParent);
+      continue;
+    }
+
+    if (existing !== sourceParent) {
+      pushError(
+        errors,
+        'SOURCE_GROUP_MISMATCH',
+        claim.decisionPath,
+        'claims from the same decision object must resolve within the same source object',
+        claim.evidenceRef
+      );
+    }
+  }
 }
 
 export function validateGroundedBundle(bundle, { baseDir = process.cwd() } = {}) {
@@ -230,9 +373,49 @@ export function validateGroundedBundle(bundle, { baseDir = process.cwd() } = {})
     evidenceById.set(evidence.id, evidence);
   }
 
+  if (source.kind === 'json') {
+    validateJsonGroupCoherence(bundle.claims, evidenceById, errors);
+  }
+
   const claimsByPath = new Map();
+  const decisionPathByEvidenceRef = new Map();
   for (const claim of bundle.claims) {
-    if (!claimsByPath.has(claim.decisionPath)) claimsByPath.set(claim.decisionPath, claim);
+    if (claimsByPath.has(claim.decisionPath)) {
+      pushError(
+        errors,
+        'DUPLICATE_CLAIM',
+        claim.decisionPath,
+        'each decision path may have only one grounding claim',
+        claim.evidenceRef
+      );
+      continue;
+    }
+    claimsByPath.set(claim.decisionPath, claim);
+
+    const existingPath = decisionPathByEvidenceRef.get(claim.evidenceRef);
+    if (existingPath !== undefined && existingPath !== claim.decisionPath) {
+      pushError(
+        errors,
+        'EVIDENCE_REF_REUSED',
+        claim.decisionPath,
+        `evidence is already assigned to ${existingPath}`,
+        claim.evidenceRef
+      );
+      continue;
+    }
+    decisionPathByEvidenceRef.set(claim.evidenceRef, claim.decisionPath);
+  }
+
+  for (const evidence of bundle.evidence) {
+    if (!decisionPathByEvidenceRef.has(evidence.id)) {
+      pushError(
+        errors,
+        'UNUSED_EVIDENCE',
+        '/evidence',
+        'every evidence record must be referenced by exactly one claim',
+        evidence.id
+      );
+    }
   }
 
   const requiredPaths = mode === 'composite' ? requiredCompositePaths(decisionState) : requiredNoScorePaths(decisionState);
