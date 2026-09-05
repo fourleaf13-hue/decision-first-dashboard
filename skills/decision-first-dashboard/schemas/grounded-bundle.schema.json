@@ -19,6 +19,12 @@
   },
   "definitions": {
     "source": {
+      "oneOf": [
+        { "$ref": "#/definitions/jsonTextSource" },
+        { "$ref": "#/definitions/screenshotSource" }
+      ]
+    },
+    "jsonTextSource": {
       "type": "object",
       "additionalProperties": false,
       "required": ["kind", "path", "sha256"],
@@ -26,6 +32,18 @@
         "kind": { "enum": ["json", "text"] },
         "path": { "type": "string", "minLength": 1, "maxLength": 240 },
         "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "screenshotSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "sha256", "manifestPath", "manifestSha256"],
+      "properties": {
+        "kind": { "const": "screenshot" },
+        "path": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "manifestPath": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "manifestSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
       }
     },
     "evidence": {
@@ -37,7 +55,8 @@
         "anchor": {
           "oneOf": [
             { "$ref": "#/definitions/jsonAnchor" },
-            { "$ref": "#/definitions/textAnchor" }
+            { "$ref": "#/definitions/textAnchor" },
+            { "$ref": "#/definitions/tokenAnchor" }
           ]
         }
       }
@@ -61,6 +80,21 @@
         "valueText": { "type": "string", "minLength": 1, "maxLength": 200 },
         "start": { "type": "integer", "minimum": 0 },
         "end": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "tokenAnchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "tokenRefs", "valueText"],
+      "properties": {
+        "type": { "const": "token_span" },
+        "tokenRefs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": { "type": "string", "pattern": "^tok_[0-9]{6}$" }
+        },
+        "valueText": { "type": "string", "minLength": 1, "maxLength": 200 }
       }
     },
     "claim": {
