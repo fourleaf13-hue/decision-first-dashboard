@@ -157,12 +157,8 @@ body {
 }
 .orbit-ring--outer { width: 72%; aspect-ratio: 1; border-style: dashed; opacity: .8; }
 .orbit-ring--inner { width: 50%; aspect-ratio: 1; opacity: .62; }
-.orbit svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.orbit path { vector-effect: non-scaling-stroke; }
-.orbit .radar-grid { fill: rgba(114, 100, 202, .015); stroke: #d8d2ef; stroke-width: 1.4; }
-.orbit .radar-grid--inner { fill: none; stroke: #e9e5f6; stroke-width: 1; }
-.orbit .radar-spokes { fill: none; stroke: #dfdaf2; stroke-width: 1.2; }
-.orbit .radar-shape { fill: rgba(114, 100, 202, .20); stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; }
+.orbit svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.orbit path { fill: none; stroke: var(--accent-line); stroke-width: 1.6; }
 
 .synthesis-core {
   position: absolute;
@@ -226,7 +222,7 @@ body {
 .composition-row:last-child { border-bottom: 0; }
 .composition-row span { font-size: 12px; font-weight: 650; }
 .composition-row small { color: var(--muted); font-size: 11px; }
-.score-center .synthesis-core { width: 154px; height: 154px; }
+.score-center .synthesis-core { width: 194px; height: 194px; }
 .score-center .synthesis-core strong {
   font-size: 48px;
   line-height: 1;
