@@ -1,4 +1,9 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { renderSvg as legacyRenderSvg, renderHtml as legacyRenderHtml } from './render-legacy.js';
+
+const currentFile = fileURLToPath(import.meta.url);
 
 function formatScore(value) {
   return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(1)));
@@ -68,7 +73,7 @@ function svgNodes(data) {
 }
 
 function enhanceSvg(markup, data) {
-  const spokePath = /<path d="M698 464[^\"]*" fill="none" stroke="#dad5ed" stroke-width="2"\/>/;
+  const spokePath = /<path d="M698 464[^"]*" fill="none" stroke="[^"]+" stroke-width="[^"]+"\/>/;
   markup = markup.replace(spokePath, svgRadar(data));
   markup = markup.replaceAll('r="98" fill="#ffffff"', 'r="76" fill="#ffffff"');
   markup = markup.replaceAll('r="86" fill="#f7f4ff"', 'r="66" fill="#f7f4ff"');
@@ -116,4 +121,27 @@ export function renderSvg(data) {
 export function renderHtml(data) {
   const markup = legacyRenderHtml(data);
   return data.mode === 'composite' ? enhanceHtml(markup, data) : markup;
+}
+
+if (process.argv[1] === currentFile) {
+  const inputPath = process.argv[2];
+  const outputDir = process.argv[3] ?? path.dirname(inputPath ?? '.');
+
+  if (!inputPath) {
+    console.error('Usage: node render.js <decision-state.json> [output-dir]');
+    process.exit(2);
+  }
+
+  const data = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
+  const svg = renderSvg(data);
+  const html = renderHtml(data);
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  const outputMode = data.mode === 'composite' ? 'composite' : 'no-score';
+  const svgOutput = path.join(outputDir, `output.${outputMode}.svg`);
+  const htmlOutput = path.join(outputDir, `output.${outputMode}.html`);
+  fs.writeFileSync(svgOutput, svg);
+  fs.writeFileSync(htmlOutput, html);
+  console.log(svgOutput);
+  console.log(htmlOutput);
 }
