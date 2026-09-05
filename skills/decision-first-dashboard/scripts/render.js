@@ -55,10 +55,10 @@ function geometry(data, { cx, cy, radius, labelRadius }) {
 
 function svgRadar(data) {
   const g = geometry(data, { cx: 698, cy: 464, radius: 178, labelRadius: 222 });
-  return `<path class="radar-grid" d="${g.grid}" fill="rgba(114,100,202,0.015)" stroke="#d8d2ef" stroke-width="1.4"/>
+  return `<path class="radar-grid" d="${g.grid}" fill="none" stroke="#d8d2ef" stroke-width="1.4"/>
     <path class="radar-grid radar-grid--inner" d="${g.inner}" fill="none" stroke="#e9e5f6" stroke-width="1"/>
     <path class="radar-spokes" d="${g.spokes}" fill="none" stroke="#dfdaf2" stroke-width="1.2"/>
-    <path class="radar-shape" d="${g.shape}" fill="rgba(114,100,202,0.20)" stroke="#7264ca" stroke-width="3" stroke-linejoin="round"/>`;
+    <path class="radar-shape" d="${g.shape}" fill="#7264ca" fill-opacity="0.20" stroke="#7264ca" stroke-width="3" stroke-linejoin="round"/>`;
 }
 
 function svgNodes(data) {
