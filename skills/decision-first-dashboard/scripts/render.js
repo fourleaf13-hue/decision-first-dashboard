@@ -235,55 +235,91 @@ function formatWeight(weight) {
   return `${Number((weight * 100).toFixed(1))}%`;
 }
 
-function svgComponentCluster(components) {
-  const { top, bottom } = splitSignalRows(components);
-  const placed = [];
+function radarPoint(cx, cy, radius, angle) {
+  return {
+    x: cx + Math.cos(angle) * radius,
+    y: cy + Math.sin(angle) * radius
+  };
+}
 
-  for (const [rowName, row, y] of [['top', top, 330], ['bottom', bottom, 590]]) {
-    const xs = svgRowXs(row.length);
-    row.forEach((component, index) => placed.push({ component, x: xs[index], y, rowName }));
-  }
+function closedPath(points) {
+  return points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+    .join(' ') + ' Z';
+}
 
-  const paths = placed.map(({ x, y }) => `M698 464 L${x} ${y}`).join(' ');
-  const nodes = placed.map(({ component, x, y, rowName }) => {
-    const topRow = rowName === 'top';
-    const scoreY = topRow ? y - 62 : y + 66;
-    const labelY = topRow ? y - 37 : y + 91;
-    const detailY = topRow ? y - 18 : y + 110;
+function radarGeometry(components, min, max, { cx, cy, radius, labelRadius }) {
+  const count = components.length;
+  const span = Math.max(max - min, 1);
+  const axisPoints = [];
+  const innerPoints = [];
+  const dataPoints = [];
+  const labelPoints = [];
+
+  components.forEach((component, index) => {
+    const angle = -Math.PI / 2 + (Math.PI * 2 * index) / count;
+    const ratio = Math.min(1, Math.max(0, (component.normalizedScore - min) / span));
+    axisPoints.push(radarPoint(cx, cy, radius, angle));
+    innerPoints.push(radarPoint(cx, cy, radius * 0.5, angle));
+    dataPoints.push(radarPoint(cx, cy, radius * ratio, angle));
+    labelPoints.push(radarPoint(cx, cy, labelRadius, angle));
+  });
+
+  return {
+    grid: closedPath(axisPoints),
+    innerGrid: closedPath(innerPoints),
+    shape: closedPath(dataPoints),
+    spokes: axisPoints.map((point) => `M${cx} ${cy} L${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' '),
+    axisPoints,
+    dataPoints,
+    labelPoints
+  };
+}
+
+function svgComponentCluster(components, min, max) {
+  const geometry = radarGeometry(components, min, max, {
+    cx: 698,
+    cy: 464,
+    radius: 178,
+    labelRadius: 222
+  });
+
+  const nodes = components.map((component, index) => {
+    const axis = geometry.axisPoints[index];
+    const label = geometry.labelPoints[index];
     const detail = `${formatWeight(component.weight)} · ${component.value}`;
     return `<g class="score-component-node">
-      <circle cx="${x}" cy="${y}" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
-      <text x="${x}" y="${scoreY}" class="accent" font-size="24" font-weight="740" text-anchor="middle">${escapeMarkup(formatScore(component.normalizedScore))}</text>
-      <text x="${x}" y="${labelY}" class="ink" font-size="13" font-weight="650" text-anchor="middle">${escapeMarkup(component.label)}</text>
-      <text x="${x}" y="${detailY}" class="muted" font-size="11" text-anchor="middle">${escapeMarkup(detail)}</text>
+      <circle cx="${axis.x.toFixed(1)}" cy="${axis.y.toFixed(1)}" r="8" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
+      <text x="${label.x.toFixed(1)}" y="${(label.y - 12).toFixed(1)}" class="accent" font-size="22" font-weight="740" text-anchor="middle">${escapeMarkup(formatScore(component.normalizedScore))}</text>
+      <text x="${label.x.toFixed(1)}" y="${(label.y + 11).toFixed(1)}" class="ink" font-size="13" font-weight="650" text-anchor="middle">${escapeMarkup(component.label)}</text>
+      <text x="${label.x.toFixed(1)}" y="${(label.y + 30).toFixed(1)}" class="muted" font-size="11" text-anchor="middle">${escapeMarkup(detail)}</text>
     </g>`;
   }).join('\n');
 
-  return { paths, nodes };
+  return { ...geometry, nodes };
 }
 
-function htmlComponentCluster(components) {
-  const { top, bottom } = splitSignalRows(components);
-  const placed = [];
+function htmlComponentCluster(components, min, max) {
+  const geometry = radarGeometry(components, min, max, {
+    cx: 310,
+    cy: 260,
+    radius: 174,
+    labelRadius: 216
+  });
 
-  for (const [row, y] of [[top, 28], [bottom, 72]]) {
-    const xs = htmlRowXs(row.length);
-    row.forEach((component, index) => placed.push({ component, x: xs[index], y }));
-  }
-
-  const paths = placed.map(({ x, y }) => {
-    const px = (620 * x / 100).toFixed(1);
-    const py = (520 * y / 100).toFixed(1);
-    return `M310 260 L${px} ${py}`;
-  }).join(' ');
-
-  const nodes = placed.map(({ component, x, y }) => `<div class="signal score-component" style="left:${x}%;top:${y}%">
+  const nodes = components.map((component, index) => {
+    const axis = geometry.axisPoints[index];
+    const label = geometry.labelPoints[index];
+    const left = (label.x / 620 * 100).toFixed(2);
+    const top = (label.y / 520 * 100).toFixed(2);
+    return `<div class="signal score-component" style="left:${left}%;top:${top}%">
     <strong>${escapeMarkup(formatScore(component.normalizedScore))}</strong>
     <span>${escapeMarkup(component.label)}</span>
     <small>${escapeMarkup(`${formatWeight(component.weight)} · ${component.value}`)}</small>
-  </div>`).join('\n');
+  </div>`;
+  }).join('\n');
 
-  return { paths, nodes };
+  return { ...geometry, nodes };
 }
 
 function svgCompositionRows(components) {
@@ -300,7 +336,7 @@ function svgCompositionRows(components) {
 function htmlCompositionRows(components) {
   return components.map((component) => `<div class="composition-row">
     <span>${escapeMarkup(component.label)}</span>
-    <small>${escapeMarkup(`${formatScore(component.normalizedScore)} · ${formatWeight(component.weight)}`)}</small>
+    <small>${escapeMarkup(`${formatScore(component.normalizedScore)} · ${formatWeight(component.weight)}`))}</small>
   </div>`).join('\n');
 }
 
@@ -466,82 +502,4 @@ function renderNoScoreHtml(data) {
     HTML_REVENUE_VISUAL: htmlRevenueVisual(revenueSeries),
     HTML_MOVEMENT_ROWS: htmlMovementRows(movement),
     SYNTHESIS: synthesis.direction,
-    HTML_ORBIT_PATHS: signalCluster.paths,
-    HTML_SIGNAL_NODES: signalCluster.nodes,
-    HTML_EXCEPTION_ROWS: htmlExceptionRows(data.exceptions),
-    HTML_EVENT_ROWS: htmlEventRows(data.events)
-  });
-}
-
-function renderCompositeSvg(data) {
-  const template = fs.readFileSync(compositeSvgTemplatePath, 'utf8');
-  const scoreSeries = data.context?.provenance === 'source' ? data.context.scoreSeries : null;
-  const cluster = svgComponentCluster(data.model.components);
-
-  return fillTemplate(template, {
-    SCORE_LABEL: escapeMarkup(data.score.label),
-    SCORE_VALUE: escapeMarkup(formatScore(data.score.value)),
-    SCORE_MAX: escapeMarkup(formatScore(data.score.max)),
-    SCORE_BAND: escapeMarkup(data.score.band),
-    SVG_SCORE_TREND: svgScoreVisual(scoreSeries),
-    SVG_COMPOSITION_ROWS: svgCompositionRows(data.model.components),
-    SVG_COMPONENT_PATHS: cluster.paths,
-    SVG_COMPONENT_NODES: cluster.nodes,
-    EXCEPTION_ROWS: svgExceptionRows(data.exceptions),
-    EVENT_ROWS: svgEventRows(data.events)
-  });
-}
-
-function renderCompositeHtml(data) {
-  const template = fs.readFileSync(compositeHtmlTemplatePath, 'utf8');
-  const css = fs.readFileSync(cssTemplatePath, 'utf8');
-  const scoreSeries = data.context?.provenance === 'source' ? data.context.scoreSeries : null;
-  const cluster = htmlComponentCluster(data.model.components);
-
-  return fillTemplate(template, {
-    CSS: css,
-    SCORE_LABEL: escapeMarkup(data.score.label),
-    SCORE_VALUE: escapeMarkup(formatScore(data.score.value)),
-    SCORE_MAX: escapeMarkup(formatScore(data.score.max)),
-    SCORE_BAND: escapeMarkup(data.score.band),
-    HTML_SCORE_TREND: htmlScoreVisual(scoreSeries),
-    HTML_COMPOSITION_ROWS: htmlCompositionRows(data.model.components),
-    HTML_COMPONENT_PATHS: cluster.paths,
-    HTML_COMPONENT_NODES: cluster.nodes,
-    HTML_EXCEPTION_ROWS: htmlExceptionRows(data.exceptions),
-    HTML_EVENT_ROWS: htmlEventRows(data.events)
-  });
-}
-
-export function renderSvg(data) {
-  assertValid(data);
-  return data.mode === 'composite' ? renderCompositeSvg(data) : renderNoScoreSvg(data);
-}
-
-export function renderHtml(data) {
-  assertValid(data);
-  return data.mode === 'composite' ? renderCompositeHtml(data) : renderNoScoreHtml(data);
-}
-
-if (process.argv[1] === currentFile) {
-  const inputPath = process.argv[2];
-  const outputDir = process.argv[3] ?? path.dirname(inputPath ?? '.');
-
-  if (!inputPath) {
-    console.error('Usage: node render.js <decision-state.json> [output-dir]');
-    process.exit(2);
-  }
-
-  const data = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
-  const svg = renderSvg(data);
-  const html = renderHtml(data);
-  fs.mkdirSync(outputDir, { recursive: true });
-
-  const outputMode = data.mode === 'composite' ? 'composite' : 'no-score';
-  const svgOutput = path.join(outputDir, `output.${outputMode}.svg`);
-  const htmlOutput = path.join(outputDir, `output.${outputMode}.html`);
-  fs.writeFileSync(svgOutput, svg);
-  fs.writeFileSync(htmlOutput, html);
-  console.log(svgOutput);
-  console.log(htmlOutput);
-}
+    HTML_ORBIT

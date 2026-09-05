@@ -16,10 +16,8 @@ function radarPath(markup) {
 test('three composite dimensions render as a closed triangular radar shape in SVG and HTML', () => {
   const svg = renderSvg(fixture);
   const html = renderHtml(fixture);
-
   const svgPath = radarPath(svg);
   const htmlPath = radarPath(html);
-
   assert.match(svgPath, /^M[^Z]+L[^Z]+L[^Z]+Z$/);
   assert.match(htmlPath, /^M[^Z]+L[^Z]+L[^Z]+Z$/);
   assert.match(svg, /class="radar-grid"/);
@@ -34,7 +32,7 @@ test('changing a normalized component score moves the corresponding radar polygo
     (sum, component) => sum + component.normalizedScore * component.weight,
     0
   ).toFixed(2));
-
+  changedFixture.score.band = 'Watch';
   const changed = radarPath(renderSvg(changedFixture));
   assert.notEqual(changed, baseline);
 });

@@ -58,12 +58,13 @@
     <rect x="406" y="174" width="584" height="562" rx="30" fill="url(#centerGlow)"/>
     <text x="414" y="204" class="muted" font-size="12" font-weight="650" letter-spacing="1.5">CURRENT SCORE</text>
 
-    <circle cx="698" cy="464" r="188" fill="none" stroke="#e3dff5" stroke-width="1.5" stroke-dasharray="5 8"/>
-    <circle cx="698" cy="464" r="132" fill="none" stroke="#ece9f7" stroke-width="1"/>
-    <path d="{{SVG_COMPONENT_PATHS}}" fill="none" stroke="#d6d0ef" stroke-width="1.6"/>
+    <path class="radar-grid" d="{{SVG_RADAR_GRID}}" fill="rgba(114,100,202,0.015)" stroke="#d8d2ef" stroke-width="1.4"/>
+    <path class="radar-grid radar-grid--inner" d="{{SVG_RADAR_INNER_GRID}}" fill="none" stroke="#e9e5f6" stroke-width="1"/>
+    <path class="radar-spokes" d="{{SVG_COMPONENT_PATHS}}" fill="none" stroke="#dfdaf2" stroke-width="1.2"/>
+    <path class="radar-shape" d="{{SVG_RADAR_SHAPE}}" fill="rgba(114,100,202,0.20)" stroke="#7264ca" stroke-width="3" stroke-linejoin="round"/>
 
-    <circle cx="698" cy="464" r="98" fill="#ffffff" stroke="#d7d0ef" stroke-width="2"/>
-    <circle cx="698" cy="464" r="86" fill="#f7f4ff"/>
+    <circle cx="698" cy="464" r="76" fill="#ffffff" stroke="#d7d0ef" stroke-width="2"/>
+    <circle cx="698" cy="464" r="66" fill="#f7f4ff"/>
     <text x="698" y="454" class="accent" font-size="48" font-weight="780" text-anchor="middle">{{SCORE_VALUE}}</text>
     <text x="698" y="481" class="muted" font-size="14" text-anchor="middle">/ {{SCORE_MAX}}</text>
     <text x="698" y="511" class="danger" font-size="14" font-weight="700" text-anchor="middle">{{SCORE_BAND}}</text>

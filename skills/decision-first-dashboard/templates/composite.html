@@ -40,8 +40,11 @@
         <div class="orbit" aria-hidden="true">
           <div class="orbit-ring orbit-ring--outer"></div>
           <div class="orbit-ring orbit-ring--inner"></div>
-          <svg viewBox="0 0 620 520" preserveAspectRatio="none">
-            <path d="{{HTML_COMPONENT_PATHS}}"></path>
+          <svg viewBox="0 0 620 520" preserveAspectRatio="xMidYMid meet" aria-label="Component radar">
+            <path class="radar-grid" d="{{HTML_RADAR_GRID}}"></path>
+            <path class="radar-grid radar-grid--inner" d="{{HTML_RADAR_INNER_GRID}}"></path>
+            <path class="radar-spokes" d="{{HTML_COMPONENT_PATHS}}"></path>
+            <path class="radar-shape" d="{{HTML_RADAR_SHAPE}}"></path>
           </svg>
         </div>
 
