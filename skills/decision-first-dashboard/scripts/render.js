@@ -75,8 +75,8 @@ function svgNodes(data) {
 function enhanceSvg(markup, data) {
   const spokePath = /<path d="M698 464[^"]*" fill="none" stroke="[^"]+" stroke-width="[^"]+"\/>/;
   markup = markup.replace(spokePath, svgRadar(data));
-  markup = markup.replaceAll('r="98" fill="#ffffff"', 'r="76" fill="#ffffff"');
-  markup = markup.replaceAll('r="86" fill="#f7f4ff"', 'r="66" fill="#f7f4ff"');
+  markup = markup.replaceAll('r="98" fill="#ffffff"', 'r="58" fill="#ffffff"');
+  markup = markup.replaceAll('r="86" fill="#f7f4ff"', 'r="50" fill="#f7f4ff"');
   markup = markup.replace(/\n\s*<g class="score-component-node">[\s\S]*?<\/g>/g, '');
   const nodes = svgNodes(data);
   return markup.replace(/\n\s*<g filter="url\(#cardShadow\)">\n\s*<rect x="1038"/, `\n    ${nodes}\n\n    <g filter="url(#cardShadow)">\n      <rect x="1038"`);
@@ -104,7 +104,7 @@ function htmlNodes(data) {
 }
 
 const RADAR_CSS = `
-.orbit path{vector-effect:non-scaling-stroke}.orbit .radar-grid{fill:rgba(114,100,202,.015);stroke:#d8d2ef;stroke-width:1.4}.orbit .radar-grid--inner{fill:none;stroke:#e9e5f6;stroke-width:1}.orbit .radar-spokes{fill:none;stroke:#dfdaf2;stroke-width:1.2}.orbit .radar-shape{fill:rgba(114,100,202,.22);stroke:var(--accent);stroke-width:3;stroke-linejoin:round}.score-center .synthesis-core{width:154px;height:154px}.score-component strong{font-size:24px}`;
+.orbit path{vector-effect:non-scaling-stroke}.orbit .radar-grid{fill:rgba(114,100,202,.015);stroke:#d8d2ef;stroke-width:1.4}.orbit .radar-grid--inner{fill:none;stroke:#e9e5f6;stroke-width:1}.orbit .radar-spokes{fill:none;stroke:#dfdaf2;stroke-width:1.2}.orbit .radar-shape{fill:rgba(114,100,202,.22);stroke:var(--accent);stroke-width:3;stroke-linejoin:round}.score-center .synthesis-core{width:118px;height:118px}.score-center .synthesis-core strong{font-size:40px}.score-component strong{font-size:24px}`;
 
 function enhanceHtml(markup, data) {
   markup = markup.replace(/<svg viewBox="0 0 620 520"[\s\S]*?<\/svg>/, htmlRadar(data));
