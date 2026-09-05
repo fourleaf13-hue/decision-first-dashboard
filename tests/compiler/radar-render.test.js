@@ -13,6 +13,24 @@ function radarPath(markup) {
   return match[1];
 }
 
+function fixtureWithDimensions(count) {
+  const next = structuredClone(fixture);
+  next.model.components = Array.from({ length: count }, (_, index) => ({
+    metric: `dimension_${index + 1}`,
+    label: `Dimension ${index + 1}`,
+    value: `${55 + index * 5}`,
+    normalizedScore: 55 + index * 5,
+    weight: 1 / count,
+    provenance: 'source'
+  }));
+  next.score.value = Number(next.model.components.reduce(
+    (sum, component) => sum + component.normalizedScore * component.weight,
+    0
+  ).toFixed(4));
+  next.score.band = 'At risk';
+  return next;
+}
+
 test('three composite dimensions render as a closed triangular radar shape in SVG and HTML', () => {
   const svg = renderSvg(fixture);
   const html = renderHtml(fixture);
@@ -22,6 +40,17 @@ test('three composite dimensions render as a closed triangular radar shape in SV
   assert.match(htmlPath, /^M[^Z]+L[^Z]+L[^Z]+Z$/);
   assert.match(svg, /class="radar-grid"/);
   assert.match(html, /class="radar-grid"/);
+});
+
+test('four through six dimensions produce closed polygons with one vertex per dimension', () => {
+  for (const count of [4, 5, 6]) {
+    const data = fixtureWithDimensions(count);
+    for (const markup of [renderSvg(data), renderHtml(data)]) {
+      const path = radarPath(markup);
+      assert.equal((path.match(/L/g) ?? []).length, count - 1);
+      assert.match(path, /^M.*Z$/);
+    }
+  }
 });
 
 test('changing a normalized component score moves the corresponding radar polygon vertex', () => {
