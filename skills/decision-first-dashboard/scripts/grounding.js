@@ -3,9 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateAgainstSchema, validateDecisionState } from './validate.js';
+import { readImageDimensions } from './screenshot-adapter.js';
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const groundingSchema = JSON.parse(fs.readFileSync(path.resolve(currentDir, '../schemas/grounded-bundle.schema.json'), 'utf8'));
+const screenshotManifestSchema = JSON.parse(fs.readFileSync(path.resolve(currentDir, '../schemas/screenshot-manifest.schema.json'), 'utf8'));
 
 function pushError(errors, code, pathValue, message, evidenceRef = undefined) {
   const error = { code, path: pathValue, message };
@@ -68,6 +70,10 @@ function textOccurrenceCount(text, literal) {
     count += 1;
     fromIndex = index + Math.max(literal.length, 1);
   }
+}
+
+function normalizeWhitespace(value) {
+  return String(value).trim().replace(/\s+/g, ' ');
 }
 
 function parseNumericText(value) {
@@ -154,9 +160,121 @@ function fail(mode, stage, errors) {
   return { valid: false, stage, transition: transitionForMode(mode), errors };
 }
 
+function resolveContainedFile(basePath, relativePath, errors, errorPath, missingCode) {
+  if (path.isAbsolute(relativePath)) {
+    pushError(errors, 'SOURCE_PATH_OUTSIDE_BASE', errorPath, 'grounding path must stay inside the bundle base directory');
+    return null;
+  }
+
+  const requestedPath = path.resolve(basePath, relativePath);
+  if (!isPathInside(basePath, requestedPath)) {
+    pushError(errors, 'SOURCE_PATH_OUTSIDE_BASE', errorPath, 'grounding path must stay inside the bundle base directory');
+    return null;
+  }
+  if (!fs.existsSync(requestedPath)) {
+    pushError(errors, missingCode, errorPath, 'grounding file does not exist');
+    return null;
+  }
+
+  let realPath;
+  try {
+    realPath = fs.realpathSync(requestedPath);
+  } catch {
+    pushError(errors, missingCode, errorPath, 'grounding file does not exist');
+    return null;
+  }
+  if (!isPathInside(basePath, realPath)) {
+    pushError(errors, 'SOURCE_PATH_OUTSIDE_BASE', errorPath, 'grounding real path escapes the bundle base directory');
+    return null;
+  }
+
+  let stat;
+  try {
+    stat = fs.statSync(realPath);
+  } catch {
+    pushError(errors, 'SOURCE_FILE_READ_FAILED', errorPath, 'grounding file metadata could not be read');
+    return null;
+  }
+  if (!stat.isFile()) {
+    pushError(errors, 'SOURCE_NOT_FILE', errorPath, 'grounding source must be a regular file');
+    return null;
+  }
+
+  try {
+    return { path: realPath, bytes: fs.readFileSync(realPath) };
+  } catch {
+    pushError(errors, 'SOURCE_FILE_READ_FAILED', errorPath, 'grounding file bytes could not be read');
+    return null;
+  }
+}
+
+function readScreenshotSource(source, basePath, imageFile, errors) {
+  if (sha256(imageFile.bytes) !== source.sha256) {
+    pushError(errors, 'SCREENSHOT_IMAGE_HASH_MISMATCH', '/source/sha256', 'screenshot hash does not match image bytes');
+    return null;
+  }
+
+  const manifestFile = resolveContainedFile(basePath, source.manifestPath, errors, '/source/manifestPath', 'SCREENSHOT_MANIFEST_MISSING');
+  if (!manifestFile) return null;
+  if (sha256(manifestFile.bytes) !== source.manifestSha256) {
+    pushError(errors, 'SCREENSHOT_MANIFEST_HASH_MISMATCH', '/source/manifestSha256', 'screenshot manifest hash does not match manifest bytes');
+    return null;
+  }
+
+  let manifest;
+  try {
+    manifest = JSON.parse(manifestFile.bytes.toString('utf8'));
+  } catch {
+    pushError(errors, 'SCREENSHOT_MANIFEST_MISSING', '/source/manifestPath', 'screenshot manifest is not valid JSON');
+    return null;
+  }
+
+  const manifestResult = validateAgainstSchema(manifest, screenshotManifestSchema);
+  if (!manifestResult.valid) {
+    pushError(errors, 'SCREENSHOT_MANIFEST_MISSING', '/source/manifestPath', 'screenshot manifest failed its closed schema');
+    return null;
+  }
+  if (manifest.imageSha256 !== source.sha256) {
+    pushError(errors, 'SCREENSHOT_IMAGE_HASH_MISMATCH', '/source/manifestPath', 'manifest is not bound to the screenshot image hash');
+    return null;
+  }
+
+  let dimensions;
+  try {
+    dimensions = readImageDimensions(imageFile.bytes);
+  } catch {
+    pushError(errors, 'SCREENSHOT_MANIFEST_MISSING', '/source/path', 'screenshot image is not a supported PNG/JPEG');
+    return null;
+  }
+  if (manifest.width !== dimensions.width || manifest.height !== dimensions.height) {
+    pushError(errors, 'SCREENSHOT_MANIFEST_MISSING', '/source/manifestPath', 'manifest dimensions do not match screenshot bytes');
+    return null;
+  }
+
+  const tokenById = new Map();
+  const tokenIndexById = new Map();
+  for (const [index, token] of manifest.tokens.entries()) {
+    if (tokenById.has(token.id)) {
+      pushError(errors, 'TOKEN_NOT_FOUND', '/source/manifestPath', 'screenshot manifest token ids must be unique');
+      return null;
+    }
+    tokenById.set(token.id, token);
+    tokenIndexById.set(token.id, index);
+  }
+
+  return {
+    kind: 'screenshot',
+    manifest,
+    tokenById,
+    tokenIndexById,
+    width: dimensions.width,
+    height: dimensions.height
+  };
+}
+
 function readSource(bundle, baseDir, errors) {
   const source = bundle?.source;
-  if (!source || !['json', 'text'].includes(source.kind) || typeof source.path !== 'string' || typeof source.sha256 !== 'string') {
+  if (!source || !['json', 'text', 'screenshot'].includes(source.kind) || typeof source.path !== 'string' || typeof source.sha256 !== 'string') {
     pushError(errors, 'SOURCE_ANCHOR_NOT_FOUND', '/source', 'source must declare kind, path, and sha256');
     return null;
   }
@@ -170,60 +288,23 @@ function readSource(bundle, baseDir, errors) {
     return null;
   }
 
-  if (path.isAbsolute(source.path)) {
-    pushError(errors, 'SOURCE_PATH_OUTSIDE_BASE', '/source/path', 'grounding source path must stay inside the bundle base directory');
-    return null;
+  const sourceFile = resolveContainedFile(basePath, source.path, errors, '/source/path', 'SOURCE_FILE_NOT_FOUND');
+  if (!sourceFile) return null;
+
+  if (source.kind === 'screenshot') {
+    if (typeof source.manifestPath !== 'string' || typeof source.manifestSha256 !== 'string') {
+      pushError(errors, 'SCREENSHOT_MANIFEST_MISSING', '/source', 'screenshot source must declare manifestPath and manifestSha256');
+      return null;
+    }
+    return readScreenshotSource(source, basePath, sourceFile, errors);
   }
 
-  const requestedSourcePath = path.resolve(basePath, source.path);
-  if (!isPathInside(basePath, requestedSourcePath)) {
-    pushError(errors, 'SOURCE_PATH_OUTSIDE_BASE', '/source/path', 'grounding source path must stay inside the bundle base directory');
-    return null;
-  }
-
-  if (!fs.existsSync(requestedSourcePath)) {
-    pushError(errors, 'SOURCE_FILE_NOT_FOUND', '/source/path', 'grounding source file does not exist');
-    return null;
-  }
-
-  let sourcePath;
-  try {
-    sourcePath = fs.realpathSync(requestedSourcePath);
-  } catch {
-    pushError(errors, 'SOURCE_FILE_NOT_FOUND', '/source/path', 'grounding source file does not exist');
-    return null;
-  }
-
-  if (!isPathInside(basePath, sourcePath)) {
-    pushError(errors, 'SOURCE_PATH_OUTSIDE_BASE', '/source/path', 'grounding source real path escapes the bundle base directory');
-    return null;
-  }
-
-  let sourceStat;
-  try {
-    sourceStat = fs.statSync(sourcePath);
-  } catch {
-    pushError(errors, 'SOURCE_FILE_READ_FAILED', '/source/path', 'grounding source metadata could not be read');
-    return null;
-  }
-  if (!sourceStat.isFile()) {
-    pushError(errors, 'SOURCE_NOT_FILE', '/source/path', 'grounding source must be a regular file');
-    return null;
-  }
-
-  let bytes;
-  try {
-    bytes = fs.readFileSync(sourcePath);
-  } catch {
-    pushError(errors, 'SOURCE_FILE_READ_FAILED', '/source/path', 'grounding source bytes could not be read');
-    return null;
-  }
-  if (sha256(bytes) !== source.sha256) {
+  if (sha256(sourceFile.bytes) !== source.sha256) {
     pushError(errors, 'SOURCE_HASH_MISMATCH', '/source/sha256', 'grounding source hash does not match source bytes');
     return null;
   }
 
-  const text = bytes.toString('utf8');
+  const text = sourceFile.bytes.toString('utf8');
   if (source.kind === 'text') return { kind: 'text', text };
 
   try {
@@ -232,6 +313,48 @@ function readSource(bundle, baseDir, errors) {
     pushError(errors, 'SOURCE_ANCHOR_NOT_FOUND', '/source/path', 'JSON grounding source is not valid JSON');
     return null;
   }
+}
+
+function screenshotTokenValue(source, anchor, decisionPath, evidence, errors) {
+  const tokens = [];
+  const indices = [];
+  for (const tokenRef of anchor.tokenRefs) {
+    const token = source.tokenById.get(tokenRef);
+    if (!token) {
+      pushError(errors, 'TOKEN_NOT_FOUND', decisionPath, `OCR token ${tokenRef} does not exist in the bound manifest`, evidence.id);
+      return { found: false };
+    }
+    tokens.push(token);
+    indices.push(source.tokenIndexById.get(tokenRef));
+  }
+
+  for (let i = 1; i < indices.length; i += 1) {
+    if (indices[i] <= indices[i - 1]) {
+      pushError(errors, 'TOKEN_TEXT_MISMATCH', decisionPath, 'tokenRefs must follow manifest reading order', evidence.id);
+      return { found: false };
+    }
+  }
+
+  for (const token of tokens) {
+    const { x, y, width, height } = token.bbox;
+    if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > source.width || y + height > source.height) {
+      pushError(errors, 'TOKEN_BBOX_INVALID', decisionPath, 'OCR token bbox escapes screenshot bounds', evidence.id);
+      return { found: false };
+    }
+    if (token.confidence < 70) {
+      pushError(errors, 'OCR_EVIDENCE_UNCERTAIN', decisionPath, `OCR token confidence ${token.confidence} is below 70`, evidence.id);
+      return { found: false };
+    }
+  }
+
+  const tokenText = normalizeWhitespace(tokens.map((token) => token.text).join(' '));
+  const expectedText = normalizeWhitespace(anchor.valueText);
+  if (tokenText !== expectedText) {
+    pushError(errors, 'TOKEN_TEXT_MISMATCH', decisionPath, `OCR token text ${JSON.stringify(tokenText)} does not match evidence value ${JSON.stringify(expectedText)}`, evidence.id);
+    return { found: false };
+  }
+
+  return { found: true, value: anchor.valueText };
 }
 
 function anchorValue(source, evidence, decisionPath, errors) {
@@ -281,6 +404,10 @@ function anchorValue(source, evidence, decisionPath, errors) {
     }
 
     return { found: true, value: anchor.valueText };
+  }
+
+  if (anchor.type === 'token_span' && source.kind === 'screenshot') {
+    return screenshotTokenValue(source, anchor, decisionPath, evidence, errors);
   }
 
   pushError(errors, 'SOURCE_ANCHOR_NOT_FOUND', decisionPath, 'evidence anchor type does not match source kind', evidence.id);
