@@ -37,6 +37,8 @@ jobs:
         run: node skills/decision-first-dashboard/scripts/compile.js tests/compiler/fixtures/grounding/no-score.grounded.json tests/compiler/generated/v3-no-score
       - name: Compile grounded no-score radar fixture
         run: node skills/decision-first-dashboard/scripts/compile.js tests/compiler/fixtures/grounding/no-score-radar.grounded.json tests/compiler/generated/v3-no-score-radar
+      - name: Compile grounded Control Center fixture
+        run: node skills/decision-first-dashboard/scripts/compile.js tests/compiler/fixtures/grounding/control-center.grounded.json tests/compiler/generated/v3-control-center
       - name: Build V3.1 semantic fixture
         shell: bash
         run: |
@@ -97,6 +99,8 @@ jobs:
             tests/compiler/generated/v3-no-score/output.no-score.html
             tests/compiler/generated/v3-no-score-radar/output.no-score.svg
             tests/compiler/generated/v3-no-score-radar/output.no-score.html
+            tests/compiler/generated/v3-control-center/output.no-score.svg
+            tests/compiler/generated/v3-control-center/output.no-score.html
             tests/compiler/generated/v3.1-a/output.composite.plan.json
             tests/compiler/generated/v3.1-a/output.composite.svg
             tests/compiler/generated/v3.1-a/output.composite.html
