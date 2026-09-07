@@ -39,7 +39,9 @@ Required contract facts:
 - `radarScale.max`;
 - `normalizedScore` on every rendered signal.
 
-When those facts are grounded, the renderer connects the score-derived vertices into a closed polygon while keeping the center synthesis independent from an overall score.
+When those facts are grounded, the renderer connects the score-derived vertices into a closed polygon while keeping the radar independent from any overall score.
+
+**No-score radar center rule:** because `no_score` has no mechanically grounded overall score, do not render a small center badge, fallback synthesis word, `UNKNOWN`, `Target unknown`, or any other placeholder over the polygon. Keep the large white backing plate; leave the center visually empty so the radar remains unobstructed.
 
 Do not normalize mixed raw KPI units merely to force the visual. MRR dollars, customer counts, churn percentages, latency, and ratios are not automatically comparable dimensions. If the common scale is absent, keep the ordinary no-score layout rather than drawing a false radar.
 
@@ -91,10 +93,10 @@ The visual stack is deterministic, from back to front:
 1. **White circular plate** — the largest center shape and the bottom visual layer.
 2. **Radar grid, spokes, and closed data polygon** — centered on top of the plate.
 3. **Dimension values and labels** — placed outside the white plate, never inside it.
-4. **Center synthesis or source-supported score/conclusion** — the topmost focal content.
+4. **Optional center score/conclusion** — only for a mode that has a mechanically grounded overall score and source-supported conclusion/band. For an eligible `no_score` radar, this layer is absent and the center remains empty.
 
 The plate must remain visibly larger than the radar geometry. The current reference geometry scales the prior plate/radar system to **80%** while preserving their relative proportions. In the SVG reference layout, radar radius is `142.4`, plate radius is `196`, and label radius is `224`; HTML uses the proportional equivalents `139.2`, `192`, and `220`.
 
-Do not replace the large backing plate with an outline ring. Do not place dimension values inside the plate. Do not allow the center synthesis/score badge to cover enough of the polygon that the closed radar shape becomes visually ambiguous.
+Do not replace the large backing plate with an outline ring. Do not place dimension values inside the plate. Do not render a small center circle merely to hold missing data or fallback copy. When a valid center score exists, do not allow its badge to cover enough of the polygon that the closed radar shape becomes visually ambiguous.
 
 If a future renderer changes these dimensions, preserve the same invariant relationships and update the radar geometry regression tests and golden snapshots intentionally.
