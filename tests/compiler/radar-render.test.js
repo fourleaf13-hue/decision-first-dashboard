@@ -31,6 +31,15 @@ function fixtureWithDimensions(count) {
   return next;
 }
 
+function svgNodePositions(markup) {
+  return [...markup.matchAll(/<g class="score-component-node">\s*<text x="([\d.]+)" y="([\d.]+)"/g)]
+    .map((match) => ({ x: Number(match[1]), y: Number(match[2]) }));
+}
+
+function distance(x, y, cx, cy) {
+  return Math.hypot(x - cx, y - cy);
+}
+
 test('three composite dimensions render as a closed triangular radar shape in SVG and HTML', () => {
   const svg = renderSvg(fixture);
   const html = renderHtml(fixture);
@@ -64,4 +73,29 @@ test('changing a normalized component score moves the corresponding radar polygo
   changedFixture.score.band = 'Watch';
   const changed = radarPath(renderSvg(changedFixture));
   assert.notEqual(changed, baseline);
+});
+
+test('radar hierarchy uses a larger white plate behind a radar scaled to 80 percent', () => {
+  const svg = renderSvg(fixture);
+  const html = renderHtml(fixture);
+
+  assert.match(svg, /class="radar-plate"[^>]*r="196"/);
+  assert.match(svg, /class="radar-grid"[^>]*d="M698\.0 321\.6/);
+  assert.ok(svg.indexOf('class="radar-plate"') < svg.indexOf('class="radar-shape"'));
+
+  assert.match(html, /class="radar-plate"[^>]*r="192"/);
+  assert.match(html, /class="radar-grid"[^>]*d="M310\.0 120\.8/);
+  assert.ok(html.indexOf('class="radar-plate"') < html.indexOf('class="radar-shape"'));
+});
+
+test('dimension numbers and labels sit outside the white radar plate', () => {
+  const svg = renderSvg(fixture);
+  const nodes = svgNodePositions(svg);
+  assert.equal(nodes.length, fixture.model.components.length);
+  for (const node of nodes) {
+    assert.ok(distance(node.x, node.y, 698, 464) > 196, `expected node at ${node.x},${node.y} outside plate`);
+  }
+
+  assert.match(svg, /class="radar-shape"[\s\S]*?<circle cx="698" cy="464" r="58"/);
+  assert.match(renderHtml(fixture), /\.score-center \.synthesis-core\{[^}]*z-index:4/);
 });
