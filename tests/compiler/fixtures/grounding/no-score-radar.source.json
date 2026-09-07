@@ -1,0 +1,8 @@
+{
+  "radarScale": { "min": 0, "max": 100 },
+  "signals": [
+    { "label": "Retention", "value": "60", "normalizedScore": 60 },
+    { "label": "Growth", "value": "80", "normalizedScore": 80 },
+    { "label": "Conversion", "value": "66.7", "normalizedScore": 66.7 }
+  ]
+}
