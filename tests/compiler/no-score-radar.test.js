@@ -29,12 +29,25 @@ test('no-score accepts 3 to 6 source-backed comparable dimension scores without 
   assert.equal(validateDecisionState(six).valid, true);
 });
 
-test('no-score renders a true closed radar while keeping synthesis independent from overall score', () => {
+test('no-score renders a true closed radar without an empty center badge', () => {
   const svg = renderSvg(scoredNoScore);
   const html = renderHtml(scoredNoScore);
+
   assert.match(radarPath(svg), /^M[^Z]+L[^Z]+L[^Z]+Z$/);
   assert.match(radarPath(html), /^M[^Z]+L[^Z]+L[^Z]+Z$/);
-  assert.match(svg, />MIXED<|>IMPROVING<|>DETERIORATING<|>FLAT<|>UNKNOWN</);
+
+  // Keep the large white backing plate.
+  assert.match(svg, /class="radar-plate"/);
+  assert.match(html, /class="radar-plate"/);
+
+  // No overall score exists in no_score radar mode, so the small center badge
+  // and fallback copy must not cover the radar polygon.
+  assert.doesNotMatch(svg, /<circle cx="698" cy="464" r="(?:58|50)"/);
+  assert.doesNotMatch(svg, />(?:MIXED|IMPROVING|DETERIORATING|FLAT|UNKNOWN)</);
+  assert.doesNotMatch(svg, /Target unknown/);
+  assert.doesNotMatch(html, /class="synthesis-core"/);
+  assert.doesNotMatch(html, />(?:MIXED|IMPROVING|DETERIORATING|FLAT|UNKNOWN)</);
+  assert.doesNotMatch(html, /Target unknown/);
   assert.doesNotMatch(svg, />68<|\/ 100/);
 });
 
