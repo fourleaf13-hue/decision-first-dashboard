@@ -35,6 +35,12 @@ function escapeMarkup(value = '') {
     .replaceAll("'", '&#39;');
 }
 
+function directionClass(direction) {
+  if (direction === 'improving') return 'positive';
+  if (direction === 'deteriorating') return 'danger';
+  return 'muted';
+}
+
 function point(cx, cy, radius, angle) {
   return { x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius };
 }
@@ -144,6 +150,59 @@ function enhanceNoScoreSvg(markup, data) {
   return markup.replace(/\n\s*<g filter="url\(#cardShadow\)">\n\s*<rect x="1038"/, `\n    ${nodes}\n\n    <g filter="url(#cardShadow)">\n      <rect x="1038"`);
 }
 
+function svgBreakdownRows(items = []) {
+  return items.slice(0, 5).map((item, index) => {
+    const y = 232 + index * 42;
+    const delta = item.delta
+      ? `<text x="1342" y="${y}" class="${directionClass(item.direction)}" font-size="12" font-weight="650" text-anchor="end">${escapeMarkup(item.delta)}</text>`
+      : '';
+    return `<g class="breakdown-row">
+      <text x="1064" y="${y}" class="accent" font-size="14" font-weight="740">${escapeMarkup(item.value)}</text>
+      <text x="1114" y="${y}" class="muted" font-size="12">${escapeMarkup(item.label)}</text>
+      ${delta}
+    </g>`;
+  }).join('\n');
+}
+
+function htmlBreakdownRows(items = []) {
+  return items.slice(0, 5).map((item) => {
+    const delta = item.delta
+      ? `<em class="${directionClass(item.direction)}">${escapeMarkup(item.delta)}</em>`
+      : '';
+    return `<div class="breakdown-row">
+      <strong>${escapeMarkup(item.value)}</strong>
+      <span>${escapeMarkup(item.label)}</span>
+      ${delta}
+    </div>`;
+  }).join('\n');
+}
+
+function enhanceNoScoreBreakdownSvg(markup, data) {
+  if (!data.breakdown?.length) return markup;
+  const card = `<g filter="url(#cardShadow)">
+      <rect x="1038" y="150" width="330" height="278" rx="26" class="card"/>
+    </g>
+    <text x="1064" y="190" class="ink" font-size="15" font-weight="650">Breakdown</text>
+    ${svgBreakdownRows(data.breakdown)}
+    `;
+  return markup.replace(
+    /<g filter="url\(#cardShadow\)">\s*<rect x="1038" y="150"[\s\S]*?(?=<g filter="url\(#cardShadow\)">\s*<rect x="1038" y="452")/,
+    card
+  );
+}
+
+const BREAKDOWN_CSS = `.breakdown-list{margin-top:18px}.breakdown-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid #efedf6}.breakdown-row:last-child{border-bottom:0}.breakdown-row strong{color:var(--accent);font-size:14px}.breakdown-row span{color:var(--muted);font-size:12px}.breakdown-row em{font-style:normal;font-size:11px;font-weight:700;white-space:nowrap}`;
+
+function enhanceNoScoreBreakdownHtml(markup, data) {
+  if (!data.breakdown?.length) return markup;
+  const card = `<article class="card compact-card">
+          <div class="eyebrow">Breakdown</div>
+          <div class="breakdown-list">${htmlBreakdownRows(data.breakdown)}</div>
+        </article>`;
+  markup = markup.replace(/<article class="card compact-card">[\s\S]*?<\/article>/, card);
+  return markup.replace('</style>', `${BREAKDOWN_CSS}\n</style>`);
+}
+
 function htmlRadar(data) {
   const { cx, cy, plateRadius } = HTML_RADAR_LAYOUT;
   const g = geometry(data, HTML_RADAR_LAYOUT);
@@ -193,15 +252,17 @@ function enhanceNoScoreHtml(markup, data) {
 }
 
 export function renderSvg(data) {
-  const markup = legacyRenderSvg(data);
+  let markup = legacyRenderSvg(data);
   if (data.mode === 'composite') return enhanceCompositeSvg(markup, data);
-  return radarSource(data) ? enhanceNoScoreSvg(markup, data) : markup;
+  if (radarSource(data)) markup = enhanceNoScoreSvg(markup, data);
+  return enhanceNoScoreBreakdownSvg(markup, data);
 }
 
 export function renderHtml(data) {
-  const markup = legacyRenderHtml(data);
+  let markup = legacyRenderHtml(data);
   if (data.mode === 'composite') return enhanceCompositeHtml(markup, data);
-  return radarSource(data) ? enhanceNoScoreHtml(markup, data) : markup;
+  if (radarSource(data)) markup = enhanceNoScoreHtml(markup, data);
+  return enhanceNoScoreBreakdownHtml(markup, data);
 }
 
 if (process.argv[1] === currentFile) {
