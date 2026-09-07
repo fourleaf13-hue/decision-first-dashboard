@@ -73,6 +73,18 @@ test('missing no-score radar score grounding returns to evidence extraction', ()
   assert.ok(result.errors.some((error) => error.code === 'MISSING_REQUIRED_GROUNDING' && error.path === '/signals/1/normalizedScore'));
 });
 
+test('visible no-score breakdown rows require their own grounding claims', () => {
+  const bad = structuredClone(radarNoScore);
+  bad.decisionState.breakdown = [
+    { label: 'New trials', value: '4', provenance: 'source' }
+  ];
+  const result = validate(bad);
+  assert.equal(result.valid, false);
+  assert.equal(result.transition, 'RETURN_TO_EVIDENCE_EXTRACTION');
+  assert.ok(result.errors.some((error) => error.code === 'MISSING_REQUIRED_GROUNDING' && error.path === '/breakdown/0/label'));
+  assert.ok(result.errors.some((error) => error.code === 'MISSING_REQUIRED_GROUNDING' && error.path === '/breakdown/0/value'));
+});
+
 test('missing no-score grounding returns to evidence extraction', () => {
   const bad = structuredClone(noScore);
   bad.claims = bad.claims.filter((claim) => claim.decisionPath !== '/signals/0/value');
