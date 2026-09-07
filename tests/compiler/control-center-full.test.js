@@ -46,3 +46,10 @@ test('full Control Center input preserves business context, breakdown, and event
     assert.doesNotMatch(markup, /No confirmed exceptions visible|No recent source-supported events|Revenue metric unavailable|No additional movement signals/);
   }
 });
+
+test('Control Center total change renders as a right-aligned summary instead of colliding with its label', () => {
+  const svg = renderSvg(controlCenter);
+  const html = renderHtml(controlCenter);
+  assert.match(svg, /<text x="1064"[^>]*>Total change<\/text>[\s\S]*?<text x="1342"[^>]*text-anchor="end">\+\$115\.94<\/text>/);
+  assert.match(html, /breakdown-row breakdown-row--summary[\s\S]*?<span>Total change<\/span>[\s\S]*?<strong[^>]*>\+\$115\.94<\/strong>/);
+});
