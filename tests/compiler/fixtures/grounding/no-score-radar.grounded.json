@@ -1,0 +1,42 @@
+{
+  "source": {
+    "kind": "json",
+    "path": "no-score-radar.source.json",
+    "sha256": "f25ec8a0d95bfc5757a60f8401a4b94d47cb3de4d2c448dc263103fe946aaef8"
+  },
+  "decisionState": {
+    "mode": "no_score",
+    "radarScale": { "min": 0, "max": 100, "provenance": "source" },
+    "signals": [
+      { "metric": "retention", "label": "Retention", "value": "60", "normalizedScore": 60, "provenance": "source" },
+      { "metric": "growth", "label": "Growth", "value": "80", "normalizedScore": 80, "provenance": "source" },
+      { "metric": "conversion", "label": "Conversion", "value": "66.7", "normalizedScore": 66.7, "provenance": "source" }
+    ]
+  },
+  "evidence": [
+    { "id": "ev_scale_min", "anchor": { "type": "json_pointer", "pointer": "/radarScale/min" } },
+    { "id": "ev_scale_max", "anchor": { "type": "json_pointer", "pointer": "/radarScale/max" } },
+    { "id": "ev_signal_0_label", "anchor": { "type": "json_pointer", "pointer": "/signals/0/label" } },
+    { "id": "ev_signal_0_value", "anchor": { "type": "json_pointer", "pointer": "/signals/0/value" } },
+    { "id": "ev_signal_0_score", "anchor": { "type": "json_pointer", "pointer": "/signals/0/normalizedScore" } },
+    { "id": "ev_signal_1_label", "anchor": { "type": "json_pointer", "pointer": "/signals/1/label" } },
+    { "id": "ev_signal_1_value", "anchor": { "type": "json_pointer", "pointer": "/signals/1/value" } },
+    { "id": "ev_signal_1_score", "anchor": { "type": "json_pointer", "pointer": "/signals/1/normalizedScore" } },
+    { "id": "ev_signal_2_label", "anchor": { "type": "json_pointer", "pointer": "/signals/2/label" } },
+    { "id": "ev_signal_2_value", "anchor": { "type": "json_pointer", "pointer": "/signals/2/value" } },
+    { "id": "ev_signal_2_score", "anchor": { "type": "json_pointer", "pointer": "/signals/2/normalizedScore" } }
+  ],
+  "claims": [
+    { "decisionPath": "/radarScale/min", "evidenceRef": "ev_scale_min" },
+    { "decisionPath": "/radarScale/max", "evidenceRef": "ev_scale_max" },
+    { "decisionPath": "/signals/0/label", "evidenceRef": "ev_signal_0_label" },
+    { "decisionPath": "/signals/0/value", "evidenceRef": "ev_signal_0_value" },
+    { "decisionPath": "/signals/0/normalizedScore", "evidenceRef": "ev_signal_0_score" },
+    { "decisionPath": "/signals/1/label", "evidenceRef": "ev_signal_1_label" },
+    { "decisionPath": "/signals/1/value", "evidenceRef": "ev_signal_1_value" },
+    { "decisionPath": "/signals/1/normalizedScore", "evidenceRef": "ev_signal_1_score" },
+    { "decisionPath": "/signals/2/label", "evidenceRef": "ev_signal_2_label" },
+    { "decisionPath": "/signals/2/value", "evidenceRef": "ev_signal_2_value" },
+    { "decisionPath": "/signals/2/normalizedScore", "evidenceRef": "ev_signal_2_score" }
+  ]
+}

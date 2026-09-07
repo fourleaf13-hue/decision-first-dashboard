@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateGroundedBundle } from './grounding.js';
+import { validateGroundedBundle } from './grounding-coverage.js';
 import { buildRenderPlan, serializeRenderPlan } from './planner.js';
 import { renderHtml, renderSvg } from './render-plan.js';
 

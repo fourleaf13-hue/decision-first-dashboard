@@ -104,7 +104,17 @@ Composite accepts only:
 
 If any required composite scoring fact cannot be mechanically grounded, the transition is `FALLBACK_TO_NO_SCORE`. Do not fill the gap with an inferred formula, guessed weight, or benchmark.
 
-For `no_score`, do not create `Healthy`, `Marginal`, `At risk`, or a 0–100 score. Overall direction remains a deterministic renderer derivation from validated signal directions.
+For `no_score`, do not create `Healthy`, `Marginal`, `At risk`, or a 0–100 overall score. Overall direction remains a deterministic renderer derivation from validated signal directions.
+
+**Radar eligibility is independent of overall-score eligibility.** A `no_score` dashboard may render a closed radar polygon when the source explicitly provides all of the following:
+
+- 3–6 comparable dimensions;
+- one shared source-backed scale in `radarScale.min` / `radarScale.max`;
+- a source-backed `normalizedScore` for every rendered dimension.
+
+When those facts exist, put the comparable dimensions in `signals`, set `radarScale`, and preserve each source value separately from `normalizedScore`. The compiler grounds the shared scale and every normalized score before rendering.
+
+Do **not** derive or guess radar scores merely to obtain the visual. Raw heterogeneous KPIs such as MRR dollars, customer counts, churn percentages, latency, or ratios do not become comparable because they appear on the same dashboard. If a common source-backed scoring scale is absent, omit `radarScale` and `normalizedScore`; the renderer must use the non-radar no-score expression instead of drawing a misleading polygon.
 
 ### 4. Build a grounded bundle
 
@@ -240,7 +250,14 @@ For `composite`, ground all source-dependent scoring facts:
 - score-series values when present;
 - visible exception/event fields when present.
 
-For `no_score`, ground each visible signal label/value, optional source delta/direction, source series values, and visible exception/event fields.
+For ordinary `no_score`, ground each visible signal label/value, optional source delta/direction, source series values, and visible exception/event fields.
+
+For a `no_score` radar, additionally ground:
+
+- `radarScale.min` and `radarScale.max`;
+- every signal `normalizedScore` used as a radar vertex.
+
+A missing radar-scale or normalized-score claim returns to evidence extraction. Do not silently fall back to an ungrounded radar.
 
 Do not ground deterministic renderer synthesis as if it were a source fact.
 
@@ -318,16 +335,19 @@ The renderer owns the visual implementation.
 For `no_score`:
 
 - dominant center directional synthesis;
-- 3–6 signals converging on the center;
+- when all 3–6 signals have source-grounded `normalizedScore` values on one source-grounded `radarScale`, render a true closed radar polygon behind the synthesis;
+- otherwise use the legacy non-radar signal layout and never connect heterogeneous raw KPI values into a fake radar;
 - compact left business context;
 - compact right exceptions/events.
 
 For `composite`:
 
 - dominant center source-supported score and band;
-- 3–6 weighted score components converging on the center;
+- 3–6 weighted score components form a true closed radar polygon;
 - compact left score trend and score composition;
 - compact right exceptions/events.
+
+For both radar-capable modes, the fixed visual stack is: large white backing plate → radar grid/spokes/data polygon → dimension values/labels outside the plate → center synthesis or source-supported score/conclusion on top.
 
 For V3.1 with deferred requirements:
 
@@ -364,6 +384,8 @@ Before delivery, verify:
 - every V3.1 deferral remains visible in final output as `Data needed` and retains its full audit record in `plan.json`;
 - V3.1 plan validation passes with no overlap/out-of-bounds slots;
 - `no_score` overall direction matches the signal directions;
+- a `no_score` radar appears only when the shared radar scale and every normalized dimension score are source-grounded;
+- raw mixed-unit no-score KPIs never masquerade as normalized radar dimensions;
 - `composite` weights, weighted score, score scale, and score band pass semantic validation;
 - no unsupported score/status/target/action appears;
 - no framework or compiler labels leak into visible UI;
