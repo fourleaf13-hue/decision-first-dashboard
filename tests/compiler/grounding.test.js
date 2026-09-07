@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { validateGroundedBundle } from '../../skills/decision-first-dashboard/scripts/grounding.js';
+import { validateGroundedBundle } from '../../skills/decision-first-dashboard/scripts/grounding-coverage.js';
 
 const groundingDir = new URL('./fixtures/grounding/', import.meta.url);
 const composite = JSON.parse(fs.readFileSync(new URL('composite.grounded.json', groundingDir), 'utf8'));
