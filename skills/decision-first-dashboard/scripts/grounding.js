@@ -135,8 +135,11 @@ function requiredCompositePaths(data) {
 
 function requiredNoScorePaths(data) {
   const paths = [];
+  if (data.radarScale) {
+    paths.push('/radarScale/min', '/radarScale/max');
+  }
   data.signals.forEach((signal, index) => {
-    for (const field of ['label', 'value', 'delta', 'direction']) {
+    for (const field of ['label', 'value', 'delta', 'direction', 'normalizedScore']) {
       if (Object.hasOwn(signal, field)) paths.push(`/signals/${index}/${field}`);
     }
   });
