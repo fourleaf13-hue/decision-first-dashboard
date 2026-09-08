@@ -20,6 +20,9 @@
       <stop offset="0" stop-color="#7768e6"/>
       <stop offset="1" stop-color="#9e91ef"/>
     </linearGradient>
+    <marker id="radarVertex" viewBox="0 0 14 14" refX="7" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="5" fill="#6f60e5" stroke="#ffffff" stroke-width="2"/>
+    </marker>
     <style>
       .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       .ink { fill: #171733; }
@@ -30,6 +33,7 @@
       .danger { fill: #e0525f; }
       .center-field { fill: url(#centerField); stroke: #f0eef9; stroke-width: 1; }
       .radar-guide { fill: none; stroke: #d8d4f5; stroke-width: 1; stroke-dasharray: 6 9; }
+      .radar-shape { marker-start: url(#radarVertex); marker-mid: url(#radarVertex); }
       .direction-core { fill: #ffffff; stroke: #ffffff; stroke-width: 10; }
     </style>
   </defs>
