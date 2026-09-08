@@ -6,6 +6,7 @@ import { validateGroundedBundle } from '../../skills/decision-first-dashboard/sc
 const groundingDir = new URL('./fixtures/grounding/', import.meta.url);
 const composite = JSON.parse(fs.readFileSync(new URL('composite.grounded.json', groundingDir), 'utf8'));
 const noScore = JSON.parse(fs.readFileSync(new URL('no-score.grounded.json', groundingDir), 'utf8'));
+const radarNoScore = JSON.parse(fs.readFileSync(new URL('no-score-radar.grounded.json', groundingDir), 'utf8'));
 
 function validate(bundle) {
   return validateGroundedBundle(bundle, { baseDir: groundingDir });
@@ -56,6 +57,20 @@ test('passes a no-score bundle grounded by exact text spans', () => {
   const result = validate(noScore);
   assert.equal(result.valid, true);
   assert.equal(result.transition, 'PASS');
+});
+
+test('passes a no-score radar only when scale and normalized scores are grounded', () => {
+  const result = validate(radarNoScore);
+  assert.equal(result.valid, true);
+  assert.equal(result.transition, 'PASS');
+});
+
+test('missing no-score radar score grounding returns to evidence extraction', () => {
+  const bad = structuredClone(radarNoScore);
+  bad.claims = bad.claims.filter((claim) => claim.decisionPath !== '/signals/1/normalizedScore');
+  const result = validate(bad);
+  assert.equal(result.transition, 'RETURN_TO_EVIDENCE_EXTRACTION');
+  assert.ok(result.errors.some((error) => error.code === 'MISSING_REQUIRED_GROUNDING' && error.path === '/signals/1/normalizedScore'));
 });
 
 test('missing no-score grounding returns to evidence extraction', () => {
