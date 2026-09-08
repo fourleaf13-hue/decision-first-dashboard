@@ -29,7 +29,9 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          from PIL import Image, ImageFilter
+          from PIL import Image, ImageFilter, ImageFile
+
+          ImageFile.LOAD_TRUNCATED_IMAGES = True
 
           src = Path('assets/decision-first-dashboard-hero.jpg')
           dst = Path('assets/decision-first-dashboard-hero.png')
