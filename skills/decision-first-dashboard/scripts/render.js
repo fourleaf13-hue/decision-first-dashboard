@@ -165,6 +165,79 @@ function htmlRowXs(count) {
   }[count] ?? [];
 }
 
+const SVG_RADAR_LAYOUT = { cx: 698, cy: 464, radarRadius: 188, labelRadius: 226 };
+const HTML_RADAR_LAYOUT = { cx: 310, cy: 260, radarRadius: 188, labelRadius: 226 };
+
+function radialPoint(cx, cy, radius, angle) {
+  return {
+    x: cx + Math.cos(angle) * radius,
+    y: cy + Math.sin(angle) * radius
+  };
+}
+
+function pointPath(points, close = false) {
+  const path = points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+    .join(' ');
+  return close ? `${path} Z` : path;
+}
+
+function radarGeometry(dimensions, min, max, layout) {
+  const span = max - min;
+  const count = dimensions.length;
+  const axes = [];
+  const shape = [];
+  const labels = [];
+
+  dimensions.forEach((dimension, index) => {
+    const angle = -Math.PI / 2 + (Math.PI * 2 * index) / count;
+    const ratio = Math.min(1, Math.max(0, (dimension.normalizedScore - min) / span));
+    axes.push(radialPoint(layout.cx, layout.cy, layout.radarRadius, angle));
+    shape.push(radialPoint(layout.cx, layout.cy, layout.radarRadius * ratio, angle));
+    labels.push(radialPoint(layout.cx, layout.cy, layout.labelRadius, angle));
+  });
+
+  return {
+    shape: pointPath(shape, true),
+    spokes: axes.map((point) => `M${layout.cx} ${layout.cy} L${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' '),
+    labels
+  };
+}
+
+function svgRadarVisual(dimensions, min, max) {
+  const geometry = radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT);
+  return `<path class="radar-spokes" d="${geometry.spokes}"/>
+    <path class="radar-shape" d="${geometry.shape}" fill="#7264ca" fill-opacity="0.20" stroke="#7264ca" stroke-width="3" stroke-linejoin="round"/>`;
+}
+
+function htmlRadarVisual(dimensions, min, max) {
+  const geometry = radarGeometry(dimensions, min, max, HTML_RADAR_LAYOUT);
+  return `<path class="radar-spokes" d="${geometry.spokes}"></path>
+            <path class="radar-shape" d="${geometry.shape}"></path>`;
+}
+
+function svgRadarNodes(dimensions, min, max, nodeClass) {
+  const geometry = radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT);
+  return dimensions.map((dimension, index) => {
+    const point = geometry.labels[index];
+    return `<g class="${nodeClass}">
+      <text x="${point.x.toFixed(1)}" y="${(point.y - 10).toFixed(1)}" class="accent" font-size="22" font-weight="740" text-anchor="middle">${escapeMarkup(formatScore(dimension.normalizedScore))}</text>
+      <text x="${point.x.toFixed(1)}" y="${(point.y + 13).toFixed(1)}" class="ink" font-size="13" font-weight="650" text-anchor="middle">${escapeMarkup(dimension.label)}</text>
+    </g>`;
+  }).join('\n');
+}
+
+function htmlRadarNodes(dimensions, min, max, className) {
+  const geometry = radarGeometry(dimensions, min, max, HTML_RADAR_LAYOUT);
+  return dimensions.map((dimension, index) => {
+    const point = geometry.labels[index];
+    return `<div class="${className}" style="left:${(point.x / 620 * 100).toFixed(2)}%;top:${(point.y / 520 * 100).toFixed(2)}%">
+    <strong>${escapeMarkup(formatScore(dimension.normalizedScore))}</strong>
+    <span>${escapeMarkup(dimension.label)}</span>
+  </div>`;
+  }).join('\n');
+}
+
 function svgSignalCluster(signals) {
   const { top, bottom } = splitSignalRows(signals);
   const placed = [];
@@ -235,55 +308,18 @@ function formatWeight(weight) {
   return `${Number((weight * 100).toFixed(1))}%`;
 }
 
-function svgComponentCluster(components) {
-  const { top, bottom } = splitSignalRows(components);
-  const placed = [];
-
-  for (const [rowName, row, y] of [['top', top, 330], ['bottom', bottom, 590]]) {
-    const xs = svgRowXs(row.length);
-    row.forEach((component, index) => placed.push({ component, x: xs[index], y, rowName }));
-  }
-
-  const paths = placed.map(({ x, y }) => `M698 464 L${x} ${y}`).join(' ');
-  const nodes = placed.map(({ component, x, y, rowName }) => {
-    const topRow = rowName === 'top';
-    const scoreY = topRow ? y - 62 : y + 66;
-    const labelY = topRow ? y - 37 : y + 91;
-    const detailY = topRow ? y - 18 : y + 110;
-    const detail = `${formatWeight(component.weight)} · ${component.value}`;
-    return `<g class="score-component-node">
-      <circle cx="${x}" cy="${y}" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
-      <text x="${x}" y="${scoreY}" class="accent" font-size="24" font-weight="740" text-anchor="middle">${escapeMarkup(formatScore(component.normalizedScore))}</text>
-      <text x="${x}" y="${labelY}" class="ink" font-size="13" font-weight="650" text-anchor="middle">${escapeMarkup(component.label)}</text>
-      <text x="${x}" y="${detailY}" class="muted" font-size="11" text-anchor="middle">${escapeMarkup(detail)}</text>
-    </g>`;
-  }).join('\n');
-
-  return { paths, nodes };
+function svgComponentCluster(components, min, max) {
+  return {
+    visual: svgRadarVisual(components, min, max),
+    nodes: svgRadarNodes(components, min, max, 'score-component-node')
+  };
 }
 
-function htmlComponentCluster(components) {
-  const { top, bottom } = splitSignalRows(components);
-  const placed = [];
-
-  for (const [row, y] of [[top, 28], [bottom, 72]]) {
-    const xs = htmlRowXs(row.length);
-    row.forEach((component, index) => placed.push({ component, x: xs[index], y }));
-  }
-
-  const paths = placed.map(({ x, y }) => {
-    const px = (620 * x / 100).toFixed(1);
-    const py = (520 * y / 100).toFixed(1);
-    return `M310 260 L${px} ${py}`;
-  }).join(' ');
-
-  const nodes = placed.map(({ component, x, y }) => `<div class="signal score-component" style="left:${x}%;top:${y}%">
-    <strong>${escapeMarkup(formatScore(component.normalizedScore))}</strong>
-    <span>${escapeMarkup(component.label)}</span>
-    <small>${escapeMarkup(`${formatWeight(component.weight)} · ${component.value}`)}</small>
-  </div>`).join('\n');
-
-  return { paths, nodes };
+function htmlComponentCluster(components, min, max) {
+  return {
+    visual: htmlRadarVisual(components, min, max),
+    nodes: htmlRadarNodes(components, min, max, 'signal score-component')
+  };
 }
 
 function svgCompositionRows(components) {
@@ -434,7 +470,16 @@ function noScoreViewModel(data) {
 function renderNoScoreSvg(data) {
   const template = fs.readFileSync(noScoreSvgTemplatePath, 'utf8');
   const { revenue, synthesis, revenueSeries, movement } = noScoreViewModel(data);
-  const signalCluster = svgSignalCluster(data.signals);
+  const radar = data.radarScale
+    ? {
+        visual: svgRadarVisual(data.signals, data.radarScale.min, data.radarScale.max),
+        nodes: svgRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'radar-dimension-node')
+      }
+    : null;
+  const signalCluster = radar ?? svgSignalCluster(data.signals);
+  const orbitVisual = radar
+    ? radar.visual
+    : `<path class="orbit-spokes" d="${signalCluster.paths}" fill="none" stroke="#d6d0ef" stroke-width="1.6"/>`;
 
   return fillTemplate(template, {
     REVENUE_TITLE: escapeMarkup(revenueTitle(revenue)),
@@ -444,7 +489,7 @@ function renderNoScoreSvg(data) {
     REVENUE_VISUAL: svgRevenueVisual(revenueSeries),
     MOVEMENT_ROWS: svgMovementRows(movement),
     SYNTHESIS: synthesis.direction,
-    SVG_ORBIT_PATHS: signalCluster.paths,
+    SVG_ORBIT_VISUAL: orbitVisual,
     SVG_SIGNAL_NODES: signalCluster.nodes,
     EXCEPTION_ROWS: svgExceptionRows(data.exceptions),
     EVENT_ROWS: svgEventRows(data.events)
@@ -455,7 +500,16 @@ function renderNoScoreHtml(data) {
   const template = fs.readFileSync(noScoreHtmlTemplatePath, 'utf8');
   const css = fs.readFileSync(cssTemplatePath, 'utf8');
   const { revenue, synthesis, revenueSeries, movement } = noScoreViewModel(data);
-  const signalCluster = htmlSignalCluster(data.signals);
+  const radar = data.radarScale
+    ? {
+        visual: htmlRadarVisual(data.signals, data.radarScale.min, data.radarScale.max),
+        nodes: htmlRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'signal radar-dimension')
+      }
+    : null;
+  const signalCluster = radar ?? htmlSignalCluster(data.signals);
+  const orbitVisual = radar
+    ? radar.visual
+    : `<path class="orbit-spokes" d="${signalCluster.paths}"></path>`;
 
   return fillTemplate(template, {
     CSS: css,
@@ -466,7 +520,7 @@ function renderNoScoreHtml(data) {
     HTML_REVENUE_VISUAL: htmlRevenueVisual(revenueSeries),
     HTML_MOVEMENT_ROWS: htmlMovementRows(movement),
     SYNTHESIS: synthesis.direction,
-    HTML_ORBIT_PATHS: signalCluster.paths,
+    HTML_ORBIT_VISUAL: orbitVisual,
     HTML_SIGNAL_NODES: signalCluster.nodes,
     HTML_EXCEPTION_ROWS: htmlExceptionRows(data.exceptions),
     HTML_EVENT_ROWS: htmlEventRows(data.events)
@@ -476,7 +530,7 @@ function renderNoScoreHtml(data) {
 function renderCompositeSvg(data) {
   const template = fs.readFileSync(compositeSvgTemplatePath, 'utf8');
   const scoreSeries = data.context?.provenance === 'source' ? data.context.scoreSeries : null;
-  const cluster = svgComponentCluster(data.model.components);
+  const cluster = svgComponentCluster(data.model.components, data.score.min, data.score.max);
 
   return fillTemplate(template, {
     SCORE_LABEL: escapeMarkup(data.score.label),
@@ -485,7 +539,7 @@ function renderCompositeSvg(data) {
     SCORE_BAND: escapeMarkup(data.score.band),
     SVG_SCORE_TREND: svgScoreVisual(scoreSeries),
     SVG_COMPOSITION_ROWS: svgCompositionRows(data.model.components),
-    SVG_COMPONENT_PATHS: cluster.paths,
+    SVG_COMPONENT_RADAR: cluster.visual,
     SVG_COMPONENT_NODES: cluster.nodes,
     EXCEPTION_ROWS: svgExceptionRows(data.exceptions),
     EVENT_ROWS: svgEventRows(data.events)
@@ -496,7 +550,7 @@ function renderCompositeHtml(data) {
   const template = fs.readFileSync(compositeHtmlTemplatePath, 'utf8');
   const css = fs.readFileSync(cssTemplatePath, 'utf8');
   const scoreSeries = data.context?.provenance === 'source' ? data.context.scoreSeries : null;
-  const cluster = htmlComponentCluster(data.model.components);
+  const cluster = htmlComponentCluster(data.model.components, data.score.min, data.score.max);
 
   return fillTemplate(template, {
     CSS: css,
@@ -506,7 +560,7 @@ function renderCompositeHtml(data) {
     SCORE_BAND: escapeMarkup(data.score.band),
     HTML_SCORE_TREND: htmlScoreVisual(scoreSeries),
     HTML_COMPOSITION_ROWS: htmlCompositionRows(data.model.components),
-    HTML_COMPONENT_PATHS: cluster.paths,
+    HTML_COMPONENT_RADAR: cluster.visual,
     HTML_COMPONENT_NODES: cluster.nodes,
     HTML_EXCEPTION_ROWS: htmlExceptionRows(data.exceptions),
     HTML_EVENT_ROWS: htmlEventRows(data.events)
