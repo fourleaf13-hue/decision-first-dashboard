@@ -35,6 +35,10 @@ jobs:
         run: node skills/decision-first-dashboard/scripts/compile.js tests/compiler/fixtures/grounding/composite.grounded.json tests/compiler/generated/v3-composite
       - name: Compile grounded no-score fixture
         run: node skills/decision-first-dashboard/scripts/compile.js tests/compiler/fixtures/grounding/no-score.grounded.json tests/compiler/generated/v3-no-score
+      - name: Compile routed composite fixture
+        run: node skills/decision-first-dashboard/scripts/compile-dashboard.js tests/compiler/fixtures/routing/composite.routing.json tests/compiler/fixtures/grounding/composite.grounded.json tests/compiler/generated/routed-composite
+      - name: Compile routed no-score fixture
+        run: node skills/decision-first-dashboard/scripts/compile-dashboard.js tests/compiler/fixtures/routing/no-score.routing.json tests/compiler/fixtures/grounding/no-score.grounded.json tests/compiler/generated/routed-no-score
       - uses: actions/upload-artifact@v4
         with:
           name: saas-no-score-render
@@ -47,3 +51,7 @@ jobs:
             tests/compiler/generated/v3-composite/output.composite.html
             tests/compiler/generated/v3-no-score/output.no-score.svg
             tests/compiler/generated/v3-no-score/output.no-score.html
+            tests/compiler/generated/routed-composite/output.composite.svg
+            tests/compiler/generated/routed-composite/output.composite.html
+            tests/compiler/generated/routed-no-score/output.no-score.svg
+            tests/compiler/generated/routed-no-score/output.no-score.html
