@@ -20,7 +20,9 @@ Before redesigning anything, it asks:
 
 > **Does this need to be a dashboard at all?**
 
-A dashboard should support a **recurring decision**, have a clear owner, and change an action, priority, escalation, or intervention when an important signal changes.
+A dashboard should support a **recurring decision or monitoring loop**, have a clear **accountability path**, and change an action, priority, escalation, intervention, or coordination when an important signal changes.
+
+That accountability path can be one owner, an on-call team, or a recurring shared forum such as a board or cross-functional review. It does not have to be one named person.
 
 “Visibility” alone isn't enough.
 
@@ -122,9 +124,24 @@ The skill will first check whether a dashboard is the right format. If it is, it
 
 ### Dashboard Worthiness Test
 
-Before the Decision Brief, the skill checks for a recurring decision or monitoring loop, a clear owner, and an action/priority/escalation that changes when a signal changes. Any questions used here count toward the same five-question intake budget; this is not a second questionnaire.
+Before the Decision Brief, the agent produces a structured assessment matching `schemas/worthiness-assessment.schema.json`.
 
-If the request is only “visibility” or is better handled as a one-off analysis, scheduled summary, alert, report, or chat/query workflow, dashboard rendering stops by default. The user can explicitly override that recommendation, but the rest of the decision, routing, and grounding contracts still apply.
+It records whether there is a recurring decision or monitoring loop, an accountability path, and a response that changes. A shared decision forum is a valid accountability path; a single named owner is not required.
+
+The agent does **not** choose the next transition. The compiler validates the assessment and decides:
+
+```text
+BUILD_DECISION_BRIEF
+ASK_WORTHINESS_QUESTION
+REDIRECT_NON_DASHBOARD
+FIX_WORTHINESS_ASSESSMENT
+```
+
+If the request is only “visibility” or is better handled as a one-off analysis, scheduled summary, alert, report, or chat/query workflow, dashboard rendering stops by default. If the user explicitly chooses a dashboard after seeing that trade-off, `userOverride: true` can continue to the Decision Brief — but it still must pass routing and grounding.
+
+This machine gate checks schema and internal semantic consistency. **It does not prove the agent interpreted the user's natural-language intent correctly.** A separate end-to-end agent eval suite is still needed to measure model behavior on raw prompts.
+
+Any Worthiness questions count toward the same five-question intake budget as the Decision Brief; this is not a second questionnaire.
 
 ### Adaptive Decision Brief
 
@@ -136,14 +153,15 @@ The Action Trigger Test asks: **if this metric changes materially, what decision
 
 The routing manifest preserves the complete extracted inventory while keeping only the minimum sufficient first-view signals visible. Active exceptions cannot be hidden to make the dashboard look healthier.
 
-### Grounding
+### Three production gates
 
-The production compiler has two hard gates:
+The production compiler has three ordered gates:
 
-1. **Routing gate** — verifies metric-routing semantics.
-2. **Grounding gate** — verifies that rendered source claims resolve back to source evidence.
+1. **Worthiness gate** — validates the structured Worthiness Assessment and decides whether to continue, clarify, redirect, or repair the assessment.
+2. **Routing gate** — verifies metric-routing semantics.
+3. **Grounding gate** — verifies that rendered source claims resolve back to source evidence.
 
-Machine-readable transitions are:
+Downstream transitions remain:
 
 ```text
 PASS
@@ -168,7 +186,9 @@ Composite output is allowed only when all score-model facts are mechanically gro
 ### Production path
 
 ```text
-Dashboard Worthiness Test
+User context
+→ structured Worthiness Assessment
+→ worthiness validation
 → Decision Brief
 → evidence extraction
 → Metric Router
@@ -182,7 +202,8 @@ Dashboard Worthiness Test
 From the skill directory:
 
 ```bash
-node scripts/compile-dashboard.js path/to/routing-manifest.json path/to/grounded-bundle.json path/to/output-directory
+node scripts/worthiness.js path/to/worthiness-assessment.json
+node scripts/compile-dashboard.js path/to/worthiness-assessment.json path/to/routing-manifest.json path/to/grounded-bundle.json path/to/output-directory
 ```
 
 Mode-specific outputs:
@@ -202,13 +223,13 @@ npm run validate:saas
 npm run render:saas
 ```
 
-GitHub Actions runs the compiler test suite, including Dashboard Worthiness and Decision Brief intake, 70-KPI Metric Router behavior, routed production compilation, grounded composite/no-score compilation, radar rendering, and byte-level golden snapshots.
+GitHub Actions runs the compiler suite, including executable Worthiness scenario fixtures, Decision Brief intake, 70-KPI Metric Router behavior, routed production compilation, grounded composite/no-score compilation, radar rendering, and byte-level golden snapshots.
 
 ## What this is not
 
 This is not a generic chart library and not a prompt that asks AI to freestyle a prettier admin dashboard.
 
-It is a decision-first workflow with routing, evidence checks, and deterministic rendering so the output is useful **and** auditable.
+It is a decision-first workflow with worthiness, routing, evidence checks, and deterministic rendering so the output is useful **and** auditable.
 
 ## License
 
