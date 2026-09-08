@@ -55,3 +55,14 @@ test('a non-dashboard redirect cannot smuggle dashboard back in as the recommend
   assert.equal(result.result.transition, 'FIX_WORTHINESS_ASSESSMENT');
   assert.ok(result.result.errors.some((error) => error.code === 'FORMAT_TRANSITION_CONFLICT'));
 });
+
+test('an explicit user override can proceed to Decision Brief while keeping downstream gates intact', () => {
+  const visibility = structuredClone(scenarios.find((scenario) => scenario.id === 'visibility-only').assessment);
+  visibility.userOverride = true;
+  visibility.recommendedFormat = 'dashboard';
+  const result = compile(visibility);
+
+  assert.equal(result.result.transition, 'PASS');
+  assert.equal(result.result.worthinessSummary.userOverride, true);
+  assert.equal(result.result.routingSummary.primaryCount, 5);
+});
