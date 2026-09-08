@@ -7,7 +7,7 @@ Most dashboard prompts ask an LLM to **design**. This project treats dashboard r
 ```text
 source dashboard / verified source file
       ↓
-agent extraction + mode proposal
+agent extraction + Metric Router + mode proposal
       ↓
 grounded evidence bundle
       ↓
@@ -36,13 +36,23 @@ The user still has to scan everything and construct the conclusion mentally.
 
 Decision-First Dashboard changes the information hierarchy first. The agent extracts evidence; the compiler verifies that the evidence can be mechanically grounded back to source bytes before the deterministic renderer owns the layout.
 
+## Metric Router
+
+A source can contain many valid metrics without needing to display them all as peers. The canonical **70-KPI overload** case is routed before rendering using the **Action Trigger Test**: if a metric changes materially, what decision or action changes?
+
+Each metric is classified as `primary_signal`, `diagnostic`, `exception`, `drilldown`, or `scorecard_only`. The first view keeps only the minimum sufficient decision signals plus active exceptions; explanatory, investigative, and completeness metrics stay available in the source/extraction inventory rather than competing for equal visual weight.
+
+> **Preserve everything without showing everything.**
+
+The router is a Layer 1 classification step. It does not weaken the closed grounded-bundle contract or add hidden, unused evidence to the compiler input.
+
 ## Two strict evidence modes
 
-The compiler supports two mutually exclusive modes.
+The compiler supports two mutually exclusive modes after routing.
 
-### 1. `no_score`
+### No-score mode — no unsupported score invented
 
-Use this when the source does not provide a defensible composite model.
+Use compiler mode `no_score` when the source does not provide a defensible composite model.
 
 For executive no-score cases, the rendered structure is deliberately constrained:
 
@@ -52,10 +62,12 @@ WHY / CONTEXT  →  DOMINANT SYNTHESIS  ←  WHO / EVENTS
 
 The output does **not** invent a Health Score. Overall direction is derived deterministically from source-supported signal directions.
 
+The image below is retained as a guardrail example: it demonstrates that the renderer can preserve decision hierarchy without fabricating a score. It is **not the ceiling or final expression of no-score capability**. With the current radar grounding rules, a no-score dashboard may also render a true closed 3–6 dimension radar profile when every peer dimension has a source-grounded normalized score on one source-grounded shared scale. Heterogeneous raw KPIs remain non-radar.
+
 <table>
   <tr>
     <th width="50%">Before</th>
-    <th width="50%">Deterministic no-score output</th>
+    <th width="50%">No-score mode — no unsupported score invented</th>
   </tr>
   <tr>
     <td width="50%"><img src="examples/saas/before.png" width="100%"></td>
@@ -63,9 +75,9 @@ The output does **not** invent a Health Score. Overall direction is derived dete
   </tr>
 </table>
 
-### 2. `composite`
+### Composite mode — when the evidence supports it
 
-Use this only when the source already provides a complete, defensible score model.
+Use compiler mode `composite` only when the source already provides a complete, defensible score model.
 
 Composite v1 requires all of the following:
 
@@ -79,9 +91,11 @@ The validator checks that weights sum to 1, the displayed score matches the weig
 
 If any required model fact is missing, the correct fallback is `no_score` — not an inferred formula, guessed weight, or fabricated threshold.
 
-The existing `examples/saas/after.png` remains a visual reference for a dominant score composition. It is **not** treated as proof that the canonical SaaS source fixture contains a real composite model.
+The composite image below is the uploaded visual reference for the intended dominant-score composition. It illustrates the visual capability only; it is **not** evidence that the canonical SaaS source fixture contains a real composite model. A production composite output is allowed only when its score, scale, normalized components, weights, aggregation rule, and score bands are mechanically grounded.
 
-<img src="examples/saas/after.png" width="760">
+<img src="examples/saas/composite-mode.png" width="760">
+
+The original `examples/saas/after.png` is retained. `examples/saas/composite-mode.png` is the explicit README reference for this evidence-supported composite capability.
 
 The repository's composite JSON fixture lives under `tests/compiler/fixtures/` and is synthetic contract data used only for automated validation and rendering tests.
 
@@ -126,12 +140,13 @@ Give the agent a dashboard screenshot, Figma frame, existing dashboard code, or 
 The intended production execution path is:
 
 1. Extract verified facts only.
-2. Decide whether the evidence supports `no_score` or strict `composite` mode.
-3. Build a closed `decisionState`.
-4. Build the source hash, evidence ledger, and claim references in a grounded bundle.
-5. Run the grounding compiler gate.
-6. Render SVG and HTML only after `PASS`.
-7. Inspect the output for evidence and visual integrity.
+2. Route metrics with the Metric Router and Action Trigger Test.
+3. Decide whether the evidence supports `no_score` or strict `composite` mode.
+4. Build a closed `decisionState` from the minimum sufficient visible signals and source-supported exceptions.
+5. Build the source hash, evidence ledger, and claim references in a grounded bundle.
+6. Run the grounding compiler gate.
+7. Render SVG and HTML only after `PASS`.
+8. Inspect the output for evidence and visual integrity.
 
 From the skill directory:
 
@@ -203,13 +218,14 @@ Both rendering branches use fixed templates and the same shared visual system.
 
 - one dominant center directional synthesis area;
 - 3–6 signals converging on the center;
+- when all 3–6 peer dimensions have source-grounded normalized scores on one source-grounded shared scale, a true closed radar profile is permitted;
 - compact left business context;
 - compact right account exceptions and events.
 
 ### Composite composition
 
 - one dominant center source-supported score and band;
-- 3–6 weighted score components converging on the center;
+- 3–6 normalized weighted score components form a true closed radar profile;
 - compact left score trend and score composition;
 - compact right account exceptions and events.
 
@@ -234,6 +250,7 @@ decision-first-dashboard/
 │   └── saas/
 │       ├── before.png
 │       ├── after.png
+│       ├── composite-mode.png
 │       ├── input.no-score.json
 │       ├── output.no-score.svg
 │       ├── output.no-score.html
@@ -267,6 +284,7 @@ decision-first-dashboard/
     │   ├── grounding.test.js
     │   ├── compile-cli.test.js
     │   ├── golden-snapshot.test.js
+    │   ├── metric-router-contract.test.js
     │   ├── schema.test.js
     │   ├── composite-schema.test.js
     │   ├── render-svg.test.js
@@ -298,7 +316,7 @@ This is not a generic chart library and not a prompt that asks the model to free
 
 The project separates three responsibilities:
 
-- **Layer 1 / Agent:** evidence extraction and mode proposal.
+- **Layer 1 / Agent:** evidence extraction, Metric Router classification, and mode proposal.
 - **Layer 2 / Compiler contract:** source grounding, claim coverage, schema/semantic validation, and machine-readable retry/fallback decisions.
 - **Layer 3 / Renderer:** deterministic SVG/HTML composition only.
 
