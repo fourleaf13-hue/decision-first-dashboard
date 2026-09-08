@@ -21,7 +21,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .tmp/hero/part-*.txt | base64 -d > assets/decision-first-dashboard-hero.webp
+          cat .tmp/hero/part-0{0..9}.txt .tmp/herotail/tail-*.txt | base64 -d > assets/decision-first-dashboard-hero.webp
           test "$(stat -c%s assets/decision-first-dashboard-hero.webp)" -eq 83418
           echo "45973db0a72fdeb43e5d087297a76d648051ed1e44cd1fcf0cc055cb3098e08f  assets/decision-first-dashboard-hero.webp" | sha256sum -c -
           file assets/decision-first-dashboard-hero.webp | grep -qi 'Web/P'
@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           rm -f assets/decision-first-dashboard-hero.png
-          rm -rf .tmp/hero
+          rm -rf .tmp/hero .tmp/herotail
           rm -f .github/workflows/finalize-hero-webp.yml
 
       - name: Commit verified replacement
