@@ -1,3 +1,10 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { validateAgainstSchema } from './validate.js';
+
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const routingSchema = JSON.parse(fs.readFileSync(path.resolve(currentDir, '../schemas/metric-routing.schema.json'), 'utf8'));
 const ROLES = new Set(['primary_signal', 'diagnostic', 'exception', 'drilldown', 'scorecard_only']);
 const VISIBILITIES = new Set(['first_view', 'supporting', 'on_demand', 'scorecard']);
 
@@ -31,6 +38,19 @@ function sameSet(a, b) {
 }
 
 export function validateMetricRouting(manifest, decisionState) {
+  const schemaResult = validateAgainstSchema(manifest, routingSchema);
+  if (!schemaResult.valid) {
+    return {
+      valid: false,
+      errors: schemaResult.errors.map((error) => ({
+        code: 'ROUTING_SCHEMA_INVALID',
+        path: error.instancePath,
+        message: `${error.keyword}: ${error.message}`
+      })),
+      summary: null
+    };
+  }
+
   const errors = [];
   if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
     return { valid: false, errors: [{ code: 'ROUTING_MANIFEST_INVALID', path: '', message: 'routing manifest must be an object' }], summary: null };
