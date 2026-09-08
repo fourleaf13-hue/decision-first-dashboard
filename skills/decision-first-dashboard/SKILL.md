@@ -20,7 +20,7 @@ The agent may extract and classify evidence. It may not invent source support, b
 The agent may:
 
 - extract literal source facts;
-- classify decision roles;
+- classify decision roles with the Metric Router;
 - choose a proposed mode;
 - create evidence anchors and claim references.
 
@@ -59,7 +59,37 @@ Identify the primary user and decision, then capture only source-supported metri
 
 Never invent scores, targets, thresholds, customer states, events, workflows, actions, or causal claims. Direction is not the same as health.
 
-### 2. Choose the evidence mode
+### 2. Route metrics before choosing a mode
+
+Use the **Metric Router** whenever the source exposes more metrics than a user can reasonably scan at first view. The canonical stress case is **70-KPI overload**: a dashboard may contain roughly 70 valid KPIs, but validity does not make every KPI a first-view peer.
+
+> **Preserve everything without showing everything.**
+
+Preserve the complete source/extraction inventory for traceability. Route each metric to exactly one decision role before constructing the visible decision state:
+
+- `primary_signal` — directly changes the main decision or next action; eligible for first-view emphasis.
+- `diagnostic` — explains why a primary signal moved or why the current state exists; supporting context, not a peer headline by default.
+- `exception` — a source-supported breach, outlier, critical account/event, or hard-stop condition that requires attention even when the summary looks acceptable.
+- `drilldown` — useful investigation detail that should be available on demand rather than occupying the default composition.
+- `scorecard_only` — retained for completeness, audit, or secondary scorecard use, but not promoted to the decision-first view unless the user explicitly requests it.
+
+Apply the **Action Trigger Test** to every candidate metric:
+
+1. If this metric changes materially, does the user's decision or action change?
+2. If yes in the normal decision loop, route it to `primary_signal`.
+3. If it requires attention because a threshold, safety, compliance, contractual, outage, or other critical condition is breached, route it to `exception`; exceptions override ordinary synthesis rather than being averaged away.
+4. If it mainly explains a primary signal, route it to `diagnostic`.
+5. If it matters only after the user chooses to investigate, route it to `drilldown`.
+6. If no decision, action, diagnosis, or exception handling changes, route it to `scorecard_only`.
+
+Routing rules:
+
+- Do not promote a metric because it is easy to visualize, numerically large, or already placed in a KPI card.
+- Prefer the minimum sufficient set of `primary_signal` metrics. The current deterministic no-score renderer supports 3–6 visible signals; when the source contains more, route the remainder to `diagnostic`, `exception`, `drilldown`, or `scorecard_only` instead of deleting source evidence.
+- Active `exception` facts may be visible even when they are not part of the central synthesis.
+- The role taxonomy belongs to Layer 1 routing. Do not leak `primary_signal`, `diagnostic`, `exception`, `drilldown`, or `scorecard_only` labels into product UI, and do not add unclaimed hidden metrics to the grounded bundle merely to prove they were preserved. The closed grounded bundle should contain only facts used by the rendered decision state and its required claims.
+
+### 3. Choose the evidence mode
 
 The compiler supports two mutually exclusive decision-state modes.
 
@@ -91,7 +121,7 @@ Three dimensions are sufficient and must render as a triangle. Fewer than three 
 
 Radar is a **profile chart**, not a generic multi-metric chart. Do not connect heterogeneous raw KPIs such as revenue dollars, customer counts, percentages, latency, ratios, or unrelated business outcomes merely because several numbers are available. Do not derive or guess normalization for visual convenience. If a shared source-backed scale is absent, keep the metrics in the non-radar `no_score` expression.
 
-### 3. Build a grounded bundle
+### 4. Build a grounded bundle
 
 The production contract has four top-level fields:
 
@@ -127,7 +157,7 @@ The compiler verifies the source file hash before checking any claim.
 
 Image-only coordinates are not strong composite grounding in V3 because this repository has no deterministic OCR/token extractor. For screenshot inputs, first produce a verifiable text/JSON sidecar. Do not represent an unverified screenshot interpretation as strong composite evidence.
 
-### 4. Required grounding coverage
+### 5. Required grounding coverage
 
 For `composite`, ground all source-dependent scoring facts:
 
@@ -149,7 +179,7 @@ A missing radar-scale or normalized-score claim returns to evidence extraction. 
 
 Do not ground deterministic renderer synthesis as if it were a source fact.
 
-### 5. Compile through the grounding gate
+### 6. Compile through the grounding gate
 
 Production execution is:
 
@@ -166,7 +196,7 @@ On any non-`PASS` transition, it exits non-zero and does not render dashboard ou
 
 Treat `validate.js` and `render.js` as lower-level compiler/renderer tools. Do not use direct rendering as a substitute for the V3 grounded production path.
 
-### 6. Follow failure transitions literally
+### 7. Follow failure transitions literally
 
 - `FIX_DECISION_STATE` → repair contract/schema errors only; do not weaken validation.
 - `RETURN_TO_EVIDENCE_EXTRACTION` → re-read the source and repair evidence/claims.
@@ -212,6 +242,8 @@ Safety, compliance, security, regulatory, contractual, or outage conditions over
 
 Before delivery, verify:
 
+- the Metric Router has classified overloaded source metrics before the evidence mode is chosen;
+- the first view contains the minimum sufficient `primary_signal` set plus active source-supported exceptions, rather than a flat KPI inventory;
 - the grounded-bundle schema passes;
 - the source SHA-256 matches the actual source bytes;
 - every required visible/source scoring fact has a resolvable claim and evidence anchor;
