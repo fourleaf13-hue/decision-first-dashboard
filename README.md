@@ -7,7 +7,7 @@ Most dashboard prompts ask an LLM to **design**. This project treats dashboard r
 ```text
 source dashboard / verified source file + user context
       ↓
-adaptive Decision Brief (0–5 one-at-a-time questions)
+adaptive Decision Brief (1–5 questions unless Decision + Action are already explicit)
       ↓
 agent extraction + Metric Router + mode proposal
       ↓
@@ -46,16 +46,22 @@ The interaction is deliberately lightweight:
 
 - ask **one question at a time**;
 - ask **no more than five questions**;
-- stop early as soon as the information is sufficient;
-- never ask for information already provided or inferable from the request or uploaded data;
-- treat the five dimensions — Decision, Action, Exception, Diagnosis, and Audience/cadence — as a question pool rather than a fixed questionnaire.
+- stop early as soon as the confirmed information is sufficient;
+- do not ask the user to repeat source facts already visible or extractable from the request/data;
+- treat Decision, Action, Exception, Diagnosis, and Audience/cadence as a question pool rather than a fixed questionnaire.
+
+A critical distinction is enforced: **source facts are not business intent**. A screenshot, uploaded dataset, dashboard title, visible KPI mix, or domain pattern can suggest what the dashboard might be for, but cannot silently establish what the user actually wants to decide. Unless the user has already explicitly supplied both the **Decision** and the **Action**, the skill must ask **at least one question** and get confirmation before routing metrics or rendering.
+
+An inferred intent is only a candidate. The skill can turn that candidate into a short multiple-choice question, but it cannot count the inference itself as a completed Decision Brief.
 
 If the user cannot answer an open question, the skill first reduces it to 2–4 concrete choices. If the user is still unsure, it can infer the most defensible direction from the uploaded data and ask for confirmation. It never invents a business threshold merely to complete the brief.
 
 Both intake orders are supported:
 
-- **data-first** — profile uploaded fields, metrics, dimensions, time range, targets, and benchmarks first, then ask only for missing decision context;
+- **data-first** — profile uploaded fields, metrics, dimensions, time range, targets, and benchmarks first, then ask only for missing decision context; profiling does not waive intent confirmation;
 - **question-first** — clarify the decision context first, then request only the data needed to support that decision and its diagnosis path.
+
+The zero-question path is intentionally narrow: it applies only when the user's request or already-established conversation context explicitly states both what the dashboard should help decide and what action/prioritization changes based on that decision.
 
 The Decision Brief guides the Metric Router and information hierarchy, but it does not weaken source grounding. User intent or inferred needs do not become source evidence unless they are independently supported by the source and allowed by the decision-state contract.
 
@@ -162,7 +168,7 @@ Give the agent a dashboard screenshot, Figma frame, existing dashboard code, or 
 
 The intended production execution path is:
 
-1. Build the adaptive Decision Brief. If data already exists, profile it first; ask 0–5 short questions one at a time and stop as soon as the decision context is sufficient.
+1. Build the adaptive Decision Brief. If data already exists, profile it first. If Decision + Action are not already explicit, ask at least one short confirmation question; ask no more than five and stop as soon as the confirmed decision context is sufficient.
 2. Extract verified facts only.
 3. Route metrics with the Metric Router and Action Trigger Test.
 4. Decide whether the evidence supports `no_score` or strict `composite` mode.
