@@ -9,9 +9,9 @@ description: Use when redesigning KPI-heavy dashboards where users must scan mul
 
 Separate agent judgment from compiler judgment and deterministic rendering.
 
-**Source → Dashboard Worthiness Test → Decision Brief → Metric Routing Manifest → grounded evidence bundle → routed compiler gate → deterministic renderer → SVG / HTML**
+**Source / context → Worthiness Assessment → worthiness gate → Decision Brief → Metric Routing Manifest → grounded evidence bundle → routing + grounding gates → deterministic renderer → SVG / HTML**
 
-The agent may assess whether a dashboard is warranted, clarify decision intent, extract and classify evidence, and propose routing. It may not invent source support, bypass routing/grounding gates, or choose a free-form dashboard layout during ordinary compilation.
+The agent may assess whether a dashboard is warranted, clarify decision intent, extract and classify evidence, and propose routing. It may not invent source support, bypass worthiness/routing/grounding gates, or choose a free-form dashboard layout during ordinary compilation.
 
 A dashboard earns first-view screen space only when the information can change a decision, trigger an action, surface an exception, explain a primary signal, or support deliberate drill-down.
 
@@ -21,7 +21,7 @@ A dashboard earns first-view screen space only when the information can change a
 
 The agent may:
 
-- run the Dashboard Worthiness Test before committing to dashboard output;
+- produce a structured Worthiness Assessment from explicit user/context evidence;
 - build an adaptive Decision Brief from user context and source structure;
 - extract literal source facts;
 - classify every extracted metric with the Metric Router;
@@ -29,26 +29,34 @@ The agent may:
 - choose a proposed evidence mode;
 - create evidence anchors and claim references.
 
-The agent must not render UI or fabricate score-model evidence.
+The agent must not render UI, fabricate score-model evidence, or decide its own worthiness transition. **The agent does not choose or set the transition; the compiler owns the transition.**
 
 ### Layer 2 — Compiler contract
 
-Code decides whether routing and grounding can proceed.
+Code decides whether worthiness, routing, and grounding can proceed.
 
 The production compiler validates, in order:
 
-1. the Metric Routing Manifest and its semantic rules;
-2. exact agreement between routed `primary_signal` metrics and the visible center metrics/components;
-3. active-exception surfacing rules;
-4. the closed grounded-bundle contract;
-5. the closed `decision-state` contract;
-6. source file SHA-256;
-7. evidence reference integrity;
-8. exact JSON Pointer or text-span grounding;
-9. required claim coverage;
-10. composite score mathematics and score-band semantics.
+1. the Worthiness Assessment against `schemas/worthiness-assessment.schema.json` plus its semantic consistency rules;
+2. the Metric Routing Manifest and its semantic rules;
+3. exact agreement between routed `primary_signal` metrics and the visible center metrics/components;
+4. active-exception surfacing rules;
+5. the closed grounded-bundle contract;
+6. the closed `decision-state` contract;
+7. source file SHA-256;
+8. evidence reference integrity;
+9. exact JSON Pointer or text-span grounding;
+10. required claim coverage;
+11. composite score mathematics and score-band semantics.
 
-Machine-readable transitions are:
+Worthiness transitions are:
+
+- `BUILD_DECISION_BRIEF`;
+- `ASK_WORTHINESS_QUESTION`;
+- `REDIRECT_NON_DASHBOARD`;
+- `FIX_WORTHINESS_ASSESSMENT`.
+
+Downstream machine-readable transitions remain:
 
 - `PASS`;
 - `FIX_METRIC_ROUTING`;
@@ -68,19 +76,34 @@ Keeping hidden routing inventory out of the renderer is intentional: metrics ass
 
 Before starting the Decision Brief or committing to dashboard output, ask whether the request deserves to become a persistent dashboard at all. This is a lightweight preflight, not a separate questionnaire: reuse context already supplied, ask one question at a time only when needed, and count any worthiness questions toward the same **five-question total intake budget** used by the Decision Brief.
 
-A dashboard is justified when the workflow has a real recurring decision or recurring monitoring loop, a clear owner who is accountable for that decision or exception, and a meaningful action that changes when an important signal changes. A monitoring dashboard can qualify when a recurring exception changes attention, escalation, or intervention.
+A dashboard is justified when the workflow has a real recurring decision or recurring monitoring loop, a clear **accountability path**, and a meaningful response that changes when an important signal changes. An accountability path may be a single owner, an on-call team, a distributed responsible team, or a recurring shared decision forum such as a board or cross-functional review. A monitoring dashboard can qualify when a recurring exception changes attention, escalation, or intervention.
 
 Use three tests:
 
-1. **Recurring Decision Test** — is there a recurring decision, review, or exception-monitoring loop rather than a one-off question?
-2. **Owner Test** — is there a clear owner or accountable audience who acts on the result?
-3. **Action Change Test** — when a material signal changes, does a decision, priority, escalation, or action change?
+1. **Recurring Loop Test** — is there a recurring decision, review, or exception-monitoring loop rather than a one-off question?
+2. **Accountability Path Test** — is there an identifiable person, team, or shared forum accountable for responding to the result?
+3. **Response Change Test** — when a material signal changes, does an action, priority, escalation, intervention, or coordination change?
 
-**“Visibility” alone is not a decision and is not sufficient justification for a dashboard.** Wanting to feel informed, copy an old report, or fill a reporting slot does not automatically pass the test.
+**“Visibility” alone is not a decision and is not sufficient justification for a dashboard.** Wanting to feel informed, copy an old report, or fill a reporting slot does not automatically pass the test. Shared visibility can still be legitimate when it belongs to a recurring accountable forum and changes coordination or priorities.
+
+The agent must express the judgment as a structured assessment matching:
+
+`schemas/worthiness-assessment.schema.json`
+
+The assessment records `purpose`, `decisionLoop`, `accountability`, `responseChange`, `recommendedFormat`, and optional `userOverride`. Status fields distinguish `confirmed`, `inferred`, and `absent` instead of letting uncertainty silently become fact.
+
+The compiler, not the agent, determines the transition:
+
+- confirmed recurring loop + confirmed accountability path + confirmed response change → `BUILD_DECISION_BRIEF`;
+- inferred or unclear worthiness → `ASK_WORTHINESS_QUESTION`;
+- visibility-only, one-off, or otherwise non-recurring requests → `REDIRECT_NON_DASHBOARD` with a concrete non-dashboard `recommendedFormat`;
+- malformed or contradictory assessments → `FIX_WORTHINESS_ASSESSMENT`.
 
 If the request fails the Worthiness Test, **do not build or render a dashboard by default**. Explain the mismatch briefly and recommend the smallest format that fits the actual job, such as a **one-off analysis**, **scheduled summary**, **alert**, **report**, or **chat/query** workflow. Do not continue into Metric Routing or deterministic rendering merely because the user originally asked for a dashboard.
 
-If the user explicitly chooses a dashboard after seeing that trade-off, proceed as a user-requested exception, but still apply the Decision Brief, Metric Router, grounding, and rendering contracts. Worthiness judgment is design context, not source evidence.
+If the user explicitly chooses a dashboard after seeing that trade-off, record `userOverride: true` and `recommendedFormat: "dashboard"`. That explicit user override may enter the Decision Brief, but it does **not** bypass Metric Router, grounding, evidence, or rendering contracts. The agent may not set `userOverride` merely to avoid a redirect.
+
+Worthiness is design context, not source evidence. The machine gate verifies the assessment's schema and internal semantic consistency; it **does not prove the agent interpreted the user's natural-language intent correctly**. End-to-end model behavior therefore still requires a separate agent scenario/eval layer.
 
 ### 2. Build an adaptive Decision Brief
 
@@ -262,32 +285,36 @@ A missing radar-scale or normalized-score claim returns to evidence extraction. 
 
 Do not ground deterministic renderer synthesis or Metric Router role decisions as if they were source facts.
 
-### 8. Compile through both gates
+### 8. Compile through all gates
 
 Production execution is:
 
 ```bash
-node scripts/compile-dashboard.js <routing-manifest.json> <grounded-bundle.json> <output-dir>
+node scripts/compile-dashboard.js <worthiness-assessment.json> <routing-manifest.json> <grounded-bundle.json> <output-dir>
 ```
 
-The production gate runs Metric Router validation first. On routing failure it returns `FIX_METRIC_ROUTING` and produces no SVG/HTML. Only after routing passes does it run the existing grounding compiler.
+The production path runs the Worthiness gate first. `FIX_WORTHINESS_ASSESSMENT`, `ASK_WORTHINESS_QUESTION`, or `REDIRECT_NON_DASHBOARD` produces no SVG/HTML. Only `BUILD_DECISION_BRIEF` may continue to Metric Router validation. On routing failure the compiler returns `FIX_METRIC_ROUTING`; only after routing passes does it run the grounding compiler.
 
 On final `PASS`, the CLI writes:
 
 - `no_score` → `output.no-score.svg` and `output.no-score.html`;
 - `composite` → `output.composite.svg` and `output.composite.html`.
 
-`compile.js` remains the lower-level grounding-only compiler for tests and internal compatibility. `validate.js` and `render.js` remain lower-level Layer 2 / Layer 3 tools. Do not use these lower-level entry points as a substitute for `compile-dashboard.js` in ordinary Decision-First production workflows.
+`worthiness.js` is the lower-level Worthiness evaluator. `compile.js` remains the lower-level grounding-only compiler for tests and internal compatibility. `validate.js` and `render.js` remain lower-level Layer 2 / Layer 3 tools. Do not use these lower-level entry points as a substitute for `compile-dashboard.js` in ordinary Decision-First production workflows.
 
 ### 9. Follow failure transitions literally
 
+- `FIX_WORTHINESS_ASSESSMENT` → repair malformed or contradictory structured worthiness fields; do not guess a transition.
+- `ASK_WORTHINESS_QUESTION` → ask only the minimum missing question and keep the same five-question total intake budget.
+- `REDIRECT_NON_DASHBOARD` → stop dashboard compilation and use the validated `recommendedFormat` unless the user explicitly overrides after the trade-off is explained.
+- `BUILD_DECISION_BRIEF` → continue into the existing Decision Brief; this is not final render permission.
 - `FIX_METRIC_ROUTING` → repair routing roles, action-trigger logic, first-view budget, primary/visible mismatch, or exception surfacing; do not bypass the gate.
 - `FIX_DECISION_STATE` → repair contract/schema errors only; do not weaken validation.
 - `RETURN_TO_EVIDENCE_EXTRACTION` → re-read source and repair evidence/claims.
 - `FALLBACK_TO_NO_SCORE` → abandon unsupported composite scoring and rebuild a grounded no-score state.
 - `PASS` → render deterministically.
 
-Do not turn a failed routing or grounding check into an invitation to guess.
+Do not turn a failed worthiness, routing, or grounding check into an invitation to guess.
 
 ## Visual contract
 
@@ -328,7 +355,10 @@ Safety, compliance, security, regulatory, contractual, or outage conditions over
 
 Before delivery, verify:
 
-- the Dashboard Worthiness Test passed, or the user explicitly chose a dashboard after the trade-off was explained;
+- `schemas/worthiness-assessment.schema.json` is respected and the compiler, not the agent, owned the Worthiness transition;
+- inferred or unclear worthiness did not silently pass; it produced `ASK_WORTHINESS_QUESTION` unless the user explicitly resolved it;
+- the accountability path may be a single owner, responsible team, or shared forum; do not require one named individual when a recurring accountable forum exists;
+- `REDIRECT_NON_DASHBOARD` stopped rendering unless the user explicitly chose the dashboard trade-off and `userOverride: true` was recorded;
 - any worthiness questions counted toward the same five-question intake budget rather than creating a second questionnaire;
 - the Decision Brief contains enough confirmed decision context to route metrics, and intake stopped as soon as that context was sufficient;
 - source facts were not mistaken for business intent; if Decision and Action were not explicitly stated beforehand, at least one user-confirmation question was asked;
