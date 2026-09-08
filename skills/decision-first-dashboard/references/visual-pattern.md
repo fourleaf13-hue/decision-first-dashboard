@@ -54,6 +54,17 @@ The templates intentionally omit:
 
 If a user wants a different visual system, modify the deterministic templates deliberately; do not let the LLM improvise a replacement layout during ordinary dashboard compilation.
 
+## Radar profile eligibility
+
+Use a radar only to show the profile of one object or condition across **3–6 peer dimensions** on one shared, source-backed numeric scale.
+
+- 3 dimensions render as a triangle; fewer than 3 are invalid for radar.
+- 4–6 dimensions render with one vertex per dimension.
+- Each radar vertex must use a source-backed normalized score on the same scale.
+- A radar does not require an overall score: `no_score` may still use a radar when the comparable dimension scores and shared scale are grounded.
+- Do not connect mixed-unit KPIs such as dollars, counts, rates, durations, and ratios into a polygon. Use the ordinary signal composition instead.
+- Prefer one profile, or at most a simple before/after comparison when both series use identical dimensions and scale. Do not create a multi-series spider web.
+
 ## Composite mode
 
-`after-reference.png` demonstrates the intended composite visual family. Use a composite only when score math, normalization, weights, and thresholds are defensible from the source. The current deterministic MVP renderer implements the no-score executive branch; do not invent a composite score to imitate the reference.
+`after-reference.png` demonstrates the intended composite visual family. Use a composite only when score math, normalization, weights, and thresholds are defensible from the source. Its 3–6 normalized components render as a closed radar profile; never invent a composite score merely to obtain that visual.
