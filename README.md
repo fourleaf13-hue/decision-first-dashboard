@@ -10,9 +10,21 @@ Most AI dashboard redesigns look cleaner.
 
 They don't necessarily get smarter.
 
-**Decision-First Dashboard makes AI figure out what the dashboard is actually for before redesigning it.**
+**Decision-First Dashboard first asks whether the dashboard deserves to exist — then figures out what decision it is actually for.**
 
 > **What matters → Why → What should I do?**
+
+## Sometimes the right dashboard is no dashboard
+
+Before redesigning anything, it asks:
+
+> **Does this need to be a dashboard at all?**
+
+A dashboard should support a **recurring decision**, have a clear owner, and change an action, priority, escalation, or intervention when an important signal changes.
+
+“Visibility” alone isn't enough.
+
+If the real job is one-off or passive, the skill can recommend a **one-off analysis**, **scheduled summary**, **alert**, report, or chat/query workflow instead of forcing another dashboard into existence.
 
 ## Less dashboard. More decision.
 
@@ -63,7 +75,7 @@ If it doesn't, show the real signals instead.
 
 You don't need to know the perfect KPI set or chart type first.
 
-The skill asks only enough questions to understand the decision and what action could change. Then it routes the available metrics by role instead of putting everything on the first screen.
+The skill first checks whether a persistent dashboard is warranted. If it is, it asks only enough questions to understand the decision and what action could change. Then it routes the available metrics by role instead of putting everything on the first screen.
 
 A source can contain 70 valid KPIs without becoming a 70-KPI dashboard.
 
@@ -103,14 +115,20 @@ Give your agent a dashboard screenshot, Figma frame, existing dashboard code, or
 
 > Redesign this dashboard using the `decision-first-dashboard` skill.
 
-The skill will clarify the decision if needed, route the metrics, verify source support, and render the decision-first output.
+The skill will first check whether a dashboard is the right format. If it is, it clarifies the decision if needed, routes the metrics, verifies source support, and renders the decision-first output.
 
 <details>
 <summary><strong>Under the hood</strong></summary>
 
+### Dashboard Worthiness Test
+
+Before the Decision Brief, the skill checks for a recurring decision or monitoring loop, a clear owner, and an action/priority/escalation that changes when a signal changes. Any questions used here count toward the same five-question intake budget; this is not a second questionnaire.
+
+If the request is only “visibility” or is better handled as a one-off analysis, scheduled summary, alert, report, or chat/query workflow, dashboard rendering stops by default. The user can explicitly override that recommendation, but the rest of the decision, routing, and grounding contracts still apply.
+
 ### Adaptive Decision Brief
 
-The skill asks one question at a time, no more than five, and stops as soon as it has enough confirmed context. Source facts can suggest intent, but they do not silently become business intent. Unless Decision + Action are already explicit, the skill asks for confirmation before routing or rendering.
+The skill asks one question at a time, no more than five total across Worthiness + Decision Brief intake, and stops as soon as it has enough confirmed context. Source facts can suggest intent, but they do not silently become business intent. Unless Decision + Action are already explicit, the skill asks for confirmation before routing or rendering.
 
 ### Metric Router
 
@@ -150,7 +168,8 @@ Composite output is allowed only when all score-model facts are mechanically gro
 ### Production path
 
 ```text
-Decision Brief
+Dashboard Worthiness Test
+→ Decision Brief
 → evidence extraction
 → Metric Router
 → no_score / composite decision
@@ -183,7 +202,7 @@ npm run validate:saas
 npm run render:saas
 ```
 
-GitHub Actions runs the compiler test suite, including Decision Brief intake, 70-KPI Metric Router behavior, routed production compilation, grounded composite/no-score compilation, radar rendering, and byte-level golden snapshots.
+GitHub Actions runs the compiler test suite, including Dashboard Worthiness and Decision Brief intake, 70-KPI Metric Router behavior, routed production compilation, grounded composite/no-score compilation, radar rendering, and byte-level golden snapshots.
 
 ## What this is not
 

@@ -9,9 +9,9 @@ description: Use when redesigning KPI-heavy dashboards where users must scan mul
 
 Separate agent judgment from compiler judgment and deterministic rendering.
 
-**Source → Decision Brief → Metric Routing Manifest → grounded evidence bundle → routed compiler gate → deterministic renderer → SVG / HTML**
+**Source → Dashboard Worthiness Test → Decision Brief → Metric Routing Manifest → grounded evidence bundle → routed compiler gate → deterministic renderer → SVG / HTML**
 
-The agent may clarify decision intent, extract and classify evidence, and propose routing. It may not invent source support, bypass routing/grounding gates, or choose a free-form dashboard layout during ordinary compilation.
+The agent may assess whether a dashboard is warranted, clarify decision intent, extract and classify evidence, and propose routing. It may not invent source support, bypass routing/grounding gates, or choose a free-form dashboard layout during ordinary compilation.
 
 A dashboard earns first-view screen space only when the information can change a decision, trigger an action, surface an exception, explain a primary signal, or support deliberate drill-down.
 
@@ -21,6 +21,7 @@ A dashboard earns first-view screen space only when the information can change a
 
 The agent may:
 
+- run the Dashboard Worthiness Test before committing to dashboard output;
 - build an adaptive Decision Brief from user context and source structure;
 - extract literal source facts;
 - classify every extracted metric with the Metric Router;
@@ -63,9 +64,27 @@ Keeping hidden routing inventory out of the renderer is intentional: metrics ass
 
 ## Workflow
 
-### 1. Build an adaptive Decision Brief
+### 1. Run the Dashboard Worthiness Test
 
-Before routing metrics or choosing a visual mode, establish the minimum decision context needed to design the dashboard. Tell the user briefly that better dashboard design requires a few questions. Ask **one question at a time**, ask **no more than five questions**, and **stop immediately once enough information** exists to route metrics and make a defensible design decision.
+Before starting the Decision Brief or committing to dashboard output, ask whether the request deserves to become a persistent dashboard at all. This is a lightweight preflight, not a separate questionnaire: reuse context already supplied, ask one question at a time only when needed, and count any worthiness questions toward the same **five-question total intake budget** used by the Decision Brief.
+
+A dashboard is justified when the workflow has a real recurring decision or recurring monitoring loop, a clear owner who is accountable for that decision or exception, and a meaningful action that changes when an important signal changes. A monitoring dashboard can qualify when a recurring exception changes attention, escalation, or intervention.
+
+Use three tests:
+
+1. **Recurring Decision Test** — is there a recurring decision, review, or exception-monitoring loop rather than a one-off question?
+2. **Owner Test** — is there a clear owner or accountable audience who acts on the result?
+3. **Action Change Test** — when a material signal changes, does a decision, priority, escalation, or action change?
+
+**“Visibility” alone is not a decision and is not sufficient justification for a dashboard.** Wanting to feel informed, copy an old report, or fill a reporting slot does not automatically pass the test.
+
+If the request fails the Worthiness Test, **do not build or render a dashboard by default**. Explain the mismatch briefly and recommend the smallest format that fits the actual job, such as a **one-off analysis**, **scheduled summary**, **alert**, **report**, or **chat/query** workflow. Do not continue into Metric Routing or deterministic rendering merely because the user originally asked for a dashboard.
+
+If the user explicitly chooses a dashboard after seeing that trade-off, proceed as a user-requested exception, but still apply the Decision Brief, Metric Router, grounding, and rendering contracts. Worthiness judgment is design context, not source evidence.
+
+### 2. Build an adaptive Decision Brief
+
+Before routing metrics or choosing a visual mode, establish the minimum decision context needed to design the dashboard. Tell the user briefly that better dashboard design requires a few questions. Ask **one question at a time**, ask **no more than five questions total across Worthiness + Decision Brief intake**, and **stop immediately once enough information** exists to route metrics and make a defensible design decision.
 
 **Intent-confirmation gate:** a screenshot, uploaded dataset, dashboard title, visible KPI mix, domain pattern, or source structure can establish data facts and suggest candidate intent, but a **screenshot alone cannot satisfy the Decision Brief**. Unless the user has **explicitly stated both the Decision and the Action** in the request or prior conversation, ask **at least one question** and obtain user confirmation before Metric Router classification or rendering.
 
@@ -86,7 +105,7 @@ An **inferred candidate requires confirmation**. It may make the next question e
 
 After every answer, run an information-sufficiency check. If the confirmed Decision, confirmed Action, and relevant Exception, Diagnosis, or Audience context provide enough information for routing, stop. Do not ask all five questions merely for completeness.
 
-The zero-question path is narrow: use it only when the user's request or already-established conversation context explicitly states both what the dashboard should help decide and what action/prioritization changes based on that decision. Source data by itself never qualifies.
+The zero-question path is narrow: use it only when the user's request or already-established conversation context explicitly states both what the dashboard should help decide and what action/prioritization changes based on that decision, and the Worthiness Test can also be resolved from already-established context. Source data by itself never qualifies.
 
 If the user is unsure:
 
@@ -104,13 +123,13 @@ Support both intake orders:
 
 The Decision Brief is internal design context. It may guide routing and information hierarchy, but it is not automatically source evidence.
 
-### 2. Extract verified facts only
+### 3. Extract verified facts only
 
 Identify the primary user and decision from the Decision Brief, then capture only source-supported metrics, deltas, account states, events, targets, thresholds, and score rules.
 
 Never invent scores, targets, thresholds, customer states, events, workflows, actions, or causal claims. Direction is not the same as health.
 
-### 3. Route every extracted metric
+### 4. Route every extracted metric
 
 Use the **Metric Router** whenever the source exposes more metrics than a user can reasonably scan at first view. The canonical stress case is **70-KPI overload**: a source may contain roughly 70 valid KPIs, but validity does not make every KPI a first-view peer.
 
@@ -154,7 +173,7 @@ Compiler-enforced routing rules:
 
 The routing manifest is a durable decision trace. It preserves what was considered, why it was promoted or demoted, and what would change the decision, so later analysis does not have to rediscover the same KPI-prioritization logic from scratch.
 
-### 4. Choose the evidence mode
+### 5. Choose the evidence mode
 
 The compiler supports two mutually exclusive decision-state modes.
 
@@ -193,7 +212,7 @@ A radar must pass two gates:
 
 If the Profile Test passes but the Action Trigger Test fails, keep those dimensions in diagnostic/drilldown/scorecard layers instead of using a decorative radar as the dominant visual.
 
-### 5. Build a grounded bundle
+### 6. Build a grounded bundle
 
 The grounded bundle remains separate from the routing inventory and contains only facts used by the rendered decision state:
 
@@ -221,7 +240,7 @@ The compiler verifies the source file hash before accepting source claims.
 
 Image-only coordinates are not strong composite grounding because this repository has no deterministic OCR/token extractor. For screenshot inputs, first produce a verifiable text/JSON sidecar.
 
-### 6. Required grounding coverage
+### 7. Required grounding coverage
 
 For `composite`, ground all source-dependent scoring facts:
 
@@ -243,7 +262,7 @@ A missing radar-scale or normalized-score claim returns to evidence extraction. 
 
 Do not ground deterministic renderer synthesis or Metric Router role decisions as if they were source facts.
 
-### 7. Compile through both gates
+### 8. Compile through both gates
 
 Production execution is:
 
@@ -260,7 +279,7 @@ On final `PASS`, the CLI writes:
 
 `compile.js` remains the lower-level grounding-only compiler for tests and internal compatibility. `validate.js` and `render.js` remain lower-level Layer 2 / Layer 3 tools. Do not use these lower-level entry points as a substitute for `compile-dashboard.js` in ordinary Decision-First production workflows.
 
-### 8. Follow failure transitions literally
+### 9. Follow failure transitions literally
 
 - `FIX_METRIC_ROUTING` → repair routing roles, action-trigger logic, first-view budget, primary/visible mismatch, or exception surfacing; do not bypass the gate.
 - `FIX_DECISION_STATE` → repair contract/schema errors only; do not weaken validation.
@@ -309,6 +328,8 @@ Safety, compliance, security, regulatory, contractual, or outage conditions over
 
 Before delivery, verify:
 
+- the Dashboard Worthiness Test passed, or the user explicitly chose a dashboard after the trade-off was explained;
+- any worthiness questions counted toward the same five-question intake budget rather than creating a second questionnaire;
 - the Decision Brief contains enough confirmed decision context to route metrics, and intake stopped as soon as that context was sufficient;
 - source facts were not mistaken for business intent; if Decision and Action were not explicitly stated beforehand, at least one user-confirmation question was asked;
 - no more than five questions were asked, one at a time, with no redundant request for source information already known;
