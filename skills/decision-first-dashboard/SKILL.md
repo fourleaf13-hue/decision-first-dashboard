@@ -79,7 +79,17 @@ Composite accepts only:
 
 If any required composite scoring fact cannot be mechanically grounded, the transition is `FALLBACK_TO_NO_SCORE`. Do not fill the gap with an inferred formula, guessed weight, or benchmark.
 
-For `no_score`, do not create `Healthy`, `Marginal`, `At risk`, or a 0–100 score. Overall direction remains a deterministic renderer derivation from validated signal directions.
+For `no_score`, do not create `Healthy`, `Marginal`, `At risk`, or a 0–100 overall score. Overall direction remains a deterministic renderer derivation from validated signal directions.
+
+**Radar eligibility is independent of overall-score eligibility.** A `no_score` dashboard may render a closed radar profile only when the source explicitly provides all of the following:
+
+- **3–6 peer dimensions** that describe the same object or condition as one profile;
+- one shared, source-backed numeric scale in `radarScale.min` / `radarScale.max`;
+- a source-backed `normalizedScore` for every displayed dimension.
+
+Three dimensions are sufficient and must render as a triangle. Fewer than three dimensions are not radar-eligible. Four to six dimensions render with the corresponding number of vertices.
+
+Radar is a **profile chart**, not a generic multi-metric chart. Do not connect heterogeneous raw KPIs such as revenue dollars, customer counts, percentages, latency, ratios, or unrelated business outcomes merely because several numbers are available. Do not derive or guess normalization for visual convenience. If a shared source-backed scale is absent, keep the metrics in the non-radar `no_score` expression.
 
 ### 3. Build a grounded bundle
 
@@ -128,7 +138,14 @@ For `composite`, ground all source-dependent scoring facts:
 - score-series values when present;
 - visible exception/event fields when present.
 
-For `no_score`, ground each visible signal label/value, optional source delta/direction, source series values, and visible exception/event fields.
+For ordinary `no_score`, ground each visible signal label/value, optional source delta/direction, source series values, and visible exception/event fields.
+
+For a `no_score` radar, additionally ground:
+
+- `radarScale.min` and `radarScale.max`;
+- every signal `normalizedScore` used as a radar vertex.
+
+A missing radar-scale or normalized-score claim returns to evidence extraction. Do not silently fall back to an ungrounded radar.
 
 Do not ground deterministic renderer synthesis as if it were a source fact.
 
@@ -164,15 +181,15 @@ The renderer owns the layout.
 
 For `no_score`:
 
-- dominant center directional synthesis;
-- 3–6 signals converging on the center;
+- when all 3–6 peer dimensions have source-grounded `normalizedScore` values on one source-grounded `radarScale`, render a true closed radar profile;
+- otherwise use the non-radar signal layout and never connect heterogeneous raw KPI values into a fake radar;
 - compact left business context;
 - compact right exceptions/events.
 
 For `composite`:
 
 - dominant center source-supported score and band;
-- 3–6 weighted score components converging on the center;
+- 3–6 normalized weighted components form a true closed radar profile;
 - compact left score trend and score composition;
 - compact right exceptions/events.
 
@@ -200,6 +217,8 @@ Before delivery, verify:
 - every required visible/source scoring fact has a resolvable claim and evidence anchor;
 - every grounded value matches the referenced decision-state value under allowed deterministic normalization only;
 - `no_score` overall direction matches the signal directions;
+- a `no_score` radar appears only for 3–6 peer dimensions with a source-grounded shared scale and a grounded normalized score for every vertex;
+- raw mixed-unit KPIs never masquerade as radar dimensions;
 - `composite` weights, weighted score, score scale, and score band pass semantic validation;
 - no unsupported score/status/target/action appears;
 - no framework or compiler labels leak into visible UI;
