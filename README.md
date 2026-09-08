@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/decision-first-dashboard-hero.jpg" alt="Decision-First Dashboard — from metric overload to clear decisions" width="100%">
+  <img src="assets/decision-first-dashboard-hero.png" alt="Decision-First Dashboard — from metric overload to clear decisions" width="100%">
 </p>
 
 # Decision-First Dashboard
