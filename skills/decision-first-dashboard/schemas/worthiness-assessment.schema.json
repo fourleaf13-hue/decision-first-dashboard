@@ -73,7 +73,8 @@
         "chat_query",
         "undetermined"
       ]
-    }
+    },
+    "userOverride": { "enum": [true, false] }
   },
   "$defs": {
     "statusDescription": {
