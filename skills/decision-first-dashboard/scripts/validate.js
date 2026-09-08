@@ -132,6 +132,59 @@ function nearlyEqual(a, b, tolerance) {
   return Math.abs(a - b) <= tolerance;
 }
 
+function validateNoScoreSemantics(data, errors) {
+  const hasRadarScale = Object.hasOwn(data, 'radarScale');
+  const scoredSignals = data.signals.filter((signal) => Object.hasOwn(signal, 'normalizedScore'));
+
+  if (!hasRadarScale && scoredSignals.length === 0) return;
+
+  if (!hasRadarScale) {
+    pushError(
+      errors,
+      '/radarScale',
+      'radarScale',
+      'source-backed radar scale is required when no-score signals contain normalized scores'
+    );
+    return;
+  }
+
+  const { min, max } = data.radarScale;
+  if (!(min < max)) {
+    pushError(errors, '/radarScale', 'radarScale', 'radar scale min must be less than radar scale max');
+    return;
+  }
+
+  if (scoredSignals.length !== data.signals.length) {
+    pushError(
+      errors,
+      '/signals',
+      'radarEligibility',
+      'every no-score radar dimension must provide a source-backed normalized score on the shared radar scale'
+    );
+  }
+
+  if (data.signals.some((signal) => signal.provenance !== 'source')) {
+    pushError(
+      errors,
+      '/signals',
+      'radarEligibility',
+      'every no-score radar dimension must come directly from source evidence'
+    );
+  }
+
+  for (const [index, signal] of data.signals.entries()) {
+    if (!Object.hasOwn(signal, 'normalizedScore')) continue;
+    if (signal.normalizedScore < min || signal.normalizedScore > max) {
+      pushError(
+        errors,
+        `/signals/${index}/normalizedScore`,
+        'radarScale',
+        'normalized score must lie within the declared no-score radar scale'
+      );
+    }
+  }
+}
+
 function validateCompositeSemantics(data, errors) {
   const { score, model } = data;
 
@@ -206,6 +259,10 @@ export function validateAgainstSchema(data, targetSchema) {
 
 export function validateDecisionState(data) {
   const { errors } = validateAgainstSchema(data, schema);
+
+  if (errors.length === 0 && data.mode === 'no_score') {
+    validateNoScoreSemantics(data, errors);
+  }
 
   if (errors.length === 0 && data.mode === 'composite') {
     validateCompositeSemantics(data, errors);
