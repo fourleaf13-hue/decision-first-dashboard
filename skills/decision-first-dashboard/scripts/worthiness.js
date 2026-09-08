@@ -18,13 +18,15 @@ function summaryOf(assessment) {
     accountabilityStatus: assessment.accountability.status,
     accountabilityMode: assessment.accountability.mode,
     responseChangeStatus: assessment.responseChange.status,
-    responseChangeKind: assessment.responseChange.kind
+    responseChangeKind: assessment.responseChange.kind,
+    userOverride: assessment.userOverride === true
   };
 }
 
 function validateSemantics(assessment) {
   const errors = [];
   const { accountability, responseChange, recommendedFormat, purpose } = assessment;
+  const userOverride = assessment.userOverride === true;
 
   if (accountability.status === 'absent' && accountability.mode !== 'absent') {
     add(errors, 'ACCOUNTABILITY_STATUS_CONFLICT', '/accountability/mode', 'absent accountability must use mode "absent"');
@@ -40,6 +42,13 @@ function validateSemantics(assessment) {
   }
   if (purpose === 'visibility_only' && responseChange.status === 'confirmed') {
     add(errors, 'VISIBILITY_PURPOSE_CONFLICT', '/purpose', 'visibility_only cannot simultaneously claim a confirmed action, priority, escalation, intervention, or coordination change');
+  }
+
+  if (userOverride) {
+    if (recommendedFormat !== 'dashboard') {
+      add(errors, 'FORMAT_TRANSITION_CONFLICT', '/recommendedFormat', 'an explicit user override must use recommendedFormat "dashboard"');
+    }
+    return errors;
   }
 
   const explicitRedirect = purpose === 'visibility_only' || purpose === 'one_off_question';
@@ -94,6 +103,17 @@ export function evaluateWorthinessAssessment(assessment) {
       transition: 'FIX_WORTHINESS_ASSESSMENT',
       errors: semanticErrors,
       recommendedFormat: null,
+      summary: summaryOf(assessment)
+    };
+  }
+
+  if (assessment.userOverride === true) {
+    return {
+      valid: true,
+      stage: 'worthiness',
+      transition: 'BUILD_DECISION_BRIEF',
+      errors: [],
+      recommendedFormat: 'dashboard',
       summary: summaryOf(assessment)
     };
   }
