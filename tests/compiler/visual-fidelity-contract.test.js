@@ -16,12 +16,14 @@ test('composite SVG uses the open reference composition instead of three boxed c
   assert.doesNotMatch(svg, /class="card"/);
 });
 
-test('reference radar exposes one visible vertex dot per scored dimension', () => {
+test('reference radar renders visible vertex markers at the scored polygon corners', () => {
   const svg = renderSvg(composite);
   const html = renderHtml(composite);
 
-  assert.equal((svg.match(/class="radar-node"/g) ?? []).length, 3);
-  assert.equal((html.match(/class="radar-node"/g) ?? []).length, 3);
+  assert.match(svg, /<marker id="radarVertex"/);
+  assert.match(svg, /\.radar-shape \{ marker-start: url\(#radarVertex\); marker-mid: url\(#radarVertex\); \}/);
+  assert.match(html, /<marker id="radarVertex"/);
+  assert.match(html, /\.orbit \.radar-shape \{ marker-start: url\(#radarVertex\); marker-mid: url\(#radarVertex\); \}/);
 });
 
 test('reference composition does not add a floating current-score method label', () => {
