@@ -1,0 +1,10 @@
+{
+  "decision": "Decide whether subscription health requires intervention",
+  "action": "Prioritize retention, growth, or conversion intervention",
+  "inventoryCount": 3,
+  "metrics": [
+    { "metric": "retention", "role": "primary_signal", "changesDecision": true, "decisionImpact": "Retention changes intervention priority", "visibility": "first_view" },
+    { "metric": "growth", "role": "primary_signal", "changesDecision": true, "decisionImpact": "Growth changes intervention priority", "visibility": "first_view" },
+    { "metric": "conversion", "role": "primary_signal", "changesDecision": true, "decisionImpact": "Conversion changes intervention priority", "visibility": "first_view" }
+  ]
+}
