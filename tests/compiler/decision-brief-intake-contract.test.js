@@ -12,7 +12,8 @@ test('skill defines an adaptive Decision Brief that minimizes user cognitive loa
   assert.match(skill, /one question at a time/i);
   assert.match(skill, /no more than five questions/i);
   assert.match(skill, /stop immediately once enough information/i);
-  assert.match(skill, /never ask for information already provided or inferable/i);
+  assert.match(skill, /never ask the user to repeat[^\n]*source facts/i);
+  assert.match(skill, /do not use[^\n]*inferable from the data[^\n]*skip confirmation[^\n]*business intent/i);
 
   for (const dimension of ['Decision', 'Action', 'Exception', 'Diagnosis', 'Audience']) {
     assert.match(skill, new RegExp(`\\b${dimension}\\b`), `missing ${dimension} intake dimension`);
@@ -32,6 +33,13 @@ test('skill supports both data-first and question-first intake without redundant
   assert.match(skill, /question-first/i);
   assert.match(skill, /profile the uploaded data before asking/i);
   assert.match(skill, /request only the data needed/i);
+});
+
+test('source facts alone cannot silently satisfy user intent', () => {
+  assert.match(skill, /at least one question/i);
+  assert.match(skill, /explicitly stated[^\n]*Decision[^\n]*Action/i);
+  assert.match(skill, /screenshot[^\n]*cannot[^\n]*satisfy[^\n]*Decision Brief/i);
+  assert.match(skill, /inferred candidate[^\n]*confirmation/i);
 });
 
 test('README documents Decision Brief before Metric Router', () => {

@@ -56,7 +56,9 @@ It returns one of four machine-readable transitions:
 
 ### 1. Build an adaptive Decision Brief
 
-Before routing metrics or choosing a visual mode, establish the minimum decision context needed to design the dashboard. Tell the user briefly that better dashboard design requires a few questions. Ask **one question at a time**, ask **no more than five questions**, and **stop immediately once enough information** exists to route metrics and make a defensible design decision. **Never ask for information already provided or inferable** from the user's request or uploaded data.
+Before routing metrics or choosing a visual mode, establish the minimum decision context needed to design the dashboard. Tell the user briefly that better dashboard design requires a few questions. Ask **one question at a time**, ask **no more than five questions**, and **stop immediately once enough information** exists to route metrics and make a defensible design decision.
+
+**Intent-confirmation gate:** a screenshot, uploaded dataset, dashboard title, visible KPI mix, domain pattern, or source structure can establish **data facts** and can suggest candidate intent, but a **screenshot alone cannot satisfy the Decision Brief**. Do not treat “this looks like a SaaS health dashboard” as proof that the user wants “overall business health,” “retention,” or any other specific decision. Unless the user has **explicitly stated both the Decision and the Action** in the request or prior conversation, ask **at least one question** and obtain user confirmation before Metric Router classification or rendering.
 
 The five intake dimensions are a question pool, not a fixed questionnaire or mandatory order:
 
@@ -66,7 +68,16 @@ The five intake dimensions are a question pool, not a fixed questionnaire or man
 - **Diagnosis** — where should the user investigate next after a problem appears?
 - **Audience / cadence** — who uses the dashboard, how quickly must they understand it, and how often is it reviewed?
 
-After every answer, run an information-sufficiency check. If the known Decision, Action, and the relevant Exception, Diagnosis, or Audience context already provide enough information for the Metric Router, stop. Do not ask all five questions merely for completeness. One to three questions should be sufficient whenever the existing context already covers the remaining dimensions.
+Use two different notions of “known”:
+
+- **Observed source fact** — directly visible or mechanically extracted from the source. Do not ask the user to repeat it.
+- **Business intent** — Decision, Action, exception policy, diagnosis priority, and audience/cadence. This is confirmed only when explicitly supplied by the user or confirmed by the user after the agent proposes an inferred candidate.
+
+An **inferred candidate requires confirmation**. It may be used to make the next question easier, but it does not count as a confirmed Decision Brief until the user responds. For example, after seeing churn, MRR, and account-cancellation data, ask a concrete question such as: “What should this dashboard help you decide first: overall subscription health, churn/retention risk, revenue growth, or something else?” Do not silently choose one.
+
+After every answer, run an information-sufficiency check. If the confirmed Decision, confirmed Action, and the relevant Exception, Diagnosis, or Audience context provide enough information for the Metric Router, stop. Do not ask all five questions merely for completeness. One to three questions should be sufficient whenever the user has already supplied most of the intent.
+
+The **zero-question path is narrow**: use it only when the user's request or already-established conversation context explicitly states both (1) what the dashboard should help decide and (2) what action or prioritization changes based on that decision. Source data by itself never qualifies for the zero-question path.
 
 Recommended opening, adapted to the user's language:
 
@@ -78,7 +89,8 @@ Question design rules:
 - prefer plain language over dashboard, analytics, or business jargon;
 - choose the largest remaining information gap rather than following a fixed sequence;
 - use the uploaded data and prior answers to make choices specific to the user's situation;
-- never repeat a question whose answer is already present in the request, prior answers, or source structure.
+- never ask the user to repeat **source facts** already present in the request, prior answers, or source structure;
+- do not use “inferable from the data” as a reason to skip confirmation of **business intent**.
 
 If the user is unsure:
 
@@ -91,7 +103,7 @@ If the user is unsure:
 
 Support both intake orders:
 
-- **data-first** — **profile the uploaded data before asking**. Identify fields, metrics, dimensions, time range, available targets/benchmarks, and obvious evidence gaps; then ask only for missing decision context.
+- **data-first** — **profile the uploaded data before asking**. Identify fields, metrics, dimensions, time range, available targets/benchmarks, and obvious evidence gaps; then ask only for missing decision context. Data profiling does not waive the intent-confirmation gate.
 - **question-first** — clarify the decision context first, then **request only the data needed** to support that decision, its likely diagnosis path, relevant exceptions, and evidence mode.
 
 The Decision Brief is internal design context. It may guide metric routing and information hierarchy, but it is not automatically source evidence. User intent, inferred audience needs, or suggested actions must not be represented as source-grounded business facts unless independently supported by the source and allowed by the decision-state contract.
@@ -285,8 +297,9 @@ Safety, compliance, security, regulatory, contractual, or outage conditions over
 
 Before delivery, verify:
 
-- the Decision Brief contains enough decision context to route metrics, and the intake stopped as soon as that context was sufficient;
-- no more than five questions were asked, one at a time, with no redundant request for information already known or inferable;
+- the Decision Brief contains enough **confirmed** decision context to route metrics, and the intake stopped as soon as that context was sufficient;
+- source facts were not mistaken for business intent; if Decision and Action were not explicitly stated beforehand, at least one user-confirmation question was asked;
+- no more than five questions were asked, one at a time, with no redundant request for source information already known;
 - user uncertainty did not cause invented business intent, thresholds, targets, or source claims;
 - the Metric Router has classified overloaded source metrics before the evidence mode is chosen;
 - the first view contains the minimum sufficient `primary_signal` set plus active source-supported exceptions, rather than a flat KPI inventory;
