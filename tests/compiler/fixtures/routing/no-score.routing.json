@@ -1,0 +1,12 @@
+{
+  "decision": "Decide whether the SaaS business needs intervention",
+  "action": "Prioritize the next business follow-up",
+  "inventoryCount": 5,
+  "metrics": [
+    { "metric": "arr", "role": "primary_signal", "changesDecision": true, "decisionImpact": "ARR changes growth and investment prioritization", "visibility": "first_view" },
+    { "metric": "ndr", "role": "primary_signal", "changesDecision": true, "decisionImpact": "NDR changes retention and expansion prioritization", "visibility": "first_view" },
+    { "metric": "gross_margin", "role": "primary_signal", "changesDecision": true, "decisionImpact": "Gross margin changes efficiency prioritization", "visibility": "first_view" },
+    { "metric": "cac_payback", "role": "primary_signal", "changesDecision": true, "decisionImpact": "CAC payback changes acquisition-spend prioritization", "visibility": "first_view" },
+    { "metric": "burn_multiple", "role": "primary_signal", "changesDecision": true, "decisionImpact": "Burn multiple changes capital-efficiency prioritization", "visibility": "first_view" }
+  ]
+}
