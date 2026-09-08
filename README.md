@@ -1,4 +1,7 @@
-![Uploading 5032ec15-8a47-4684-926d-4546ab98b051.png…]()
+<p align="center">
+  <img src="assets/decision-first-dashboard-hero.jpg" alt="Decision-First Dashboard — from metric overload to clear decisions" width="100%">
+</p>
+
 # Decision-First Dashboard
 
 ### Stop AI from turning every dashboard into the same 4 KPI cards + chart + table.
