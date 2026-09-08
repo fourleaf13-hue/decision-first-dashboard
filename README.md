@@ -5,7 +5,9 @@ Turn KPI-heavy dashboards into decision-first dashboards without letting the age
 Most dashboard prompts ask an LLM to **design**. This project treats dashboard redesign more like a small compiler:
 
 ```text
-source dashboard / verified source file
+source dashboard / verified source file + user context
+      ↓
+adaptive Decision Brief (0–5 one-at-a-time questions)
       ↓
 agent extraction + Metric Router + mode proposal
       ↓
@@ -34,7 +36,28 @@ Table
 
 The user still has to scan everything and construct the conclusion mentally.
 
-Decision-First Dashboard changes the information hierarchy first. The agent extracts evidence; the compiler verifies that the evidence can be mechanically grounded back to source bytes before the deterministic renderer owns the layout.
+Decision-First Dashboard changes the information hierarchy first. The agent clarifies the decision context, extracts evidence, and routes metrics; the compiler verifies that the evidence can be mechanically grounded back to source bytes before the deterministic renderer owns the layout.
+
+## Adaptive Decision Brief
+
+Users often know they need a dashboard without knowing which metrics, thresholds, drilldowns, or charts they actually need. Before metric routing, the skill builds an **adaptive Decision Brief** with the minimum context necessary to make a defensible design decision.
+
+The interaction is deliberately lightweight:
+
+- ask **one question at a time**;
+- ask **no more than five questions**;
+- stop early as soon as the information is sufficient;
+- never ask for information already provided or inferable from the request or uploaded data;
+- treat the five dimensions — Decision, Action, Exception, Diagnosis, and Audience/cadence — as a question pool rather than a fixed questionnaire.
+
+If the user cannot answer an open question, the skill first reduces it to 2–4 concrete choices. If the user is still unsure, it can infer the most defensible direction from the uploaded data and ask for confirmation. It never invents a business threshold merely to complete the brief.
+
+Both intake orders are supported:
+
+- **data-first** — profile uploaded fields, metrics, dimensions, time range, targets, and benchmarks first, then ask only for missing decision context;
+- **question-first** — clarify the decision context first, then request only the data needed to support that decision and its diagnosis path.
+
+The Decision Brief guides the Metric Router and information hierarchy, but it does not weaken source grounding. User intent or inferred needs do not become source evidence unless they are independently supported by the source and allowed by the decision-state contract.
 
 ## Metric Router
 
@@ -139,14 +162,15 @@ Give the agent a dashboard screenshot, Figma frame, existing dashboard code, or 
 
 The intended production execution path is:
 
-1. Extract verified facts only.
-2. Route metrics with the Metric Router and Action Trigger Test.
-3. Decide whether the evidence supports `no_score` or strict `composite` mode.
-4. Build a closed `decisionState` from the minimum sufficient visible signals and source-supported exceptions.
-5. Build the source hash, evidence ledger, and claim references in a grounded bundle.
-6. Run the grounding compiler gate.
-7. Render SVG and HTML only after `PASS`.
-8. Inspect the output for evidence and visual integrity.
+1. Build the adaptive Decision Brief. If data already exists, profile it first; ask 0–5 short questions one at a time and stop as soon as the decision context is sufficient.
+2. Extract verified facts only.
+3. Route metrics with the Metric Router and Action Trigger Test.
+4. Decide whether the evidence supports `no_score` or strict `composite` mode.
+5. Build a closed `decisionState` from the minimum sufficient visible signals and source-supported exceptions.
+6. Build the source hash, evidence ledger, and claim references in a grounded bundle.
+7. Run the grounding compiler gate.
+8. Render SVG and HTML only after `PASS`.
+9. Inspect the output for evidence and visual integrity.
 
 From the skill directory:
 
@@ -283,6 +307,7 @@ decision-first-dashboard/
     │   ├── golden/
     │   ├── grounding.test.js
     │   ├── compile-cli.test.js
+    │   ├── decision-brief-intake-contract.test.js
     │   ├── golden-snapshot.test.js
     │   ├── metric-router-contract.test.js
     │   ├── schema.test.js
@@ -308,7 +333,7 @@ npm run validate:saas
 npm run render:saas
 ```
 
-GitHub Actions runs the complete compiler test suite, including grounded composite/no-score compilation and byte-level golden snapshots, then renders the canonical SaaS and SaaSGrid fixtures and uploads generated artifacts for visual QA.
+GitHub Actions runs the complete compiler test suite, including the Decision Brief intake contract, grounded composite/no-score compilation, and byte-level golden snapshots, then renders the canonical SaaS and SaaSGrid fixtures and uploads generated artifacts for visual QA.
 
 ## What this is not
 
@@ -316,7 +341,7 @@ This is not a generic chart library and not a prompt that asks the model to free
 
 The project separates three responsibilities:
 
-- **Layer 1 / Agent:** evidence extraction, Metric Router classification, and mode proposal.
+- **Layer 1 / Agent:** adaptive Decision Brief, evidence extraction, Metric Router classification, and mode proposal.
 - **Layer 2 / Compiler contract:** source grounding, claim coverage, schema/semantic validation, and machine-readable retry/fallback decisions.
 - **Layer 3 / Renderer:** deterministic SVG/HTML composition only.
 
