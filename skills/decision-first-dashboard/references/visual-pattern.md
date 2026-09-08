@@ -54,6 +54,12 @@ The templates intentionally omit:
 
 If a user wants a different visual system, modify the deterministic templates deliberately; do not let the LLM improvise a replacement layout during ordinary dashboard compilation.
 
+## Visualization tool routing
+
+Do not confuse a chart library with a visual-design skill. Recharts, visx, Bokeh, Cube, Nivo, Vue-ECharts, and Scrollama are primarily implementation libraries or infrastructure; ApexCharts currently provides a dedicated official AI skill.
+
+The default production path in this repository remains deterministic SVG/HTML. If a user explicitly asks for a framework implementation, choose the tool according to `visual-stack-routing.md`. In particular, prefer **visx** for bespoke React geometry that must closely reproduce `after-reference.png`, and **Recharts** for conventional supporting charts. Never import a library merely to obtain its default demo aesthetic.
+
 ## Radar profile eligibility
 
 Use a radar only to show the profile of one object or condition across **3–6 peer dimensions** on one shared, source-backed numeric scale.
