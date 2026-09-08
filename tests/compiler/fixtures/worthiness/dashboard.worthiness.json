@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "purpose": "recurring_decision",
+  "decisionLoop": {
+    "status": "confirmed",
+    "description": "A recurring subscription-health review determines where retention attention should go."
+  },
+  "accountability": {
+    "status": "confirmed",
+    "mode": "single_owner",
+    "description": "The business owner for subscription health is accountable for the review."
+  },
+  "responseChange": {
+    "status": "confirmed",
+    "kind": "priority",
+    "description": "Material signal changes alter which retention risks are prioritized."
+  },
+  "recommendedFormat": "dashboard"
+}
