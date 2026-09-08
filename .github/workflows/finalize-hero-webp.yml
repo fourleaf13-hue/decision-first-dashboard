@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/finalize-hero-webp.yml'
+      - '.tmp/hero/part-02.txt'
 
 permissions:
   contents: write
