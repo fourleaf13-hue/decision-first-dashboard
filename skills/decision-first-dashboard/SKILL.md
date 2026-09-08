@@ -9,9 +9,9 @@ description: Use when redesigning KPI-heavy dashboards where users must scan mul
 
 Separate agent judgment from compiler judgment and deterministic rendering.
 
-**Source → grounded evidence bundle → compiler gate → deterministic renderer → SVG / HTML**
+**Source → Decision Brief → grounded evidence bundle → compiler gate → deterministic renderer → SVG / HTML**
 
-The agent may extract and classify evidence. It may not invent source support, bypass grounding, or choose a free-form dashboard layout.
+The agent may clarify decision intent, extract and classify evidence. It may not invent source support, bypass grounding, or choose a free-form dashboard layout.
 
 ## Three layers
 
@@ -19,6 +19,7 @@ The agent may extract and classify evidence. It may not invent source support, b
 
 The agent may:
 
+- build an adaptive Decision Brief from user context and source structure;
 - extract literal source facts;
 - classify decision roles with the Metric Router;
 - choose a proposed mode;
@@ -53,13 +54,55 @@ It returns one of four machine-readable transitions:
 
 ## Workflow
 
-### 1. Extract verified facts only
+### 1. Build an adaptive Decision Brief
 
-Identify the primary user and decision, then capture only source-supported metrics, deltas, account states, events, targets, thresholds, and score rules.
+Before routing metrics or choosing a visual mode, establish the minimum decision context needed to design the dashboard. Tell the user briefly that better dashboard design requires a few questions. Ask **one question at a time**, ask **no more than five questions**, and **stop immediately once enough information** exists to route metrics and make a defensible design decision. **Never ask for information already provided or inferable** from the user's request or uploaded data.
+
+The five intake dimensions are a question pool, not a fixed questionnaire or mandatory order:
+
+- **Decision** — what should the dashboard help the user determine?
+- **Action** — what decision or action changes when an important signal changes?
+- **Exception** — what condition deserves immediate attention?
+- **Diagnosis** — where should the user investigate next after a problem appears?
+- **Audience / cadence** — who uses the dashboard, how quickly must they understand it, and how often is it reviewed?
+
+After every answer, run an information-sufficiency check. If the known Decision, Action, and the relevant Exception, Diagnosis, or Audience context already provide enough information for the Metric Router, stop. Do not ask all five questions merely for completeness. One to three questions should be sufficient whenever the existing context already covers the remaining dimensions.
+
+Recommended opening, adapted to the user's language:
+
+> To design this dashboard well, I need to understand the decision it should support. I'll ask one question at a time, up to five; if I have enough information earlier, I'll stop.
+
+Question design rules:
+
+- keep each question short, concrete, and limited to one concept;
+- prefer plain language over dashboard, analytics, or business jargon;
+- choose the largest remaining information gap rather than following a fixed sequence;
+- use the uploaded data and prior answers to make choices specific to the user's situation;
+- never repeat a question whose answer is already present in the request, prior answers, or source structure.
+
+If the user is unsure:
+
+1. reduce the open question to **2–4 concrete choices** that are grounded in the known context;
+2. include an explicit “I'm not sure — help me decide” path;
+3. if the user remains unsure, **infer the most defensible answer from the data** and **ask for confirmation**;
+4. if the data cannot support a defensible inference, leave that dimension unresolved and proceed conservatively rather than inventing business intent.
+
+**Do not invent a threshold.** If the user cannot supply one, use only source-backed targets, historical ranges, peer baselines, or explicit rules when they exist. If none exist, do not manufacture an exception threshold or present a statistical anomaly as a business rule without labeling its basis.
+
+Support both intake orders:
+
+- **data-first** — **profile the uploaded data before asking**. Identify fields, metrics, dimensions, time range, available targets/benchmarks, and obvious evidence gaps; then ask only for missing decision context.
+- **question-first** — clarify the decision context first, then **request only the data needed** to support that decision, its likely diagnosis path, relevant exceptions, and evidence mode.
+
+The Decision Brief is internal design context. It may guide metric routing and information hierarchy, but it is not automatically source evidence. User intent, inferred audience needs, or suggested actions must not be represented as source-grounded business facts unless independently supported by the source and allowed by the decision-state contract.
+
+### 2. Extract verified facts only
+
+Identify the primary user and decision from the Decision Brief, then capture only source-supported metrics, deltas, account states, events, targets, thresholds, and score rules.
 
 Never invent scores, targets, thresholds, customer states, events, workflows, actions, or causal claims. Direction is not the same as health.
 
-### 2. Route metrics before choosing a mode
+### 3. Route metrics before choosing a mode
 
 Use the **Metric Router** whenever the source exposes more metrics than a user can reasonably scan at first view. The canonical stress case is **70-KPI overload**: a dashboard may contain roughly 70 valid KPIs, but validity does not make every KPI a first-view peer.
 
@@ -89,7 +132,7 @@ Routing rules:
 - Active `exception` facts may be visible even when they are not part of the central synthesis.
 - The role taxonomy belongs to Layer 1 routing. Do not leak `primary_signal`, `diagnostic`, `exception`, `drilldown`, or `scorecard_only` labels into product UI, and do not add unclaimed hidden metrics to the grounded bundle merely to prove they were preserved. The closed grounded bundle should contain only facts used by the rendered decision state and its required claims.
 
-### 3. Choose the evidence mode
+### 4. Choose the evidence mode
 
 The compiler supports two mutually exclusive decision-state modes.
 
@@ -121,7 +164,7 @@ Three dimensions are sufficient and must render as a triangle. Fewer than three 
 
 Radar is a **profile chart**, not a generic multi-metric chart. Do not connect heterogeneous raw KPIs such as revenue dollars, customer counts, percentages, latency, ratios, or unrelated business outcomes merely because several numbers are available. Do not derive or guess normalization for visual convenience. If a shared source-backed scale is absent, keep the metrics in the non-radar `no_score` expression.
 
-### 4. Build a grounded bundle
+### 5. Build a grounded bundle
 
 The production contract has four top-level fields:
 
@@ -157,7 +200,7 @@ The compiler verifies the source file hash before checking any claim.
 
 Image-only coordinates are not strong composite grounding in V3 because this repository has no deterministic OCR/token extractor. For screenshot inputs, first produce a verifiable text/JSON sidecar. Do not represent an unverified screenshot interpretation as strong composite evidence.
 
-### 5. Required grounding coverage
+### 6. Required grounding coverage
 
 For `composite`, ground all source-dependent scoring facts:
 
@@ -179,7 +222,7 @@ A missing radar-scale or normalized-score claim returns to evidence extraction. 
 
 Do not ground deterministic renderer synthesis as if it were a source fact.
 
-### 6. Compile through the grounding gate
+### 7. Compile through the grounding gate
 
 Production execution is:
 
@@ -196,7 +239,7 @@ On any non-`PASS` transition, it exits non-zero and does not render dashboard ou
 
 Treat `validate.js` and `render.js` as lower-level compiler/renderer tools. Do not use direct rendering as a substitute for the V3 grounded production path.
 
-### 7. Follow failure transitions literally
+### 8. Follow failure transitions literally
 
 - `FIX_DECISION_STATE` → repair contract/schema errors only; do not weaken validation.
 - `RETURN_TO_EVIDENCE_EXTRACTION` → re-read the source and repair evidence/claims.
@@ -242,6 +285,9 @@ Safety, compliance, security, regulatory, contractual, or outage conditions over
 
 Before delivery, verify:
 
+- the Decision Brief contains enough decision context to route metrics, and the intake stopped as soon as that context was sufficient;
+- no more than five questions were asked, one at a time, with no redundant request for information already known or inferable;
+- user uncertainty did not cause invented business intent, thresholds, targets, or source claims;
 - the Metric Router has classified overloaded source metrics before the evidence mode is chosen;
 - the first view contains the minimum sufficient `primary_signal` set plus active source-supported exceptions, rather than a flat KPI inventory;
 - the grounded-bundle schema passes;
