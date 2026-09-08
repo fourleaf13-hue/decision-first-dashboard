@@ -34,6 +34,13 @@ test('skill supports both data-first and question-first intake without redundant
   assert.match(skill, /request only the data needed/i);
 });
 
+test('source facts alone cannot silently satisfy user intent', () => {
+  assert.match(skill, /at least one question/i);
+  assert.match(skill, /explicitly stated[^\n]*Decision[^\n]*Action/i);
+  assert.match(skill, /screenshot[^\n]*cannot[^\n]*satisfy[^\n]*Decision Brief/i);
+  assert.match(skill, /inferred candidate[^\n]*confirmation/i);
+});
+
 test('README documents Decision Brief before Metric Router', () => {
   assert.match(readme, /adaptive Decision Brief/i);
   assert.match(readme, /Decision Brief[\s\S]{0,400}Metric Router/i);
