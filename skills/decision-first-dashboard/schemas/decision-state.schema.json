@@ -17,6 +17,7 @@
           "maxItems": 6,
           "items": { "$ref": "#/definitions/signal" }
         },
+        "radarScale": { "$ref": "#/definitions/radarScale" },
         "context": { "$ref": "#/definitions/noScoreContext" },
         "exceptions": {
           "type": "array",
@@ -61,7 +62,18 @@
         "value": { "type": "string", "minLength": 1, "maxLength": 24 },
         "delta": { "type": "string", "minLength": 1, "maxLength": 20 },
         "direction": { "enum": ["improving", "deteriorating", "flat", "unknown"] },
+        "normalizedScore": { "type": "number" },
         "provenance": { "enum": ["source", "derived"] }
+      }
+    },
+    "radarScale": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max", "provenance"],
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "provenance": { "const": "source" }
       }
     },
     "noScoreContext": {
