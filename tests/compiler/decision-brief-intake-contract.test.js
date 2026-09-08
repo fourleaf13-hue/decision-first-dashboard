@@ -12,7 +12,8 @@ test('skill defines an adaptive Decision Brief that minimizes user cognitive loa
   assert.match(skill, /one question at a time/i);
   assert.match(skill, /no more than five questions/i);
   assert.match(skill, /stop immediately once enough information/i);
-  assert.match(skill, /never ask for information already provided or inferable/i);
+  assert.match(skill, /never ask the user to repeat[^\n]*source facts/i);
+  assert.match(skill, /do not use[^\n]*inferable from the data[^\n]*skip confirmation[^\n]*business intent/i);
 
   for (const dimension of ['Decision', 'Action', 'Exception', 'Diagnosis', 'Audience']) {
     assert.match(skill, new RegExp(`\\b${dimension}\\b`), `missing ${dimension} intake dimension`);
