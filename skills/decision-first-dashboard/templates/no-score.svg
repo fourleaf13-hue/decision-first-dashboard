@@ -60,7 +60,7 @@
 
     <circle cx="698" cy="464" r="188" fill="none" stroke="#e3dff5" stroke-width="1.5" stroke-dasharray="5 8"/>
     <circle cx="698" cy="464" r="132" fill="none" stroke="#ece9f7" stroke-width="1"/>
-    <path d="{{SVG_ORBIT_PATHS}}" fill="none" stroke="#d6d0ef" stroke-width="1.6"/>
+    {{SVG_ORBIT_VISUAL}}
 
     <circle cx="698" cy="464" r="94" fill="#ffffff" stroke="#d7d0ef" stroke-width="2"/>
     <circle cx="698" cy="464" r="82" fill="#f7f4ff"/>
