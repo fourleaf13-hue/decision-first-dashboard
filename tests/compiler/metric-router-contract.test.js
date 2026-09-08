@@ -25,6 +25,16 @@ test('skill defines the Metric Router contract for overloaded KPI sources', () =
   }
 });
 
+test('skill documents the compiler-enforced routing manifest and production gate', () => {
+  assert.match(skill, /metric-routing\.schema\.json/);
+  assert.match(skill, /compile-dashboard\.js/);
+  assert.match(skill, /FIX_METRIC_ROUTING/);
+  assert.match(skill, /inventoryCount/);
+  assert.match(skill, /active exceptions cannot be hidden/i);
+  assert.match(skill, /surfacePath/);
+  assert.match(skill, /first-view information budget/i);
+});
+
 test('README distinguishes no-score and composite examples without overstating capability', () => {
   assert.match(readme, /No-score mode — no unsupported score invented/);
   assert.match(readme, /Composite mode — when the evidence supports it/);
@@ -38,4 +48,5 @@ test('radar grounding contract remains present while Metric Router is added', ()
   assert.match(skill, /3–6 peer dimensions/);
   assert.match(skill, /Fewer than three dimensions are not radar-eligible/);
   assert.match(skill, /source-grounded `normalizedScore`/);
+  assert.match(skill, /Profile Test[\s\S]{0,500}Action Trigger Test/);
 });

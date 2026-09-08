@@ -9,9 +9,11 @@ description: Use when redesigning KPI-heavy dashboards where users must scan mul
 
 Separate agent judgment from compiler judgment and deterministic rendering.
 
-**Source → Decision Brief → grounded evidence bundle → compiler gate → deterministic renderer → SVG / HTML**
+**Source → Decision Brief → Metric Routing Manifest → grounded evidence bundle → routed compiler gate → deterministic renderer → SVG / HTML**
 
-The agent may clarify decision intent, extract and classify evidence. It may not invent source support, bypass grounding, or choose a free-form dashboard layout.
+The agent may clarify decision intent, extract and classify evidence, and propose routing. It may not invent source support, bypass routing/grounding gates, or choose a free-form dashboard layout during ordinary compilation.
+
+A dashboard earns first-view screen space only when the information can change a decision, trigger an action, surface an exception, explain a primary signal, or support deliberate drill-down.
 
 ## Three layers
 
@@ -21,36 +23,43 @@ The agent may:
 
 - build an adaptive Decision Brief from user context and source structure;
 - extract literal source facts;
-- classify decision roles with the Metric Router;
-- choose a proposed mode;
+- classify every extracted metric with the Metric Router;
+- produce a Metric Routing Manifest;
+- choose a proposed evidence mode;
 - create evidence anchors and claim references.
 
 The agent must not render UI or fabricate score-model evidence.
 
 ### Layer 2 — Compiler contract
 
-Code decides whether the grounded bundle can proceed.
+Code decides whether routing and grounding can proceed.
 
-The compiler validates:
+The production compiler validates, in order:
 
-- the closed grounded-bundle contract;
-- the closed `decision-state` contract;
-- source file SHA-256;
-- evidence reference integrity;
-- exact JSON Pointer or text-span grounding;
-- required claim coverage;
-- composite score mathematics and score-band semantics.
+1. the Metric Routing Manifest and its semantic rules;
+2. exact agreement between routed `primary_signal` metrics and the visible center metrics/components;
+3. active-exception surfacing rules;
+4. the closed grounded-bundle contract;
+5. the closed `decision-state` contract;
+6. source file SHA-256;
+7. evidence reference integrity;
+8. exact JSON Pointer or text-span grounding;
+9. required claim coverage;
+10. composite score mathematics and score-band semantics.
 
-It returns one of four machine-readable transitions:
+Machine-readable transitions are:
 
 - `PASS`;
+- `FIX_METRIC_ROUTING`;
 - `RETURN_TO_EVIDENCE_EXTRACTION`;
 - `FALLBACK_TO_NO_SCORE`;
 - `FIX_DECISION_STATE`.
 
 ### Layer 3 — Deterministic renderer
 
-`render.js` consumes only validated decision state and fills fixed SVG/HTML templates. It does not inspect source data or invent business meaning.
+`render.js` consumes only validated decision state and fills fixed SVG/HTML templates. It does not inspect the hidden routing inventory, source data, or invent business meaning.
+
+Keeping hidden routing inventory out of the renderer is intentional: metrics assigned to `diagnostic`, `drilldown`, or `scorecard_only` stay preserved for traceability without becoming hidden DOM, eager chart work, or first-view clutter.
 
 ## Workflow
 
@@ -58,9 +67,9 @@ It returns one of four machine-readable transitions:
 
 Before routing metrics or choosing a visual mode, establish the minimum decision context needed to design the dashboard. Tell the user briefly that better dashboard design requires a few questions. Ask **one question at a time**, ask **no more than five questions**, and **stop immediately once enough information** exists to route metrics and make a defensible design decision.
 
-**Intent-confirmation gate:** a screenshot, uploaded dataset, dashboard title, visible KPI mix, domain pattern, or source structure can establish **data facts** and can suggest candidate intent, but a **screenshot alone cannot satisfy the Decision Brief**. Do not treat “this looks like a SaaS health dashboard” as proof that the user wants “overall business health,” “retention,” or any other specific decision. Unless the user has **explicitly stated both the Decision and the Action** in the request or prior conversation, ask **at least one question** and obtain user confirmation before Metric Router classification or rendering.
+**Intent-confirmation gate:** a screenshot, uploaded dataset, dashboard title, visible KPI mix, domain pattern, or source structure can establish data facts and suggest candidate intent, but a **screenshot alone cannot satisfy the Decision Brief**. Unless the user has **explicitly stated both the Decision and the Action** in the request or prior conversation, ask **at least one question** and obtain user confirmation before Metric Router classification or rendering.
 
-The five intake dimensions are a question pool, not a fixed questionnaire or mandatory order:
+The five intake dimensions are a question pool, not a fixed questionnaire:
 
 - **Decision** — what should the dashboard help the user determine?
 - **Action** — what decision or action changes when an important signal changes?
@@ -68,45 +77,32 @@ The five intake dimensions are a question pool, not a fixed questionnaire or man
 - **Diagnosis** — where should the user investigate next after a problem appears?
 - **Audience / cadence** — who uses the dashboard, how quickly must they understand it, and how often is it reviewed?
 
-Use two different notions of “known”:
+Use two notions of “known”:
 
-- **Observed source fact** — directly visible or mechanically extracted from the source. Do not ask the user to repeat it.
+- **Observed source fact** — directly visible or mechanically extracted from source. Never ask the user to repeat source facts already present in the request, prior answers, or source structure.
 - **Business intent** — Decision, Action, exception policy, diagnosis priority, and audience/cadence. This is confirmed only when explicitly supplied by the user or confirmed by the user after the agent proposes an inferred candidate.
 
-An **inferred candidate requires confirmation**. It may be used to make the next question easier, but it does not count as a confirmed Decision Brief until the user responds. For example, after seeing churn, MRR, and account-cancellation data, ask a concrete question such as: “What should this dashboard help you decide first: overall subscription health, churn/retention risk, revenue growth, or something else?” Do not silently choose one.
+An **inferred candidate requires confirmation**. It may make the next question easier, but it does not count as a completed Decision Brief until the user responds. Do not use “inferable from the data” as a reason to skip confirmation of business intent.
 
-After every answer, run an information-sufficiency check. If the confirmed Decision, confirmed Action, and the relevant Exception, Diagnosis, or Audience context provide enough information for the Metric Router, stop. Do not ask all five questions merely for completeness. One to three questions should be sufficient whenever the user has already supplied most of the intent.
+After every answer, run an information-sufficiency check. If the confirmed Decision, confirmed Action, and relevant Exception, Diagnosis, or Audience context provide enough information for routing, stop. Do not ask all five questions merely for completeness.
 
-The **zero-question path is narrow**: use it only when the user's request or already-established conversation context explicitly states both (1) what the dashboard should help decide and (2) what action or prioritization changes based on that decision. Source data by itself never qualifies for the zero-question path.
-
-Recommended opening, adapted to the user's language:
-
-> To design this dashboard well, I need to understand the decision it should support. I'll ask one question at a time, up to five; if I have enough information earlier, I'll stop.
-
-Question design rules:
-
-- keep each question short, concrete, and limited to one concept;
-- prefer plain language over dashboard, analytics, or business jargon;
-- choose the largest remaining information gap rather than following a fixed sequence;
-- use the uploaded data and prior answers to make choices specific to the user's situation;
-- never ask the user to repeat **source facts** already present in the request, prior answers, or source structure;
-- do not use “inferable from the data” as a reason to skip confirmation of **business intent**.
+The zero-question path is narrow: use it only when the user's request or already-established conversation context explicitly states both what the dashboard should help decide and what action/prioritization changes based on that decision. Source data by itself never qualifies.
 
 If the user is unsure:
 
-1. reduce the open question to **2–4 concrete choices** that are grounded in the known context;
+1. reduce the open question to **2–4 concrete choices** grounded in known context;
 2. include an explicit “I'm not sure — help me decide” path;
-3. if the user remains unsure, **infer the most defensible answer from the data** and **ask for confirmation**;
-4. if the data cannot support a defensible inference, leave that dimension unresolved and proceed conservatively rather than inventing business intent.
+3. if uncertainty remains, **infer the most defensible answer from the data** and **ask for confirmation**;
+4. if the data cannot support a defensible inference, leave that dimension unresolved and proceed conservatively.
 
-**Do not invent a threshold.** If the user cannot supply one, use only source-backed targets, historical ranges, peer baselines, or explicit rules when they exist. If none exist, do not manufacture an exception threshold or present a statistical anomaly as a business rule without labeling its basis.
+**Do not invent a threshold.** Use only source-backed targets, historical ranges, peer baselines, or explicit rules when they exist.
 
 Support both intake orders:
 
-- **data-first** — **profile the uploaded data before asking**. Identify fields, metrics, dimensions, time range, available targets/benchmarks, and obvious evidence gaps; then ask only for missing decision context. Data profiling does not waive the intent-confirmation gate.
-- **question-first** — clarify the decision context first, then **request only the data needed** to support that decision, its likely diagnosis path, relevant exceptions, and evidence mode.
+- **data-first** — **profile the uploaded data before asking**. Identify fields, metrics, dimensions, time range, targets/benchmarks, and evidence gaps; then ask only for missing decision context.
+- **question-first** — clarify the decision context first, then **request only the data needed** to support that decision, its diagnosis path, relevant exceptions, and evidence mode.
 
-The Decision Brief is internal design context. It may guide metric routing and information hierarchy, but it is not automatically source evidence. User intent, inferred audience needs, or suggested actions must not be represented as source-grounded business facts unless independently supported by the source and allowed by the decision-state contract.
+The Decision Brief is internal design context. It may guide routing and information hierarchy, but it is not automatically source evidence.
 
 ### 2. Extract verified facts only
 
@@ -114,47 +110,61 @@ Identify the primary user and decision from the Decision Brief, then capture onl
 
 Never invent scores, targets, thresholds, customer states, events, workflows, actions, or causal claims. Direction is not the same as health.
 
-### 3. Route metrics before choosing a mode
+### 3. Route every extracted metric
 
-Use the **Metric Router** whenever the source exposes more metrics than a user can reasonably scan at first view. The canonical stress case is **70-KPI overload**: a dashboard may contain roughly 70 valid KPIs, but validity does not make every KPI a first-view peer.
+Use the **Metric Router** whenever the source exposes more metrics than a user can reasonably scan at first view. The canonical stress case is **70-KPI overload**: a source may contain roughly 70 valid KPIs, but validity does not make every KPI a first-view peer.
 
 > **Preserve everything without showing everything.**
 
-Preserve the complete source/extraction inventory for traceability. Route each metric to exactly one decision role before constructing the visible decision state:
+Preserve the full extracted metric inventory in a separate routing manifest. The manifest must match:
 
-- `primary_signal` — directly changes the main decision or next action; eligible for first-view emphasis.
-- `diagnostic` — explains why a primary signal moved or why the current state exists; supporting context, not a peer headline by default.
-- `exception` — a source-supported breach, outlier, critical account/event, or hard-stop condition that requires attention even when the summary looks acceptable.
-- `drilldown` — useful investigation detail that should be available on demand rather than occupying the default composition.
-- `scorecard_only` — retained for completeness, audit, or secondary scorecard use, but not promoted to the decision-first view unless the user explicitly requests it.
+`schemas/metric-routing.schema.json`
+
+It contains confirmed `decision`, confirmed `action`, `inventoryCount`, and one routing entry per extracted metric. `inventoryCount` must equal the number of routing entries; duplicate or missing metric routes are invalid.
+
+Route each metric to exactly one role:
+
+- `primary_signal` — directly changes the main decision or next action;
+- `diagnostic` — explains a routed primary signal or exception;
+- `exception` — a breach, outlier, critical account/event, or hard-stop condition requiring attention;
+- `drilldown` — useful only after deliberate investigation begins;
+- `scorecard_only` — retained for completeness, audit, or secondary scorecard use, but not promoted to the decision-first view.
 
 Apply the **Action Trigger Test** to every candidate metric:
 
 1. If this metric changes materially, does the user's decision or action change?
-2. If yes in the normal decision loop, route it to `primary_signal`.
-3. If it requires attention because a threshold, safety, compliance, contractual, outage, or other critical condition is breached, route it to `exception`; exceptions override ordinary synthesis rather than being averaged away.
-4. If it mainly explains a primary signal, route it to `diagnostic`.
-5. If it matters only after the user chooses to investigate, route it to `drilldown`.
+2. If yes in the ordinary decision loop, route it to `primary_signal` and state the `decisionImpact`.
+3. If a threshold, safety, compliance, contractual, outage, or other critical condition is breached, route it to `exception`.
+4. If it mainly explains a primary signal or exception, route it to `diagnostic` and identify what it `explains`.
+5. If it matters only after investigation begins, route it to `drilldown`.
 6. If no decision, action, diagnosis, or exception handling changes, route it to `scorecard_only`.
 
-Routing rules:
+Compiler-enforced routing rules:
 
+- `primary_signal` must have `changesDecision: true`, a non-empty `decisionImpact`, and `visibility: "first_view"`.
+- The current deterministic renderer accepts **3–6 primary signals**; more than six fails the first-view information budget instead of silently squeezing more KPI peers into the layout.
+- The routed `primary_signal` metric IDs must exactly equal `decisionState.signals[*].metric` in `no_score`, or `decisionState.model.components[*].metric` in `composite`.
+- `diagnostic` metrics must have `changesDecision: false`, must point via `explains` to a routed `primary_signal` or `exception`, and must stay `supporting` or `on_demand`.
+- `drilldown` metrics must stay `on_demand`.
+- `scorecard_only` metrics must stay `scorecard` and cannot claim to change the current decision.
+- **Active exceptions cannot be hidden** because a stakeholder dislikes red or negative states. An active exception must use `visibility: "first_view"` and its `surfacePath` must resolve to an actually rendered `/exceptions/<n>` or `/events/<n>` item in the decision state.
+- Current first-view information budget is at most 11 decision items: 3–6 primary signals plus active exceptions. Do not solve overload by shrinking type or adding more equal-weight cards.
 - Do not promote a metric because it is easy to visualize, numerically large, or already placed in a KPI card.
-- Prefer the minimum sufficient set of `primary_signal` metrics. The current deterministic no-score renderer supports 3–6 visible signals; when the source contains more, route the remainder to `diagnostic`, `exception`, `drilldown`, or `scorecard_only` instead of deleting source evidence.
-- Active `exception` facts may be visible even when they are not part of the central synthesis.
-- The role taxonomy belongs to Layer 1 routing. Do not leak `primary_signal`, `diagnostic`, `exception`, `drilldown`, or `scorecard_only` labels into product UI, and do not add unclaimed hidden metrics to the grounded bundle merely to prove they were preserved. The closed grounded bundle should contain only facts used by the rendered decision state and its required claims.
+- Do not leak role labels such as `primary_signal` or `scorecard_only` into product UI.
+
+The routing manifest is a durable decision trace. It preserves what was considered, why it was promoted or demoted, and what would change the decision, so later analysis does not have to rediscover the same KPI-prioritization logic from scratch.
 
 ### 4. Choose the evidence mode
 
 The compiler supports two mutually exclusive decision-state modes.
 
-Use `composite` only when the source already provides **all** of the following:
+Use `composite` only when the source already provides all of the following:
 
 - an overall score and score scale;
 - normalized component scores;
 - component weights;
 - a weighted-average aggregation rule;
-- complete score bands / thresholds that determine the displayed status.
+- complete score bands / thresholds that determine displayed status.
 
 Composite accepts only:
 
@@ -162,23 +172,30 @@ Composite accepts only:
 - `aggregation: "weighted_average"`;
 - source-grounded score, component, weight, band, exception, event, and trend facts.
 
-If any required composite scoring fact cannot be mechanically grounded, the transition is `FALLBACK_TO_NO_SCORE`. Do not fill the gap with an inferred formula, guessed weight, or benchmark.
+If any required composite scoring fact cannot be mechanically grounded, transition to `FALLBACK_TO_NO_SCORE`. Do not fill gaps with inferred formulas, guessed weights, or invented benchmarks.
 
 For `no_score`, do not create `Healthy`, `Marginal`, `At risk`, or a 0–100 overall score. Overall direction remains a deterministic renderer derivation from validated signal directions.
 
-**Radar eligibility is independent of overall-score eligibility.** A `no_score` dashboard may render a closed radar profile only when the source explicitly provides all of the following:
+**Radar eligibility is independent of overall-score eligibility.** A `no_score` dashboard may render a closed radar profile only when the source explicitly provides:
 
-- **3–6 peer dimensions** that describe the same object or condition as one profile;
+- **3–6 peer dimensions** describing the same object or condition as one profile;
 - one shared, source-backed numeric scale in `radarScale.min` / `radarScale.max`;
-- a source-backed `normalizedScore` for every displayed dimension.
+- a source-grounded `normalizedScore` for every displayed dimension.
 
-Three dimensions are sufficient and must render as a triangle. Fewer than three dimensions are not radar-eligible. Four to six dimensions render with the corresponding number of vertices.
+Three dimensions are sufficient and render as a triangle. **Fewer than three dimensions are not radar-eligible.** Four to six dimensions render with the corresponding number of vertices.
 
-Radar is a **profile chart**, not a generic multi-metric chart. Do not connect heterogeneous raw KPIs such as revenue dollars, customer counts, percentages, latency, ratios, or unrelated business outcomes merely because several numbers are available. Do not derive or guess normalization for visual convenience. If a shared source-backed scale is absent, keep the metrics in the non-radar `no_score` expression.
+Radar is a profile chart, not a generic multi-metric chart. Do not connect heterogeneous raw KPIs such as revenue dollars, customer counts, percentages, latency, ratios, or unrelated business outcomes merely because several numbers exist.
+
+A radar must pass two gates:
+
+- **Profile Test** — 3–6 peer dimensions, same object, same grounded scale;
+- **Action Trigger Test** — every displayed radar dimension must also be a routed `primary_signal`, meaning a material change can alter the confirmed decision or action.
+
+If the Profile Test passes but the Action Trigger Test fails, keep those dimensions in diagnostic/drilldown/scorecard layers instead of using a decorative radar as the dominant visual.
 
 ### 5. Build a grounded bundle
 
-The production contract has four top-level fields:
+The grounded bundle remains separate from the routing inventory and contains only facts used by the rendered decision state:
 
 ```json
 {
@@ -193,24 +210,16 @@ The production contract has four top-level fields:
 }
 ```
 
-The envelope must match:
+The envelope must match `schemas/grounded-bundle.schema.json` and `decisionState` must independently match `schemas/decision-state.schema.json`.
 
-`schemas/grounded-bundle.schema.json`
-
-`decisionState` must independently match:
-
-`schemas/decision-state.schema.json`
-
-`evidence` is a ledger of source anchors. `claims` maps exact decision-state JSON Pointer paths to evidence IDs.
-
-Supported source grounding in V3:
+Supported source grounding:
 
 - JSON source → `json_pointer` anchor;
 - text source → exact `text_span` anchor with `literal` and `valueText`.
 
-The compiler verifies the source file hash before checking any claim.
+The compiler verifies the source file hash before accepting source claims.
 
-Image-only coordinates are not strong composite grounding in V3 because this repository has no deterministic OCR/token extractor. For screenshot inputs, first produce a verifiable text/JSON sidecar. Do not represent an unverified screenshot interpretation as strong composite evidence.
+Image-only coordinates are not strong composite grounding because this repository has no deterministic OCR/token extractor. For screenshot inputs, first produce a verifiable text/JSON sidecar.
 
 ### 6. Required grounding coverage
 
@@ -232,41 +241,42 @@ For a `no_score` radar, additionally ground:
 
 A missing radar-scale or normalized-score claim returns to evidence extraction. Do not silently fall back to an ungrounded radar.
 
-Do not ground deterministic renderer synthesis as if it were a source fact.
+Do not ground deterministic renderer synthesis or Metric Router role decisions as if they were source facts.
 
-### 7. Compile through the grounding gate
+### 7. Compile through both gates
 
 Production execution is:
 
 ```bash
-node scripts/compile.js <grounded-bundle.json> <output-dir>
+node scripts/compile-dashboard.js <routing-manifest.json> <grounded-bundle.json> <output-dir>
 ```
 
-On `PASS`, the CLI writes:
+The production gate runs Metric Router validation first. On routing failure it returns `FIX_METRIC_ROUTING` and produces no SVG/HTML. Only after routing passes does it run the existing grounding compiler.
+
+On final `PASS`, the CLI writes:
 
 - `no_score` → `output.no-score.svg` and `output.no-score.html`;
 - `composite` → `output.composite.svg` and `output.composite.html`.
 
-On any non-`PASS` transition, it exits non-zero and does not render dashboard output.
-
-Treat `validate.js` and `render.js` as lower-level compiler/renderer tools. Do not use direct rendering as a substitute for the V3 grounded production path.
+`compile.js` remains the lower-level grounding-only compiler for tests and internal compatibility. `validate.js` and `render.js` remain lower-level Layer 2 / Layer 3 tools. Do not use these lower-level entry points as a substitute for `compile-dashboard.js` in ordinary Decision-First production workflows.
 
 ### 8. Follow failure transitions literally
 
+- `FIX_METRIC_ROUTING` → repair routing roles, action-trigger logic, first-view budget, primary/visible mismatch, or exception surfacing; do not bypass the gate.
 - `FIX_DECISION_STATE` → repair contract/schema errors only; do not weaken validation.
-- `RETURN_TO_EVIDENCE_EXTRACTION` → re-read the source and repair evidence/claims.
-- `FALLBACK_TO_NO_SCORE` → abandon composite and rebuild a grounded no-score state from available evidence.
+- `RETURN_TO_EVIDENCE_EXTRACTION` → re-read source and repair evidence/claims.
+- `FALLBACK_TO_NO_SCORE` → abandon unsupported composite scoring and rebuild a grounded no-score state.
 - `PASS` → render deterministically.
 
-Do not turn a failed grounding check into an invitation to guess.
+Do not turn a failed routing or grounding check into an invitation to guess.
 
 ## Visual contract
 
-The renderer owns the layout.
+The renderer owns layout after routing and grounding have passed.
 
 For `no_score`:
 
-- when all 3–6 peer dimensions have source-grounded `normalizedScore` values on one source-grounded `radarScale`, render a true closed radar profile;
+- when all 3–6 routed primary dimensions have grounded `normalizedScore` values on one grounded `radarScale`, render a true closed radar profile;
 - otherwise use the non-radar signal layout and never connect heterogeneous raw KPI values into a fake radar;
 - compact left business context;
 - compact right exceptions/events.
@@ -274,41 +284,47 @@ For `no_score`:
 For `composite`:
 
 - dominant center source-supported score and band;
-- 3–6 normalized weighted components form a true closed radar profile;
+- 3–6 routed normalized weighted components form a true closed radar profile;
 - compact left score trend and score composition;
 - compact right exceptions/events.
 
 For both modes:
 
-- no four-card KPI strip;
+- no flat KPI wall;
 - no dominant full-width customer table;
 - no invented action controls;
 - product-native labels only;
 - no compiler/framework methodology labels in visible UI;
-- restrained color and generous whitespace.
+- restrained color and generous whitespace;
+- negative or critical states may not be cosmetically suppressed;
+- hidden diagnostic/drilldown/scorecard routes are not rendered eagerly.
 
-See `references/visual-pattern.md`.
+See `references/visual-pattern.md` and `references/visual-stack-routing.md`.
 
 ## Hard stops
 
-Safety, compliance, security, regulatory, contractual, or outage conditions override ordinary synthesis. Never average them into a reassuring status. Do not force a hard-stop case through the current SaaS renderers.
+Safety, compliance, security, regulatory, contractual, or outage conditions override ordinary synthesis. Never average them into a reassuring status. Never hide them because a stakeholder wants the dashboard to look more positive.
 
 ## Final gate
 
 Before delivery, verify:
 
-- the Decision Brief contains enough **confirmed** decision context to route metrics, and the intake stopped as soon as that context was sufficient;
+- the Decision Brief contains enough confirmed decision context to route metrics, and intake stopped as soon as that context was sufficient;
 - source facts were not mistaken for business intent; if Decision and Action were not explicitly stated beforehand, at least one user-confirmation question was asked;
 - no more than five questions were asked, one at a time, with no redundant request for source information already known;
 - user uncertainty did not cause invented business intent, thresholds, targets, or source claims;
-- the Metric Router has classified overloaded source metrics before the evidence mode is chosen;
-- the first view contains the minimum sufficient `primary_signal` set plus active source-supported exceptions, rather than a flat KPI inventory;
+- `schemas/metric-routing.schema.json` is respected;
+- `inventoryCount` equals the routed metric inventory and no metric is duplicated or omitted;
+- every `primary_signal` passes the Action Trigger Test and the visible center matches the primary set exactly;
+- diagnostics explain routed primary/exception items rather than competing as peer headlines;
+- active exceptions cannot be hidden and every active exception has a valid rendered `surfacePath`;
+- the first-view information budget is respected instead of shrinking typography or adding equal-weight KPI cards;
 - the grounded-bundle schema passes;
-- the source SHA-256 matches the actual source bytes;
+- source SHA-256 matches actual source bytes;
 - every required visible/source scoring fact has a resolvable claim and evidence anchor;
 - every grounded value matches the referenced decision-state value under allowed deterministic normalization only;
-- `no_score` overall direction matches the signal directions;
-- a `no_score` radar appears only for 3–6 peer dimensions with a source-grounded shared scale and a grounded normalized score for every vertex;
+- `no_score` overall direction matches signal directions;
+- a `no_score` radar passes both the Profile Test and Action Trigger Test;
 - raw mixed-unit KPIs never masquerade as radar dimensions;
 - `composite` weights, weighted score, score scale, and score band pass semantic validation;
 - no unsupported score/status/target/action appears;
