@@ -1,25 +1,6 @@
 # Decision-First Dashboard
 
-Turn KPI-heavy dashboards into decision-first dashboards without letting the agent invent the visual hierarchy.
-
-Most dashboard prompts ask an LLM to **design**. This project treats dashboard redesign more like a small compiler:
-
-```text
-source dashboard / verified source file + user context
-      ↓
-adaptive Decision Brief (1–5 questions unless Decision + Action are already explicit)
-      ↓
-agent extraction + Metric Router + mode proposal
-      ↓
-grounded evidence bundle
-      ↓
-grounding + decision-state validation
-      ↓
-deterministic renderer
-      ↓
-SVG / HTML dashboard
-```
-
+Most LLM dashboard redesigns look the same: four equal KPI cards, one big line chart, one giant table — and sometimes a health score nobody asked for. Decision-First Dashboard forces the model to answer "what decision does this support" first.
 > **Many metrics → minimum sufficient decision signals → diagnosis → action**
 
 ## Why this exists
