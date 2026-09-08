@@ -305,7 +305,7 @@ For `composite`:
 - dominant center source-supported score and band;
 - 3–6 routed normalized weighted components form a true closed radar profile;
 - compact left score trend and score composition;
-- compact right account exceptions and events.
+- compact right exceptions/events.
 
 For both modes:
 
