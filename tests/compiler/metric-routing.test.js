@@ -121,3 +121,11 @@ test('composite components use the same primary routing contract', () => {
   });
   assert.equal(result.valid, true);
 });
+
+test('rejects unknown routing fields through the closed schema contract', () => {
+  const manifest = make70();
+  manifest.unexpected = 'not allowed';
+  const result = validateMetricRouting(manifest, noScoreState());
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((error) => error.code === 'ROUTING_SCHEMA_INVALID'));
+});
