@@ -9,11 +9,13 @@ source dashboard / verified source file + user context
       ↓
 adaptive Decision Brief (1–5 questions unless Decision + Action are already explicit)
       ↓
-agent extraction + Metric Router + mode proposal
+agent extraction + Metric Router
       ↓
-grounded evidence bundle
+Metric Routing Manifest
       ↓
-grounding + decision-state validation
+mode proposal + grounded evidence bundle
+      ↓
+routing gate + grounding + decision-state validation
       ↓
 deterministic renderer
       ↓
@@ -36,7 +38,7 @@ Table
 
 The user still has to scan everything and construct the conclusion mentally.
 
-Decision-First Dashboard changes the information hierarchy first. The agent clarifies the decision context, extracts evidence, and routes metrics; the compiler verifies that the evidence can be mechanically grounded back to source bytes before the deterministic renderer owns the layout.
+Decision-First Dashboard changes the information hierarchy first. The agent clarifies the decision context, extracts evidence, and routes metrics; the production compiler verifies routing discipline and source grounding before the deterministic renderer owns the layout.
 
 ## Adaptive Decision Brief
 
@@ -69,11 +71,24 @@ The Decision Brief guides the Metric Router and information hierarchy, but it do
 
 A source can contain many valid metrics without needing to display them all as peers. The canonical **70-KPI overload** case is routed before rendering using the **Action Trigger Test**: if a metric changes materially, what decision or action changes?
 
-Each metric is classified as `primary_signal`, `diagnostic`, `exception`, `drilldown`, or `scorecard_only`. The first view keeps only the minimum sufficient decision signals plus active exceptions; explanatory, investigative, and completeness metrics stay available in the source/extraction inventory rather than competing for equal visual weight.
+Each metric is classified as `primary_signal`, `diagnostic`, `exception`, `drilldown`, or `scorecard_only`.
 
 > **Preserve everything without showing everything.**
 
-The router is a Layer 1 classification step. It does not weaken the closed grounded-bundle contract or add hidden, unused evidence to the compiler input.
+The complete extracted inventory is preserved in a separate **Metric Routing Manifest** governed by `skills/decision-first-dashboard/schemas/metric-routing.schema.json`. The manifest records the confirmed Decision and Action, `inventoryCount`, and exactly one route per extracted metric.
+
+The compiler enforces routing semantics instead of merely documenting them:
+
+- `inventoryCount` must equal the number of routed metrics; duplicate or missing routes fail.
+- `primary_signal` must pass the Action Trigger Test, declare `decisionImpact`, and remain `first_view`.
+- The current first-view center accepts **3–6 primary signals**. A 70-KPI source does not become a 70-KPI dashboard.
+- The routed primary metric IDs must exactly match the rendered `no_score` signals or `composite` components.
+- `diagnostic` must explain a routed primary signal or exception and remain supporting/on-demand.
+- `drilldown` remains on-demand; `scorecard_only` remains outside the decision-first view.
+- Active exceptions cannot be hidden to make the dashboard look healthier. They must be `first_view` and map through `surfacePath` to an actually rendered exception/event.
+- The current first-view information budget is at most 11 decision items: 3–6 primary signals plus active exceptions.
+
+The routing inventory is intentionally not passed into `render.js`. Hidden diagnostic, drilldown, and scorecard metrics stay preserved for traceability without becoming hidden DOM, eager chart work, or equal-weight visual clutter.
 
 ## Two strict evidence modes
 
@@ -128,29 +143,34 @@ The original `examples/saas/after.png` is retained. `examples/saas/composite-mod
 
 The repository's composite JSON fixture lives under `tests/compiler/fixtures/` and is synthetic contract data used only for automated validation and rendering tests.
 
-## V3 evidence grounding
+## Routing + V3 evidence grounding
 
-V3 adds a hard grounding layer in front of the existing `no_score` / `composite` compiler. A source claim is no longer accepted merely because an agent writes `provenance: "source"`.
+The production path now has two independent hard gates.
 
-The production input is a **grounded bundle** containing:
+**Routing gate:** validates the Metric Routing Manifest before any grounding/rendering work. If routing is invalid, production compilation returns `FIX_METRIC_ROUTING` and emits no SVG/HTML.
+
+**Grounding gate:** verifies that source claims can be mechanically resolved back to source bytes. A source claim is not accepted merely because an agent writes `provenance: "source"`.
+
+The grounded bundle contains:
 
 - a source file path, source kind, and SHA-256;
 - the closed `decisionState`;
 - an evidence ledger;
 - claim references from exact decision-state JSON Pointer paths to evidence IDs.
 
-The compiler supports mechanically verifiable JSON Pointer grounding and exact text-span grounding. Composite scoring facts must all be grounded. Any missing or mismatched composite scoring evidence returns `FALLBACK_TO_NO_SCORE` and produces no composite dashboard.
+The compiler supports mechanically verifiable JSON Pointer grounding and exact text-span grounding. Composite scoring facts must all be grounded. Missing or mismatched composite scoring evidence returns `FALLBACK_TO_NO_SCORE` and produces no composite dashboard.
 
 Machine-readable transitions are:
 
 ```text
 PASS
+FIX_METRIC_ROUTING
 RETURN_TO_EVIDENCE_EXTRACTION
 FALLBACK_TO_NO_SCORE
 FIX_DECISION_STATE
 ```
 
-Image-only/bounding-box claims are not treated as strong composite evidence in V3 because the repository does not currently ship a deterministic OCR/token extractor. Screenshot workflows should first create a verifiable text/JSON sidecar.
+Image-only/bounding-box claims are not treated as strong composite evidence because the repository does not currently ship a deterministic OCR/token extractor. Screenshot workflows should first create a verifiable text/JSON sidecar.
 
 ## Install
 
@@ -158,7 +178,7 @@ Image-only/bounding-box claims are not treated as strong composite evidence in V
 npx skills add fourleaf13-hue/decision-first-dashboard
 ```
 
-The skill directory contains its own schema, validator, templates, and renderer. Runtime validation has no third-party dependency.
+The skill directory contains its own schemas, routing validator, grounding validator, templates, and renderer. Runtime validation has no third-party dependency.
 
 ## Use
 
@@ -170,21 +190,21 @@ The intended production execution path is:
 
 1. Build the adaptive Decision Brief. If data already exists, profile it first. If Decision + Action are not already explicit, ask at least one short confirmation question; ask no more than five and stop as soon as the confirmed decision context is sufficient.
 2. Extract verified facts only.
-3. Route metrics with the Metric Router and Action Trigger Test.
+3. Route every extracted metric with the Metric Router and Action Trigger Test, preserving the complete inventory in a routing manifest.
 4. Decide whether the evidence supports `no_score` or strict `composite` mode.
-5. Build a closed `decisionState` from the minimum sufficient visible signals and source-supported exceptions.
+5. Build a closed `decisionState` from the minimum sufficient visible primary signals and source-supported exceptions.
 6. Build the source hash, evidence ledger, and claim references in a grounded bundle.
-7. Run the grounding compiler gate.
-8. Render SVG and HTML only after `PASS`.
+7. Run the routed production compiler. It validates routing first, then grounding.
+8. Render SVG and HTML only after final `PASS`.
 9. Inspect the output for evidence and visual integrity.
 
 From the skill directory:
 
 ```bash
-node scripts/compile.js path/to/grounded-bundle.json path/to/output-directory
+node scripts/compile-dashboard.js path/to/routing-manifest.json path/to/grounded-bundle.json path/to/output-directory
 ```
 
-`validate.js` and `render.js` remain lower-level Layer 2 / Layer 3 tools for tests and internal compiler use; V3 agent workflows should not bypass `compile.js`.
+`compile.js` remains the lower-level grounding-only compiler for tests and compatibility. `validate.js` and `render.js` remain lower-level Layer 2 / Layer 3 tools. Ordinary Decision-First workflows should not bypass `compile-dashboard.js`.
 
 The renderer writes mode-specific filenames:
 
@@ -195,7 +215,11 @@ composite  → output.composite.svg / output.composite.html
 
 ## Anti-hallucination contract
 
-Both contracts are closed: `grounded-bundle.schema.json` constrains source/evidence/claim structure, and `decision-state.schema.json` constrains mutually exclusive `no_score` and `composite` states.
+Three contracts now work together:
+
+- `metric-routing.schema.json` constrains the Layer 1 routing-manifest shape;
+- `grounded-bundle.schema.json` constrains source/evidence/claim structure;
+- `decision-state.schema.json` constrains mutually exclusive `no_score` and `composite` states.
 
 ### No-score safeguards
 
@@ -247,15 +271,15 @@ Both rendering branches use fixed templates and the same shared visual system.
 ### No-score composition
 
 - one dominant center directional synthesis area;
-- 3–6 signals converging on the center;
-- when all 3–6 peer dimensions have source-grounded normalized scores on one source-grounded shared scale, a true closed radar profile is permitted;
+- 3–6 routed primary signals converging on the center;
+- a radar is permitted only when 3–6 peer dimensions share one source-grounded scale **and** each dimension passes the Action Trigger Test as a `primary_signal`;
 - compact left business context;
 - compact right account exceptions and events.
 
 ### Composite composition
 
 - one dominant center source-supported score and band;
-- 3–6 normalized weighted score components form a true closed radar profile;
+- 3–6 routed normalized weighted score components form a true closed radar profile;
 - compact left score trend and score composition;
 - compact right account exceptions and events.
 
@@ -265,9 +289,11 @@ Both rendering branches use fixed templates and the same shared visual system.
 - no dominant full-width customer table;
 - no invented action buttons;
 - no compiler/framework labels in visible UI;
-- restrained SaaS visual styling.
+- restrained SaaS visual styling;
+- active negative/critical exceptions cannot be cosmetically suppressed;
+- hidden diagnostic/drilldown/scorecard routes are not eagerly rendered.
 
-SVG is the compatibility baseline. HTML/CSS is the higher-fidelity output. Both consume the same validated JSON.
+SVG is the compatibility baseline. HTML/CSS is the higher-fidelity output. Both consume the same validated decision state.
 
 ## Repository structure
 
@@ -289,9 +315,12 @@ decision-first-dashboard/
 │   └── decision-first-dashboard/
 │       ├── SKILL.md
 │       ├── schemas/
+│       │   ├── metric-routing.schema.json
 │       │   ├── grounded-bundle.schema.json
 │       │   └── decision-state.schema.json
 │       ├── scripts/
+│       │   ├── routing.js
+│       │   ├── compile-dashboard.js
 │       │   ├── grounding.js
 │       │   ├── compile.js
 │       │   ├── validate.js
@@ -304,20 +333,25 @@ decision-first-dashboard/
 │       │   └── dashboard.css
 │       └── references/
 │           ├── visual-pattern.md
+│           ├── visual-stack-routing.md
 │           └── after-reference.png
 └── tests/
     ├── compiler/
     │   ├── fixtures/
     │   │   ├── composite.valid.json
-    │   │   └── grounding/
+    │   │   ├── grounding/
+    │   │   └── routing/
     │   ├── golden/
     │   ├── grounding.test.js
     │   ├── compile-cli.test.js
+    │   ├── compile-dashboard.test.js
     │   ├── decision-brief-intake-contract.test.js
     │   ├── golden-snapshot.test.js
     │   ├── metric-router-contract.test.js
+    │   ├── metric-routing.test.js
     │   ├── schema.test.js
     │   ├── composite-schema.test.js
+    │   ├── radar-render.test.js
     │   ├── render-svg.test.js
     │   ├── render-html.test.js
     │   ├── render-composite-svg.test.js
@@ -339,7 +373,7 @@ npm run validate:saas
 npm run render:saas
 ```
 
-GitHub Actions runs the complete compiler test suite, including the Decision Brief intake contract, grounded composite/no-score compilation, and byte-level golden snapshots, then renders the canonical SaaS and SaaSGrid fixtures and uploads generated artifacts for visual QA.
+GitHub Actions runs the complete compiler test suite, including Decision Brief intake, 70-KPI Metric Router behavior, routed production compilation, grounded composite/no-score compilation, and byte-level golden snapshots. It also renders the canonical SaaS and SaaSGrid fixtures and uploads generated artifacts for visual QA.
 
 ## What this is not
 
@@ -347,11 +381,11 @@ This is not a generic chart library and not a prompt that asks the model to free
 
 The project separates three responsibilities:
 
-- **Layer 1 / Agent:** adaptive Decision Brief, evidence extraction, Metric Router classification, and mode proposal.
-- **Layer 2 / Compiler contract:** source grounding, claim coverage, schema/semantic validation, and machine-readable retry/fallback decisions.
+- **Layer 1 / Agent:** adaptive Decision Brief, evidence extraction, Metric Router classification, and routing-manifest creation.
+- **Layer 2 / Compiler contract:** routing semantics, source grounding, claim coverage, schema/semantic validation, and machine-readable retry/fallback decisions.
 - **Layer 3 / Renderer:** deterministic SVG/HTML composition only.
 
-That separation is what makes the output repeatable across agents while making source support auditable.
+That separation is what makes the output repeatable across agents while making routing decisions and source support auditable.
 
 ## License
 
