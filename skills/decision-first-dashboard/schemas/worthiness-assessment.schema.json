@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Dashboard Worthiness Assessment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "purpose",
+    "decisionLoop",
+    "accountability",
+    "responseChange",
+    "recommendedFormat"
+  ],
+  "properties": {
+    "version": { "const": "1.0" },
+    "purpose": {
+      "enum": [
+        "recurring_decision",
+        "recurring_monitoring",
+        "shared_coordination",
+        "visibility_only",
+        "one_off_question",
+        "unclear"
+      ]
+    },
+    "decisionLoop": { "$ref": "#/$defs/statusDescription" },
+    "accountability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "mode", "description"],
+      "properties": {
+        "status": { "enum": ["confirmed", "inferred", "absent"] },
+        "mode": {
+          "enum": [
+            "single_owner",
+            "shared_forum",
+            "on_call_team",
+            "distributed_team",
+            "absent",
+            "unclear"
+          ]
+        },
+        "description": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "responseChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "kind", "description"],
+      "properties": {
+        "status": { "enum": ["confirmed", "inferred", "absent"] },
+        "kind": {
+          "enum": [
+            "action",
+            "priority",
+            "escalation",
+            "intervention",
+            "coordination",
+            "none",
+            "unclear"
+          ]
+        },
+        "description": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "recommendedFormat": {
+      "enum": [
+        "dashboard",
+        "one_off_analysis",
+        "scheduled_summary",
+        "alert",
+        "report",
+        "chat_query",
+        "undetermined"
+      ]
+    },
+    "userOverride": { "enum": [true, false] }
+  },
+  "$defs": {
+    "statusDescription": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "description"],
+      "properties": {
+        "status": { "enum": ["confirmed", "inferred", "absent"] },
+        "description": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    }
+  }
+}

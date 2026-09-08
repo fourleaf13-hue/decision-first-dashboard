@@ -3,10 +3,29 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileGroundedBundle } from './compile.js';
 import { validateMetricRouting } from './routing.js';
+import { evaluateWorthinessAssessment } from './worthiness.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 
-export function compileDecisionDashboard(routingManifest, bundle, { baseDir = process.cwd() } = {}) {
+export function compileDecisionDashboard(worthinessAssessment, routingManifest, bundle, { baseDir = process.cwd() } = {}) {
+  const worthiness = evaluateWorthinessAssessment(worthinessAssessment);
+  if (!worthiness.valid || worthiness.transition !== 'BUILD_DECISION_BRIEF') {
+    return {
+      result: {
+        valid: false,
+        assessmentValid: worthiness.valid,
+        stage: 'worthiness',
+        transition: worthiness.transition,
+        errors: worthiness.errors,
+        recommendedFormat: worthiness.recommendedFormat,
+        worthinessSummary: worthiness.summary
+      },
+      svg: null,
+      html: null,
+      outputMode: null
+    };
+  }
+
   const routing = validateMetricRouting(routingManifest, bundle?.decisionState);
   if (!routing.valid) {
     return {
@@ -15,6 +34,7 @@ export function compileDecisionDashboard(routingManifest, bundle, { baseDir = pr
         stage: 'routing',
         transition: 'FIX_METRIC_ROUTING',
         errors: routing.errors,
+        worthinessSummary: worthiness.summary,
         routingSummary: routing.summary
       },
       svg: null,
@@ -28,33 +48,37 @@ export function compileDecisionDashboard(routingManifest, bundle, { baseDir = pr
     ...compiled,
     result: {
       ...compiled.result,
+      worthinessSummary: worthiness.summary,
       routingSummary: routing.summary
     }
   };
 }
 
 if (process.argv[1] === currentFile) {
-  const routingPath = process.argv[2];
-  const bundlePath = process.argv[3];
-  const outputDir = process.argv[4] ?? path.dirname(bundlePath ?? '.');
+  const worthinessPath = process.argv[2];
+  const routingPath = process.argv[3];
+  const bundlePath = process.argv[4];
+  const outputDir = process.argv[5] ?? path.dirname(bundlePath ?? '.');
 
-  if (!routingPath || !bundlePath) {
+  if (!worthinessPath || !routingPath || !bundlePath) {
     process.stderr.write(`${JSON.stringify({
       valid: false,
-      stage: 'routing',
-      transition: 'FIX_METRIC_ROUTING',
-      errors: [{ code: 'ROUTING_MANIFEST_INVALID', path: '', message: 'Usage: node compile-dashboard.js <routing-manifest.json> <grounded-bundle.json> [output-dir]' }]
+      stage: 'worthiness',
+      transition: 'FIX_WORTHINESS_ASSESSMENT',
+      errors: [{ code: 'WORTHINESS_ASSESSMENT_INVALID', path: '', message: 'Usage: node compile-dashboard.js <worthiness-assessment.json> <routing-manifest.json> <grounded-bundle.json> [output-dir]' }]
     })}\n`);
     process.exit(2);
   }
 
+  const absoluteWorthiness = path.resolve(worthinessPath);
   const absoluteRouting = path.resolve(routingPath);
   const absoluteBundle = path.resolve(bundlePath);
+  const worthinessAssessment = JSON.parse(fs.readFileSync(absoluteWorthiness, 'utf8'));
   const routingManifest = JSON.parse(fs.readFileSync(absoluteRouting, 'utf8'));
   const bundle = JSON.parse(fs.readFileSync(absoluteBundle, 'utf8'));
-  const compiled = compileDecisionDashboard(routingManifest, bundle, { baseDir: path.dirname(absoluteBundle) });
+  const compiled = compileDecisionDashboard(worthinessAssessment, routingManifest, bundle, { baseDir: path.dirname(absoluteBundle) });
 
-  if (!compiled.result.valid) {
+  if (!compiled.result.valid || compiled.result.transition !== 'PASS') {
     process.stderr.write(`${JSON.stringify(compiled.result)}\n`);
     process.exit(1);
   }

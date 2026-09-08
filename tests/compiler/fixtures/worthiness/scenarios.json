@@ -1,0 +1,62 @@
+[
+  {
+    "id": "visibility-only",
+    "assessment": {
+      "version": "1.0",
+      "purpose": "visibility_only",
+      "decisionLoop": { "status": "absent", "description": "The boss wants to glance at the numbers each week, with no recurring decision attached." },
+      "accountability": { "status": "absent", "mode": "absent", "description": "No person or recurring forum is accountable for acting on the view." },
+      "responseChange": { "status": "absent", "kind": "none", "description": "No action, priority, escalation, intervention, or coordination changes when the numbers move." },
+      "recommendedFormat": "scheduled_summary"
+    },
+    "expected": { "transition": "REDIRECT_NON_DASHBOARD", "recommendedFormat": "scheduled_summary" }
+  },
+  {
+    "id": "one-off-analysis",
+    "assessment": {
+      "version": "1.0",
+      "purpose": "one_off_question",
+      "decisionLoop": { "status": "absent", "description": "The request is a one-time investigation of last quarter." },
+      "accountability": { "status": "confirmed", "mode": "single_owner", "description": "The analyst owns the one-time answer." },
+      "responseChange": { "status": "absent", "kind": "none", "description": "There is no recurring response loop after the answer is delivered." },
+      "recommendedFormat": "one_off_analysis"
+    },
+    "expected": { "transition": "REDIRECT_NON_DASHBOARD", "recommendedFormat": "one_off_analysis" }
+  },
+  {
+    "id": "uncertain-shared-review",
+    "assessment": {
+      "version": "1.0",
+      "purpose": "unclear",
+      "decisionLoop": { "status": "inferred", "description": "A weekly review seems plausible but has not been confirmed." },
+      "accountability": { "status": "inferred", "mode": "shared_forum", "description": "A cross-functional review may own the decision." },
+      "responseChange": { "status": "inferred", "kind": "coordination", "description": "The review may change cross-functional priorities." },
+      "recommendedFormat": "undetermined"
+    },
+    "expected": { "transition": "ASK_WORTHINESS_QUESTION", "recommendedFormat": "undetermined" }
+  },
+  {
+    "id": "operational-monitoring",
+    "assessment": {
+      "version": "1.0",
+      "purpose": "recurring_monitoring",
+      "decisionLoop": { "status": "confirmed", "description": "The service is continuously monitored for operational exceptions." },
+      "accountability": { "status": "confirmed", "mode": "on_call_team", "description": "The on-call operations team owns escalation." },
+      "responseChange": { "status": "confirmed", "kind": "escalation", "description": "A breach changes escalation and intervention." },
+      "recommendedFormat": "dashboard"
+    },
+    "expected": { "transition": "PASS", "accountabilityMode": "on_call_team" }
+  },
+  {
+    "id": "board-shared-forum",
+    "assessment": {
+      "version": "1.0",
+      "purpose": "shared_coordination",
+      "decisionLoop": { "status": "confirmed", "description": "The board reviews the same operating signals every month." },
+      "accountability": { "status": "confirmed", "mode": "shared_forum", "description": "The board is the recurring accountable decision forum." },
+      "responseChange": { "status": "confirmed", "kind": "coordination", "description": "The review changes cross-functional priorities and coordination." },
+      "recommendedFormat": "dashboard"
+    },
+    "expected": { "transition": "PASS", "accountabilityMode": "shared_forum" }
+  }
+]
