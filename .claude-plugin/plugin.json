@@ -1,0 +1,20 @@
+{
+  "name": "decision-first-dashboard",
+  "version": "1.0.0",
+  "description": "Turn KPI-heavy dashboards into grounded, decision-first views with dashboard-worthiness checks, metric routing, evidence validation, and deterministic rendering.",
+  "author": {
+    "name": "fourleaf13-hue",
+    "url": "https://github.com/fourleaf13-hue"
+  },
+  "homepage": "https://github.com/fourleaf13-hue/decision-first-dashboard",
+  "repository": "https://github.com/fourleaf13-hue/decision-first-dashboard",
+  "license": "MIT",
+  "keywords": [
+    "dashboard",
+    "analytics",
+    "data-visualization",
+    "decision-support",
+    "business-intelligence",
+    "agent-skill"
+  ]
+}
