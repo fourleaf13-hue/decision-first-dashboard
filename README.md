@@ -111,6 +111,8 @@ If those facts are missing, it falls back to `no_score` instead of guessing.
 npx skills add fourleaf13-hue/decision-first-dashboard
 ```
 
+The repository is also packaged as a standard Claude plugin via `.claude-plugin/plugin.json` for Anthropic Plugin Directory submission. Until directory approval, the skill install command above remains the public install path.
+
 ## Use
 
 Give your agent a dashboard screenshot, Figma frame, existing dashboard code, or verified metrics and ask:
@@ -223,7 +225,13 @@ npm run validate:saas
 npm run render:saas
 ```
 
-GitHub Actions runs the compiler suite, including executable Worthiness scenario fixtures, Decision Brief intake, 70-KPI Metric Router behavior, routed production compilation, grounded composite/no-score compilation, radar rendering, and byte-level golden snapshots.
+For Anthropic plugin packaging, validate the repository root with a current Claude Code CLI before submission:
+
+```bash
+claude plugin validate . --strict
+```
+
+GitHub Actions runs the compiler suite, including the plugin manifest contract, executable Worthiness scenario fixtures, Decision Brief intake, 70-KPI Metric Router behavior, routed production compilation, grounded composite/no-score compilation, radar rendering, and byte-level golden snapshots.
 
 ## What this is not
 
