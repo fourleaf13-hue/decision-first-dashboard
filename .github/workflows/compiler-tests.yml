@@ -31,6 +31,10 @@ jobs:
         run: node skills/decision-first-dashboard/scripts/validate.js examples/saas/real-world/saasgrid/input.no-score.json
       - name: Render SaaSGrid real-world fixture
         run: node skills/decision-first-dashboard/scripts/render.js examples/saas/real-world/saasgrid/input.no-score.json examples/saas/real-world/saasgrid
+      - name: Validate radar comparison fixture
+        run: node skills/decision-first-dashboard/scripts/validate.js examples/saas/radar-comparison/input.no-score.json
+      - name: Render radar comparison fixture
+        run: node skills/decision-first-dashboard/scripts/render.js examples/saas/radar-comparison/input.no-score.json examples/saas/radar-comparison
       - name: Compile grounded composite fixture
         run: node skills/decision-first-dashboard/scripts/compile.js tests/compiler/fixtures/grounding/composite.grounded.json tests/compiler/generated/v3-composite
       - name: Compile grounded no-score fixture
@@ -49,6 +53,8 @@ jobs:
             examples/saas/output.no-score.html
             examples/saas/real-world/saasgrid/output.no-score.svg
             examples/saas/real-world/saasgrid/output.no-score.html
+            examples/saas/radar-comparison/output.no-score.svg
+            examples/saas/radar-comparison/output.no-score.html
             tests/compiler/generated/v3-composite/output.composite.svg
             tests/compiler/generated/v3-composite/output.composite.html
             tests/compiler/generated/v3-no-score/output.no-score.svg
