@@ -34,10 +34,10 @@ const composite = {
 };
 
 function radarPath(markup) {
-  return markup.match(/class="radar-shape"[^>]*d="([^"]+)"/)?.[1] ?? null;
+  return markup.match(/class="radar-shape radar-shape--current"[^>]*d="([^"]+)"/)?.[1] ?? null;
 }
 
-test('accepts 3 to 6 source-backed comparable dimension scores without requiring an overall score', () => {
+test('accepts 3 to 6 source-backed comparable dimension values without requiring an overall score', () => {
   assert.equal(validateDecisionState(scoredNoScore).valid, true);
 
   const six = structuredClone(scoredNoScore);
@@ -49,7 +49,7 @@ test('accepts 3 to 6 source-backed comparable dimension scores without requiring
   assert.equal(validateDecisionState(six).valid, true);
 });
 
-test('renders three scored dimensions as a closed triangular radar in SVG and HTML', () => {
+test('renders three comparable dimensions as a closed triangular radar in SVG and HTML', () => {
   const svg = renderSvg(scoredNoScore);
   const html = renderHtml(scoredNoScore);
 
