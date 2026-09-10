@@ -11,16 +11,19 @@
       <stop offset="0.46" stop-color="#e7e3ff" stop-opacity="0.18"/>
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="centerField" cx="47%" cy="43%" r="58%">
-      <stop offset="0" stop-color="#e5dfff" stop-opacity="0.50"/>
-      <stop offset="0.35" stop-color="#efecff" stop-opacity="0.48"/>
-      <stop offset="0.72" stop-color="#f8f8ff" stop-opacity="0.82"/>
-      <stop offset="1" stop-color="#fbfcff" stop-opacity="0.94"/>
+    <radialGradient id="radarAmbient" cx="50%" cy="58%" r="56%">
+      <stop offset="0" stop-color="#cfc6ff" stop-opacity="0.26"/>
+      <stop offset="0.46" stop-color="#dcd5ff" stop-opacity="0.18"/>
+      <stop offset="0.74" stop-color="#c7bdf2" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#b9adee" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="accentLine" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#6555e8"/>
       <stop offset="1" stop-color="#9b8df4"/>
     </linearGradient>
+    <filter id="ambientFieldBlur" x="-30%" y="-30%" width="160%" height="170%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
     <filter id="panelShadow" x="-30%" y="-30%" width="160%" height="170%">
       <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#403875" flood-opacity="0.10"/>
       <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#403875" flood-opacity="0.05"/>
@@ -38,11 +41,9 @@
       .danger { fill: #e25462; }
       .support-shadow { fill: #655b8f; fill-opacity: .065; }
       .support-panel { fill: #ffffff; fill-opacity: .97; stroke: #e1e4f1; stroke-width: 1; filter: url(#panelShadow); }
-      .center-halo { fill: none; }
-      .center-halo--outer { stroke: #b8afe9; stroke-opacity: .24; stroke-width: 1; }
-      .center-halo--inner { stroke: #c8c0f2; stroke-opacity: .11; stroke-width: 22; }
-      .center-field { fill: url(#centerField); stroke: #ddd9f5; stroke-width: 1; }
-      .radar-scale-ring { fill: none; stroke: #d8d9eb; stroke-width: 1; stroke-opacity: .82; }
+      .radar-ambient-field { fill: url(#radarAmbient); stroke: none; filter: url(#ambientFieldBlur); }
+      .radar-scale-ring { fill: none; stroke: #d8d9eb; stroke-width: 1; stroke-opacity: .76; }
+      .radar-scale-ring[data-scale="100"] { stroke: #b7b3d4; stroke-width: 1.5; stroke-opacity: .98; }
       .radar-spokes { fill: none; stroke: #dedff0; stroke-width: 1; }
       .radar-shape--previous { fill: #3b82f6; fill-opacity: .07; stroke: #3b82f6; stroke-width: 3; stroke-linejoin: round; }
       .radar-shape--current { fill: #f45fa5; fill-opacity: .13; stroke: #f45fa5; stroke-width: 3; stroke-linejoin: round; marker-start: url(#radarVertex); marker-mid: url(#radarVertex); }
@@ -51,6 +52,7 @@
 
   <rect width="1440" height="900" fill="url(#pageBg)"/>
   <rect width="1440" height="900" fill="url(#ambientGlow)"/>
+  <circle cx="740" cy="482" r="318" class="radar-ambient-field"/>
 
   <g class="sans">
     <text x="72" y="76" class="ink" font-size="29" font-weight="760" letter-spacing="-0.8">{{SCORE_LABEL}}</text>
@@ -76,10 +78,6 @@
 
     <text x="98" y="516" class="ink" font-size="15" font-weight="700">Score composition</text>
     {{SVG_COMPOSITION_ROWS}}
-
-    <circle cx="740" cy="458" r="366" class="center-halo center-halo--outer"/>
-    <circle cx="740" cy="458" r="338" class="center-halo center-halo--inner"/>
-    <circle cx="740" cy="458" r="314" class="center-field"/>
 
     <g transform="translate(42 -6)">
       {{SVG_COMPONENT_RADAR}}
