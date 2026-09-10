@@ -34,10 +34,10 @@ const composite = {
 };
 
 function radarPath(markup) {
-  return markup.match(/class="radar-shape"[^>]*d="([^"]+)"/)?.[1] ?? null;
+  return markup.match(/class="radar-shape radar-shape--current"[^>]*d="([^"]+)"/)?.[1] ?? null;
 }
 
-test('accepts 3 to 6 source-backed comparable dimension scores without requiring an overall score', () => {
+test('accepts 3 to 6 source-backed comparable dimensions without requiring an overall score', () => {
   assert.equal(validateDecisionState(scoredNoScore).valid, true);
 
   const six = structuredClone(scoredNoScore);
@@ -49,7 +49,7 @@ test('accepts 3 to 6 source-backed comparable dimension scores without requiring
   assert.equal(validateDecisionState(six).valid, true);
 });
 
-test('renders three scored dimensions as a closed triangular radar in SVG and HTML', () => {
+test('renders three comparable dimensions as a closed triangular radar in SVG and HTML', () => {
   const svg = renderSvg(scoredNoScore);
   const html = renderHtml(scoredNoScore);
 
@@ -92,6 +92,28 @@ test('does not turn heterogeneous raw no-score KPIs into a radar polygon', () =>
   assert.equal(validateDecisionState(raw).valid, true);
   assert.equal(radarPath(renderSvg(raw)), null);
   assert.equal(radarPath(renderHtml(raw)), null);
+});
+
+test('accepts a complete source-backed previous-period profile', () => {
+  const compared = structuredClone(scoredNoScore);
+  compared.signals[0].previousNormalizedScore = 64;
+  compared.signals[1].previousNormalizedScore = 76;
+  compared.signals[2].previousNormalizedScore = 70;
+  assert.equal(validateDecisionState(compared).valid, true);
+  const svg = renderSvg(compared);
+  assert.match(svg, /class="radar-shape radar-shape--previous"/);
+  assert.ok(svg.indexOf('radar-shape radar-shape--previous') < svg.indexOf('radar-shape radar-shape--current'));
+});
+
+test('rejects partial or out-of-range previous-period profile values', () => {
+  const partial = structuredClone(scoredNoScore);
+  partial.signals[0].previousNormalizedScore = 64;
+  assert.equal(validateDecisionState(partial).valid, false);
+
+  const outOfRange = structuredClone(scoredNoScore);
+  for (const signal of outOfRange.signals) signal.previousNormalizedScore = 60;
+  outOfRange.signals[1].previousNormalizedScore = 120;
+  assert.equal(validateDecisionState(outOfRange).valid, false);
 });
 
 test('rejects a derived signal inside an otherwise source-backed radar', () => {
