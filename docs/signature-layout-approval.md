@@ -1,0 +1,1 @@
+Approved direction: evolve deterministic output toward a premium open-canvas data-visualization style with a dominant center, elevated side support cards, stronger hierarchy, and richer visual depth while preserving all existing grounding and radar/composite eligibility rules.
