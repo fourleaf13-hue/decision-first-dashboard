@@ -213,16 +213,17 @@ body {
 .orbit svg { position: absolute; inset: 0; width: 620px; height: 520px; overflow: visible; }
 .orbit .orbit-spokes { fill: none; stroke: var(--accent-line); stroke-width: 1.45; vector-effect: non-scaling-stroke; }
 .orbit .radar-scale-ring {
-  fill: none;
+  fill: #ffffff;
+  fill-opacity: 1;
   stroke: #d8d9eb;
   stroke-width: 1;
-  stroke-opacity: .76;
+  stroke-opacity: .86;
   vector-effect: non-scaling-stroke;
 }
 .orbit .radar-scale-ring[data-scale="100"] {
-  stroke: #b7b3d4;
+  stroke: #aaa7cb;
   stroke-width: 1.5;
-  stroke-opacity: .98;
+  stroke-opacity: 1;
 }
 .orbit .radar-spokes { fill: none; stroke: #dedff0; stroke-width: 1; vector-effect: non-scaling-stroke; }
 .orbit .radar-shape--previous {
@@ -279,6 +280,7 @@ body {
   width: 132px;
   z-index: 4;
   line-height: 1.1;
+  white-space: nowrap;
 }
 .radar-label span {
   display: block;
@@ -305,7 +307,7 @@ body {
 .radar-label small.danger { color: var(--danger); }
 .radar-label small.muted { color: var(--muted); }
 .radar-label--left { text-align: right; transform: translate(-100%, -50%); }
-.radar-label--right { text-align: left; transform: translate(0, -50%); }
+.radar-label--right { text-align: left; transform: translate(-24px, -50%); }
 .radar-label--top,
 .radar-label--bottom { text-align: center; transform: translate(-50%, -50%); }
 
