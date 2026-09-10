@@ -63,6 +63,7 @@
         "delta": { "type": "string", "minLength": 1, "maxLength": 20 },
         "direction": { "enum": ["improving", "deteriorating", "flat", "unknown"] },
         "normalizedScore": { "type": "number" },
+        "previousNormalizedScore": { "type": "number" },
         "provenance": { "enum": ["source", "derived"] }
       }
     },
