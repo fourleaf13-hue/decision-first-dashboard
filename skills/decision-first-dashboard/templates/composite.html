@@ -18,7 +18,7 @@
 
     <section class="decision-layout">
       <aside class="support-column support-column--left">
-        <article class="card score-card">
+        <article class="card support-card score-card">
           <div class="eyebrow">Score trend</div>
           <div class="score-value-line">
             <strong>{{SCORE_VALUE}}</strong>
@@ -30,7 +30,7 @@
           <div class="context-row"><span>Current score</span><strong>{{SCORE_VALUE}} / {{SCORE_MAX}}</strong></div>
         </article>
 
-        <article class="card composition-card">
+        <article class="card support-card composition-card">
           <div class="eyebrow">Score composition</div>
           <div class="composition-list">{{HTML_COMPOSITION_ROWS}}</div>
         </article>
@@ -44,7 +44,7 @@
           <svg viewBox="0 0 620 520" preserveAspectRatio="none">
             <defs>
               <marker id="radarVertex" viewBox="0 0 14 14" refX="7" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse">
-                <circle cx="7" cy="7" r="5" fill="#6f60e5" stroke="#ffffff" stroke-width="2"></circle>
+                <circle cx="7" cy="7" r="5" fill="#6555e8" stroke="#ffffff" stroke-width="2"></circle>
               </marker>
             </defs>
             {{HTML_COMPONENT_RADAR}}
@@ -60,12 +60,12 @@
       </section>
 
       <aside class="support-column support-column--right">
-        <article class="card compact-card">
+        <article class="card support-card compact-card risk-card">
           <div class="eyebrow">Accounts to watch</div>
           <div class="exception-list">{{HTML_EXCEPTION_ROWS}}</div>
         </article>
 
-        <article class="card compact-card events-card">
+        <article class="card support-card compact-card events-card">
           <div class="eyebrow">Recent events</div>
           <div class="event-list">{{HTML_EVENT_ROWS}}</div>
         </article>

@@ -165,8 +165,8 @@ function htmlRowXs(count) {
   }[count] ?? [];
 }
 
-const SVG_RADAR_LAYOUT = { cx: 698, cy: 464, radarRadius: 188, labelRadius: 226 };
-const HTML_RADAR_LAYOUT = { cx: 310, cy: 260, radarRadius: 188, labelRadius: 226 };
+const SVG_RADAR_LAYOUT = { cx: 698, cy: 464, radarRadius: 188, labelRadius: 238 };
+const HTML_RADAR_LAYOUT = { cx: 310, cy: 260, radarRadius: 188, labelRadius: 238 };
 
 function radialPoint(cx, cy, radius, angle) {
   return {
@@ -207,7 +207,7 @@ function radarGeometry(dimensions, min, max, layout) {
 function svgRadarVisual(dimensions, min, max) {
   const geometry = radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT);
   return `<path class="radar-spokes" d="${geometry.spokes}"/>
-    <path class="radar-shape" d="${geometry.shape}" fill="#7264ca" fill-opacity="0.20" stroke="#7264ca" stroke-width="3" stroke-linejoin="round"/>`;
+    <path class="radar-shape" d="${geometry.shape}" fill="#6555e8" fill-opacity="0.16" stroke="#6555e8" stroke-width="3" stroke-linejoin="round"/>`;
 }
 
 function htmlRadarVisual(dimensions, min, max) {
@@ -221,8 +221,9 @@ function svgRadarNodes(dimensions, min, max, nodeClass) {
   return dimensions.map((dimension, index) => {
     const point = geometry.labels[index];
     return `<g class="${nodeClass}">
-      <text x="${point.x.toFixed(1)}" y="${(point.y - 10).toFixed(1)}" class="accent" font-size="22" font-weight="740" text-anchor="middle">${escapeMarkup(formatScore(dimension.normalizedScore))}</text>
-      <text x="${point.x.toFixed(1)}" y="${(point.y + 13).toFixed(1)}" class="ink" font-size="13" font-weight="650" text-anchor="middle">${escapeMarkup(dimension.label)}</text>
+      <rect x="${(point.x - 68).toFixed(1)}" y="${(point.y - 42).toFixed(1)}" width="136" height="68" rx="19" class="metric-orb"/>
+      <text x="${point.x.toFixed(1)}" y="${(point.y - 10).toFixed(1)}" class="accent" font-size="22" font-weight="760" text-anchor="middle">${escapeMarkup(formatScore(dimension.normalizedScore))}</text>
+      <text x="${point.x.toFixed(1)}" y="${(point.y + 13).toFixed(1)}" class="ink" font-size="12" font-weight="670" text-anchor="middle">${escapeMarkup(dimension.label)}</text>
     </g>`;
   }).join('\n');
 }
@@ -257,13 +258,16 @@ function svgSignalCluster(signals) {
     const labelY = topRow ? y - 37 : y + 91;
     const detailY = topRow ? y - 18 : y + 110;
     const display = signalDisplay(signal);
+    const cardY = topRow ? y - 104 : y + 34;
+    const cardHeight = display.detail ? 92 : 74;
     const detailNode = display.detail
-      ? `<text x="${x}" y="${detailY}" class="muted" font-size="11" text-anchor="middle">${escapeMarkup(display.detail)}</text>`
+      ? `<text x="${x}" y="${detailY}" class="muted" font-size="10" text-anchor="middle">${escapeMarkup(display.detail)}</text>`
       : '';
     return `<g class="signal-node">
-      <circle cx="${x}" cy="${y}" r="9" fill="#ffffff" stroke="#8d7fda" stroke-width="3"/>
-      <text x="${x}" y="${primaryY}" class="accent" font-size="24" font-weight="740" text-anchor="middle">${escapeMarkup(display.primary)}</text>
-      <text x="${x}" y="${labelY}" class="ink" font-size="13" font-weight="650" text-anchor="middle">${escapeMarkup(signal.label)}</text>
+      <rect x="${x - 72}" y="${cardY}" width="144" height="${cardHeight}" rx="19" class="metric-orb"/>
+      <circle cx="${x}" cy="${y}" r="8" fill="#ffffff" stroke="#6555e8" stroke-width="3"/>
+      <text x="${x}" y="${primaryY}" class="accent" font-size="23" font-weight="760" text-anchor="middle">${escapeMarkup(display.primary)}</text>
+      <text x="${x}" y="${labelY}" class="ink" font-size="12" font-weight="670" text-anchor="middle">${escapeMarkup(signal.label)}</text>
       ${detailNode}
     </g>`;
   }).join('\n');
@@ -289,7 +293,7 @@ function htmlSignalCluster(signals) {
   const nodes = placed.map(({ signal, x, y }) => {
     const display = signalDisplay(signal);
     const detailNode = display.detail ? `<small>${escapeMarkup(display.detail)}</small>` : '';
-    return `<div class="signal" style="left:${x}%;top:${y}%">
+    return `<div class="signal metric-orb" style="left:${x}%;top:${y}%">
     <strong>${escapeMarkup(display.primary)}</strong>
     <span>${escapeMarkup(signal.label)}</span>
     ${detailNode}
@@ -318,7 +322,7 @@ function svgComponentCluster(components, min, max) {
 function htmlComponentCluster(components, min, max) {
   return {
     visual: htmlRadarVisual(components, min, max),
-    nodes: htmlRadarNodes(components, min, max, 'signal score-component')
+    nodes: htmlRadarNodes(components, min, max, 'signal score-component metric-orb')
   };
 }
 
@@ -399,7 +403,7 @@ function svgExceptionRows(exceptions = []) {
     const y = 232 + index * 70;
     const meta = [item.plan, item.mrr ? `${item.mrr} MRR` : null].filter(Boolean).join(' · ');
     return `<g>
-      <circle cx="1072" cy="${y - 4}" r="5" fill="#c96e79"/>
+      <circle cx="1072" cy="${y - 4}" r="5" fill="#e25462"/>
       <text x="1088" y="${y}" class="ink" font-size="14" font-weight="650">${escapeMarkup(item.name)}</text>
       <text x="1088" y="${y + 22}" class="muted" font-size="12">${escapeMarkup(meta)}</text>
       <rect x="1268" y="${y - 19}" width="74" height="26" rx="13" fill="#fff1f3"/>
@@ -416,7 +420,7 @@ function svgEventRows(events = []) {
   return events.slice(0, 4).map((item, index) => {
     const y = 534 + index * 68;
     return `<g>
-      <circle cx="1072" cy="${y - 4}" r="4" fill="#8d7fda"/>
+      <circle cx="1072" cy="${y - 4}" r="4" fill="#6555e8"/>
       <text x="1088" y="${y}" class="ink" font-size="13" font-weight="650">${escapeMarkup(item.subject)}</text>
       <text x="1088" y="${y + 21}" class="muted" font-size="12">${escapeMarkup(item.event)}</text>
       <text x="1342" y="${y + 21}" class="soft" font-size="11" text-anchor="end">${escapeMarkup(item.time)}</text>
@@ -503,7 +507,7 @@ function renderNoScoreHtml(data) {
   const radar = data.radarScale
     ? {
         visual: htmlRadarVisual(data.signals, data.radarScale.min, data.radarScale.max),
-        nodes: htmlRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'signal radar-dimension')
+        nodes: htmlRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'signal radar-dimension metric-orb')
       }
     : null;
   const signalCluster = radar ?? htmlSignalCluster(data.signals);
