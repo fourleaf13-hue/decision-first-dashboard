@@ -74,7 +74,7 @@
 
   <rect width="1440" height="900" fill="url(#pageBg)"/>
   <rect width="1440" height="900" fill="url(#ambientGlow)"/>
-  <circle cx="740" cy="482" r="328" class="radar-ambient-field"/>
+  <circle cx="706" cy="482" r="318" class="radar-ambient-field"/>
 
   <g class="sans">
     <text x="72" y="76" class="ink" font-size="29" font-weight="760" letter-spacing="-0.8">Subscription health</text>
