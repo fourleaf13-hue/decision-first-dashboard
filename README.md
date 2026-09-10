@@ -65,13 +65,15 @@ If it doesn't, show the real signals instead.
 <table>
   <tr>
     <th width="50%">Before</th>
-    <th width="50%">No-score mode — no unsupported score invented</th>
+    <th width="50%">No-score radar profile — no unsupported score invented</th>
   </tr>
   <tr>
     <td width="50%"><img src="examples/saas/before.png" width="100%"></td>
-    <td width="50%"><img src="examples/saas/output.no-score.svg" width="100%"></td>
+    <td width="50%"><img src="examples/radar-profile/output.no-score.svg" width="100%"></td>
   </tr>
 </table>
+
+The After showcase uses five source-backed percentage dimensions on one 0–100 scale, so the radar is real rather than decorative. Mixed-unit raw KPIs still use the non-radar fallback.
 
 ## How it works
 
@@ -99,7 +101,7 @@ Unrelated raw KPIs are not forced into a radar chart.
 
 ### Composite mode — when the evidence supports it
 
-If the source already provides a real score model — including the score, scale, normalized components, weights, aggregation rule, and score bands — the skill can render the score as the dominant decision signal.
+If the source already provides a real score model — including the score, scale, normalized components, weights, aggregation rule, and score bands — the skill can preserve and display that grounded score without forcing it into the radar center.
 
 <img src="examples/saas/composite-mode.png" width="760">
 
@@ -223,6 +225,8 @@ composite  → output.composite.svg / output.composite.html
 npm test
 npm run validate:saas
 npm run render:saas
+npm run validate:radar-showcase
+npm run render:radar-showcase
 ```
 
 For Anthropic plugin packaging, validate the repository root with a current Claude Code CLI before submission:
