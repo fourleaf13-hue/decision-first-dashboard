@@ -27,11 +27,10 @@ function pointInTimeFixture() {
   };
 }
 
-test('renders the same canonical decision state into a fixed HTML composition', () => {
+test('renders the same canonical decision state into a fixed HTML composition without a center verdict', () => {
   const html = renderHtml(fixture);
   assert.match(html, /Subscription health/);
-  assert.match(html, /IMPROVING/);
-  assert.match(html, /Target unknown/);
+  assert.doesNotMatch(html, />IMPROVING<|Target unknown|OVERALL DIRECTION/);
   assert.match(html, /\$184,320/);
   assert.match(html, /Dovetail/);
   assert.match(html, /Plan cancelled/);
@@ -67,13 +66,13 @@ test('renders a trend line only when an exact source-supported series is supplie
   assert.doesNotMatch(html, /Trend data unavailable/);
 });
 
-test('does not expose layout freedom as KPI grids, tables, or action controls', () => {
+test('does not expose layout freedom as KPI grids, tables, action controls, or synthetic center verdicts', () => {
   const html = renderHtml(fixture);
   assert.doesNotMatch(html, /<table\b/i);
   assert.doesNotMatch(html, /<button\b/i);
   assert.doesNotMatch(
     html,
-    /kpi-grid|grid-cols-4|Executive Decision Dashboard|Primary Decision|Diagnostic Context|Required Interventions|HEALTH GOOD|Healthy|Marginal|Decision-first view|No composite score/
+    /kpi-grid|grid-cols-4|Executive Decision Dashboard|Primary Decision|Diagnostic Context|Required Interventions|HEALTH GOOD|Healthy|Marginal|Decision-first view|No composite score|OVERALL DIRECTION|Target unknown/
   );
 });
 
