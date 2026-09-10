@@ -253,7 +253,7 @@ function validateCompositeSemantics(data, errors) {
   }
 
   if (!nearlyEqual(bands[bands.length - 1].max, score.max, 1e-9)) {
-    pushError(errors, `/model/bands/${bands.length - 1]/max`, 'bandCoverage', 'last band must end at the score maximum');
+    pushError(errors, `/model/bands/${bands.length - 1}/max`, 'bandCoverage', 'last band must end at the score maximum');
   }
 
   const selectedBand = bands.find((band, index) => {
