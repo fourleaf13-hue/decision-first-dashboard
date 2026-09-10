@@ -64,7 +64,6 @@
       .radar-shape--current { fill: #FF7BC2; fill-opacity: .1; stroke: #ED69AD; stroke-width: 4; stroke-linejoin: round; marker-start: url(#radarVertex); marker-mid: url(#radarVertex); }
       .radar-label--left, .radar-label--left tspan { text-anchor: end; }
       .radar-label--right, .radar-label--right tspan { text-anchor: start; }
-      .radar-label--right { transform: translateX(-24px); }
     </style>
   </defs>
 
@@ -97,7 +96,7 @@
     <text x="98" y="516" class="ink" font-size="15" font-weight="700">Score composition</text>
     {{SVG_COMPOSITION_ROWS}}
 
-    <g transform="translate(42 -6)">
+    <g transform="translate(8 18)">
       {{SVG_COMPONENT_RADAR}}
       {{SVG_COMPONENT_NODES}}
     </g>
