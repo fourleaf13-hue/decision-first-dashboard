@@ -22,8 +22,16 @@ test('profile radar uses exactly four proportional 40/60/80/100 scale rings', ()
   const svg = renderSvg(comparisonRadar);
   const html = renderHtml(comparisonRadar);
 
-  assert.deepEqual(scaleRadii(svg), [[40, 75.2], [60, 112.8], [80, 150.4], [100, 188]]);
-  assert.deepEqual(scaleRadii(html), [[40, 75.2], [60, 112.8], [80, 150.4], [100, 188]]);
+  assert.deepEqual(scaleRadii(svg), [[100, 188], [80, 150.4], [60, 112.8], [40, 75.2]]);
+  assert.deepEqual(scaleRadii(html), [[100, 188], [80, 150.4], [60, 112.8], [40, 75.2]]);
+});
+
+test('quantitative radar tiers are opaque white circles with visible gray boundaries', () => {
+  const svg = renderSvg(comparisonRadar);
+  const html = renderHtml(comparisonRadar);
+
+  assert.match(svg, /\.radar-scale-ring\s*\{[^}]*fill:\s*#ffffff;[^}]*fill-opacity:\s*1;[^}]*stroke:/i);
+  assert.match(html, /\.orbit \.radar-scale-ring\s*\{[^}]*fill:\s*#ffffff;[^}]*fill-opacity:\s*1;[^}]*stroke:/i);
 });
 
 test('previous month is blue below the current pink profile and current vertices stay visible', () => {
@@ -52,13 +60,34 @@ test('radar center stays empty and all dimension copy sits outside the 100% ring
   assert.match(svg, /class="danger"[^>]*>↓ 6pp</);
 });
 
-test('left labels are right-aligned and right labels are left-aligned', () => {
+test('left labels are explicitly right-aligned line by line and right labels are left-aligned', () => {
   const svg = renderSvg(comparisonRadar);
 
-  assert.match(svg, /class="radar-label radar-label--left"[^>]*text-anchor="end"/);
-  assert.match(svg, /class="radar-label radar-label--right"[^>]*text-anchor="start"/);
-  assert.match(svg, /class="radar-label radar-label--top"[^>]*text-anchor="middle"/);
-  assert.match(svg, /class="radar-label radar-label--bottom"[^>]*text-anchor="middle"/);
+  const leftBlock = svg.match(/<text class="radar-label radar-label--left"[\s\S]*?<\/text>/)?.[0] ?? '';
+  const rightBlock = svg.match(/<text class="radar-label radar-label--right"[\s\S]*?<\/text>/)?.[0] ?? '';
+  assert.match(leftBlock, /text-anchor="end"/);
+  assert.equal((leftBlock.match(/text-anchor="end"/g) ?? []).length, 4, 'left label and all three lines must share the same right edge');
+  assert.match(rightBlock, /text-anchor="start"/);
+  assert.equal((rightBlock.match(/text-anchor="start"/g) ?? []).length, 4, 'right label and all three lines must share the same left edge');
+});
+
+test('side labels stay inside the center safe zone and cannot overlap support cards', () => {
+  const svg = renderSvg(comparisonRadar);
+  const html = renderHtml(comparisonRadar);
+
+  for (const match of svg.matchAll(/class="radar-label radar-label--(left|right)"[^>]*x="([0-9.]+)"/g)) {
+    const [, side, xText] = match;
+    const x = Number(xText);
+    if (side === 'left') assert.ok(x >= 500, `left label x=${x} must clear the left support card`);
+    if (side === 'right') assert.ok(x <= 900, `right label x=${x} must clear the right support card`);
+  }
+
+  for (const match of html.matchAll(/class="[^\"]*radar-label radar-label--(left|right)[^\"]*"[^>]*style="left:([0-9.]+)%/g)) {
+    const [, side, pctText] = match;
+    const pct = Number(pctText);
+    if (side === 'left') assert.ok(pct >= 19.35, `left HTML label ${pct}% must clear the left support card`);
+    if (side === 'right') assert.ok(pct <= 80.65, `right HTML label ${pct}% must clear the right support card`);
+  }
 });
 
 test('ambient field is a non-quantitative bottom layer and the 100% ring remains the outer data boundary', () => {
