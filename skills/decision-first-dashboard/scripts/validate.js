@@ -132,18 +132,37 @@ function nearlyEqual(a, b, tolerance) {
   return Math.abs(a - b) <= tolerance;
 }
 
+function radarValue(signal) {
+  if (Object.hasOwn(signal, 'radarValue')) return signal.radarValue;
+  if (Object.hasOwn(signal, 'normalizedScore')) return signal.normalizedScore;
+  return undefined;
+}
+
 function validateNoScoreSemantics(data, errors) {
   const hasRadarScale = Object.hasOwn(data, 'radarScale');
-  const scoredSignals = data.signals.filter((signal) => Object.hasOwn(signal, 'normalizedScore'));
+  const radarSignals = data.signals.filter((signal) => radarValue(signal) !== undefined);
+  const hasPrevious = data.signals.some((signal) => Object.hasOwn(signal, 'previousRadarValue'));
+  const hasComparison = Object.hasOwn(data, 'radarComparison');
 
-  if (!hasRadarScale && scoredSignals.length === 0) return;
+  for (const [index, signal] of data.signals.entries()) {
+    if (Object.hasOwn(signal, 'radarValue') && Object.hasOwn(signal, 'normalizedScore')) {
+      pushError(
+        errors,
+        `/signals/${index}`,
+        'radarEligibility',
+        'use radarValue for profile radar dimensions or legacy normalizedScore, not both'
+      );
+    }
+  }
+
+  if (!hasRadarScale && radarSignals.length === 0 && !hasPrevious && !hasComparison) return;
 
   if (!hasRadarScale) {
     pushError(
       errors,
       '/radarScale',
       'radarScale',
-      'source-backed radar scale is required when no-score signals contain normalized scores'
+      'source-backed radar scale is required when no-score signals contain comparable radar values'
     );
     return;
   }
@@ -154,12 +173,12 @@ function validateNoScoreSemantics(data, errors) {
     return;
   }
 
-  if (scoredSignals.length !== data.signals.length) {
+  if (radarSignals.length !== data.signals.length) {
     pushError(
       errors,
       '/signals',
       'radarEligibility',
-      'every no-score radar dimension must provide a source-backed normalized score on the shared radar scale'
+      'every no-score radar dimension must provide a source-backed comparable value on the shared radar scale'
     );
   }
 
@@ -173,14 +192,40 @@ function validateNoScoreSemantics(data, errors) {
   }
 
   for (const [index, signal] of data.signals.entries()) {
-    if (!Object.hasOwn(signal, 'normalizedScore')) continue;
-    if (signal.normalizedScore < min || signal.normalizedScore > max) {
+    const value = radarValue(signal);
+    if (value === undefined) continue;
+    if (value < min || value > max) {
       pushError(
         errors,
-        `/signals/${index}/normalizedScore`,
+        `/signals/${index}/${Object.hasOwn(signal, 'radarValue') ? 'radarValue' : 'normalizedScore'}`,
         'radarScale',
-        'normalized score must lie within the declared no-score radar scale'
+        'radar value must lie within the declared no-score radar scale'
       );
+    }
+  }
+
+  if (hasPrevious || hasComparison) {
+    if (!hasComparison) {
+      pushError(errors, '/radarComparison', 'radarComparison', 'period labels are required when previous radar values are supplied');
+    }
+    if (!hasPrevious || data.signals.some((signal) => !Object.hasOwn(signal, 'previousRadarValue'))) {
+      pushError(
+        errors,
+        '/signals',
+        'radarComparison',
+        'every radar dimension must provide a previousRadarValue for a period comparison'
+      );
+    }
+    for (const [index, signal] of data.signals.entries()) {
+      if (!Object.hasOwn(signal, 'previousRadarValue')) continue;
+      if (signal.previousRadarValue < min || signal.previousRadarValue > max) {
+        pushError(
+          errors,
+          `/signals/${index}/previousRadarValue`,
+          'radarScale',
+          'previous radar value must lie within the declared no-score radar scale'
+        );
+      }
     }
   }
 }
@@ -248,6 +293,33 @@ function validateCompositeSemantics(data, errors) {
     pushError(errors, '/score/band', 'bandSelection', 'score value must map to exactly one declared band');
   } else if (selectedBand.label !== score.band) {
     pushError(errors, '/score/band', 'bandSelection', 'score band must match the threshold band selected by the score value');
+  }
+
+  const hasPrevious = model.components.some((component) => Object.hasOwn(component, 'previousNormalizedScore'));
+  const hasComparison = Object.hasOwn(data, 'radarComparison');
+  if (hasPrevious || hasComparison) {
+    if (!hasComparison) {
+      pushError(errors, '/radarComparison', 'radarComparison', 'period labels are required when previous component values are supplied');
+    }
+    if (!hasPrevious || model.components.some((component) => !Object.hasOwn(component, 'previousNormalizedScore'))) {
+      pushError(
+        errors,
+        '/model/components',
+        'radarComparison',
+        'every composite radar component must provide a previousNormalizedScore for a period comparison'
+      );
+    }
+    for (const [index, component] of model.components.entries()) {
+      if (!Object.hasOwn(component, 'previousNormalizedScore')) continue;
+      if (component.previousNormalizedScore < score.min || component.previousNormalizedScore > score.max) {
+        pushError(
+          errors,
+          `/model/components/${index}/previousNormalizedScore`,
+          'scoreScale',
+          'previous normalized score must lie within the composite score scale'
+        );
+      }
+    }
   }
 }
 
