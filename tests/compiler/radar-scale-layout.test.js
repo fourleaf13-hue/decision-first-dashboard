@@ -14,7 +14,7 @@ const comparisonRadar = {
 };
 
 function scaleRadii(markup) {
-  return [...markup.matchAll(/class="radar-scale-ring(?: radar-scale-ring--outer)?"[^>]*data-scale="(40|60|80|100)"[^>]*r="([0-9.]+)"/g)]
+  return [...markup.matchAll(/class="radar-scale-ring"[^>]*data-scale="(40|60|80|100)"[^>]*r="([0-9.]+)"/g)]
     .map((match) => [Number(match[1]), Number(match[2])]);
 }
 
@@ -73,11 +73,10 @@ test('ambient field is a non-quantitative bottom layer and the 100% ring remains
   assert.ok(ambientIndex < firstLabelIndex, 'ambient field must sit below labels and values');
   assert.doesNotMatch(svg, /class="center-halo|class="center-field/);
   assert.match(svg, /\.radar-ambient-field\s*\{[^}]*stroke:\s*none/i);
-  assert.match(svg, /class="radar-scale-ring radar-scale-ring--outer"[^>]*data-scale="100"/);
-  assert.match(svg, /\.radar-scale-ring--outer\s*\{[^}]*stroke-width:\s*1\.5/i);
+  assert.match(svg, /\.radar-scale-ring\[data-scale="100"\]\s*\{[^}]*stroke-width:\s*1\.5/i);
 
   assert.match(html, /\.synthesis-card::before\s*\{[^}]*radial-gradient[^}]*z-index:\s*0/is);
   assert.doesNotMatch(html, /\.synthesis-card::after\s*\{/);
   assert.match(html, /\.orbit\s*\{[^}]*z-index:\s*1/is);
-  assert.match(html, /\.radar-scale-ring--outer\s*\{[^}]*stroke-width:\s*1\.5/is);
+  assert.match(html, /\.orbit \.radar-scale-ring\[data-scale="100"\]\s*\{[^}]*stroke-width:\s*1\.5/is);
 });
