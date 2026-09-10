@@ -46,8 +46,10 @@ test('radar center stays empty and all dimension copy sits outside the 100% ring
   assert.match(svg, /class="radar-label radar-label--right"[^>]*data-outside-ring="true"/);
   assert.match(svg, /class="radar-label radar-label--bottom"[^>]*data-outside-ring="true"/);
   assert.match(svg, /class="radar-label radar-label--left"[^>]*data-outside-ring="true"/);
-  assert.match(svg, />Retail<[^]*?>80%<[^]*?>\+8pp</);
-  assert.match(svg, />To B<[^]*?>64%<[^]*?>-6pp</);
+  assert.match(svg, />Retail<[^]*?>80%<[^]*?>↑ 8pp</);
+  assert.match(svg, />To B<[^]*?>64%<[^]*?>↓ 6pp</);
+  assert.match(svg, /class="positive"[^>]*>↑ 8pp</);
+  assert.match(svg, /class="danger"[^>]*>↓ 6pp</);
 });
 
 test('left labels are right-aligned and right labels are left-aligned', () => {
