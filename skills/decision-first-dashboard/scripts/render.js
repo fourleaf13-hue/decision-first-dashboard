@@ -162,8 +162,8 @@ function htmlRowXs(count) {
   }[count] ?? [];
 }
 
-const SVG_RADAR_LAYOUT = { cx: 698, cy: 464, radarRadius: 188, labelRadius: 238 };
-const HTML_RADAR_LAYOUT = { cx: 310, cy: 260, radarRadius: 188, labelRadius: 238 };
+const SVG_RADAR_LAYOUT = { cx: 698, cy: 464, radarRadius: 188, labelRadius: 238, labelSafeLeft: 500, labelSafeRight: 900 };
+const HTML_RADAR_LAYOUT = { cx: 310, cy: 260, radarRadius: 188, labelRadius: 238, labelSafeLeft: 120, labelSafeRight: 500 };
 const RADAR_SCALE_STEPS = [40, 60, 80, 100];
 
 function radialPoint(cx, cy, radius, angle) {
@@ -180,6 +180,20 @@ function pointPath(points, close = false) {
   return close ? `${path} Z` : path;
 }
 
+function radarSide(angle) {
+  const x = Math.cos(angle);
+  const y = Math.sin(angle);
+  if (Math.abs(x) < 0.15) return y < 0 ? 'top' : 'bottom';
+  return x < 0 ? 'left' : 'right';
+}
+
+function safeRadarLabelPoint(point, angle, layout) {
+  const side = radarSide(angle);
+  if (side === 'left') return { ...point, x: Math.max(point.x, layout.labelSafeLeft) };
+  if (side === 'right') return { ...point, x: Math.min(point.x, layout.labelSafeRight) };
+  return point;
+}
+
 function radarGeometry(dimensions, min, max, layout, valueKey = 'normalizedScore') {
   const span = max - min;
   const count = dimensions.length;
@@ -194,7 +208,7 @@ function radarGeometry(dimensions, min, max, layout, valueKey = 'normalizedScore
     const ratio = Math.min(1, Math.max(0, (value - min) / span));
     axes.push(radialPoint(layout.cx, layout.cy, layout.radarRadius, angle));
     shape.push(radialPoint(layout.cx, layout.cy, layout.radarRadius * ratio, angle));
-    labels.push(radialPoint(layout.cx, layout.cy, layout.labelRadius, angle));
+    labels.push(safeRadarLabelPoint(radialPoint(layout.cx, layout.cy, layout.labelRadius, angle), angle, layout));
     angles.push(angle);
   });
 
@@ -207,7 +221,7 @@ function radarGeometry(dimensions, min, max, layout, valueKey = 'normalizedScore
 }
 
 function radarScaleRings(layout) {
-  return RADAR_SCALE_STEPS.map((scale) => {
+  return [...RADAR_SCALE_STEPS].reverse().map((scale) => {
     const radius = Number((layout.radarRadius * scale / 100).toFixed(1));
     return `<circle class="radar-scale-ring" data-scale="${scale}" r="${radius}" cx="${layout.cx}" cy="${layout.cy}"/>`;
   }).join('\n');
@@ -215,13 +229,6 @@ function radarScaleRings(layout) {
 
 function hasCompletePreviousProfile(dimensions) {
   return dimensions.length > 0 && dimensions.every((dimension) => Number.isFinite(dimension.previousNormalizedScore));
-}
-
-function radarSide(angle) {
-  const x = Math.cos(angle);
-  const y = Math.sin(angle);
-  if (Math.abs(x) < 0.15) return y < 0 ? 'top' : 'bottom';
-  return x < 0 ? 'left' : 'right';
 }
 
 function radarAnchor(side) {
@@ -269,12 +276,12 @@ function svgRadarNodes(dimensions, min, max, nodeClass) {
     const startY = side === 'top' ? point.y - 21 : side === 'bottom' ? point.y - 3 : point.y - 20;
     const delta = deltaWithArrow(dimension.delta);
     const deltaNode = delta
-      ? `<tspan x="${point.x.toFixed(1)}" dy="18" class="${directionClass(dimension.direction)}" font-size="11" font-weight="700">${escapeMarkup(delta)}</tspan>`
+      ? `<tspan x="${point.x.toFixed(1)}" dy="18" text-anchor="${anchor}" class="${directionClass(dimension.direction)}" font-size="11" font-weight="700">${escapeMarkup(delta)}</tspan>`
       : '';
     return `<g class="${nodeClass}">
       <text class="radar-label radar-label--${side}" data-outside-ring="true" text-anchor="${anchor}" x="${point.x.toFixed(1)}" y="${startY.toFixed(1)}">
-        <tspan x="${point.x.toFixed(1)}" class="muted" font-size="11" font-weight="650">${escapeMarkup(dimension.label)}</tspan>
-        <tspan x="${point.x.toFixed(1)}" dy="20" class="ink" font-size="16" font-weight="760">${escapeMarkup(dimension.value)}</tspan>
+        <tspan x="${point.x.toFixed(1)}" text-anchor="${anchor}" class="muted" font-size="11" font-weight="650">${escapeMarkup(dimension.label)}</tspan>
+        <tspan x="${point.x.toFixed(1)}" dy="20" text-anchor="${anchor}" class="ink" font-size="16" font-weight="760">${escapeMarkup(dimension.value)}</tspan>
         ${deltaNode}
       </text>
     </g>`;

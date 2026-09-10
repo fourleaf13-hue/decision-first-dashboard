@@ -45,11 +45,14 @@
       .support-shadow { fill: #655b8f; fill-opacity: .065; }
       .support-panel { fill: #ffffff; fill-opacity: .97; stroke: #e1e4f1; stroke-width: 1; filter: url(#panelShadow); }
       .radar-ambient-field { fill: url(#radarAmbient); stroke: none; filter: url(#ambientFieldBlur); }
-      .radar-scale-ring { fill: none; stroke: #d8d9eb; stroke-width: 1; stroke-opacity: .76; }
-      .radar-scale-ring[data-scale="100"] { stroke: #b7b3d4; stroke-width: 1.5; stroke-opacity: .98; }
+      .radar-scale-ring { fill: #ffffff; fill-opacity: 1; stroke: #d8d9eb; stroke-width: 1; stroke-opacity: .86; }
+      .radar-scale-ring[data-scale="100"] { stroke: #aaa7cb; stroke-width: 1.5; stroke-opacity: 1; }
       .radar-spokes { fill: none; stroke: #dedff0; stroke-width: 1; }
       .radar-shape--previous { fill: #3b82f6; fill-opacity: .07; stroke: #3b82f6; stroke-width: 3; stroke-linejoin: round; }
       .radar-shape--current { fill: #f45fa5; fill-opacity: .13; stroke: #f45fa5; stroke-width: 3; stroke-linejoin: round; marker-start: url(#radarVertex); marker-mid: url(#radarVertex); }
+      .radar-label--left, .radar-label--left tspan { text-anchor: end; }
+      .radar-label--right, .radar-label--right tspan { text-anchor: start; }
+      .radar-label--right { transform: translateX(-24px); }
       .metric-orb { fill: #f8f7ff; fill-opacity: .98; stroke: #d8d3f4; stroke-width: 1; filter: url(#orbShadow); }
     </style>
   </defs>
