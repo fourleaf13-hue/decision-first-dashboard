@@ -33,9 +33,10 @@ function assertUniformRadius(points, cx, cy, expectedRadius, tolerance = 0.35) {
 
 test('radar module is centered in the middle stage instead of only centering the raw circle', () => {
   const svg = renderSvg(state);
-  assert.match(svg, /<g transform="translate\(8 -6\)">/);
+  assert.match(svg, /<g transform="translate\(8 18\)">/);
   assert.match(svg, /<circle cx="706" cy="482" r="318" class="radar-ambient-field"\/>/);
   assert.equal(698 + 8, (376 + 1036) / 2);
+  assert.equal(464 + 18, 482);
 });
 
 test('all SVG dimension labels use one shared radial gap outside the 100% circle', () => {
