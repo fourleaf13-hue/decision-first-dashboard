@@ -71,22 +71,37 @@ test('left labels are explicitly right-aligned line by line and right labels are
   assert.equal((rightBlock.match(/text-anchor="start"/g) ?? []).length, 4, 'right label and all three lines must share the same left edge');
 });
 
-test('side labels stay inside the center safe zone and cannot overlap support cards', () => {
+test('side labels keep the shared radial gap without colliding with support cards', () => {
   const svg = renderSvg(comparisonRadar);
   const html = renderHtml(comparisonRadar);
+  const svgSides = [...svg.matchAll(/class="radar-label radar-label--(left|right)"[^>]*x="([0-9.]+)"/g)]
+    .map((match) => ({ side: match[1], x: Number(match[2]) }));
 
-  for (const match of svg.matchAll(/class="radar-label radar-label--(left|right)"[^>]*x="([0-9.]+)"/g)) {
-    const [, side, xText] = match;
-    const x = Number(xText);
-    if (side === 'left') assert.ok(x >= 500, `left label x=${x} must clear the left support card`);
-    if (side === 'right') assert.ok(x <= 900, `right label x=${x} must clear the right support card`);
+  assert.deepEqual(svgSides, [
+    { side: 'right', x: 926 },
+    { side: 'left', x: 470 }
+  ]);
+
+  const svgTranslateX = 8;
+  const conservativeLabelWidth = 96;
+  for (const { side, x } of svgSides) {
+    const absoluteX = x + svgTranslateX;
+    if (side === 'left') assert.ok(absoluteX - conservativeLabelWidth >= 376, 'left label must stay clear of the left support card');
+    if (side === 'right') assert.ok(absoluteX + conservativeLabelWidth <= 1036, 'right label must stay clear of the right support card');
   }
 
-  for (const match of html.matchAll(/class="[^\"]*radar-label radar-label--(left|right)[^\"]*"[^>]*style="left:([0-9.]+)%/g)) {
-    const [, side, pctText] = match;
-    const pct = Number(pctText);
-    if (side === 'left') assert.ok(pct >= 19.35, `left HTML label ${pct}% must clear the left support card`);
-    if (side === 'right') assert.ok(pct <= 80.65, `right HTML label ${pct}% must clear the right support card`);
+  const htmlSides = [...html.matchAll(/class="[^\"]*radar-label radar-label--(left|right)[^\"]*"[^>]*style="left:([0-9.]+)%/g)]
+    .map((match) => ({ side: match[1], x: Number(match[2]) * 620 / 100 }));
+  assert.equal(htmlSides.length, 2);
+  assert.ok(Math.abs((htmlSides[0].x + htmlSides[1].x) - 620) < 0.2, 'HTML side-label anchors must remain symmetric');
+
+  const orbitInset = 44;
+  const htmlLabelWidth = 132;
+  const middleStageWidth = 708;
+  const interColumnGap = 24;
+  for (const { side, x } of htmlSides) {
+    if (side === 'left') assert.ok(orbitInset + x - htmlLabelWidth >= -interColumnGap, 'left HTML label may use the grid gap but must not reach the support card');
+    if (side === 'right') assert.ok(orbitInset + x + htmlLabelWidth <= middleStageWidth + interColumnGap, 'right HTML label may use the grid gap but must not reach the support card');
   }
 });
 
