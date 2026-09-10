@@ -52,14 +52,14 @@
       .radar-shape--current { fill: #f45fa5; fill-opacity: .13; stroke: #f45fa5; stroke-width: 3; stroke-linejoin: round; marker-start: url(#radarVertex); marker-mid: url(#radarVertex); }
       .radar-label--left, .radar-label--left tspan { text-anchor: end; }
       .radar-label--right, .radar-label--right tspan { text-anchor: start; }
-      .radar-label--right { transform: translateX(-24px); }
+      .radar-label--right { transform: none; }
       .metric-orb { fill: #f8f7ff; fill-opacity: .98; stroke: #d8d3f4; stroke-width: 1; filter: url(#orbShadow); }
     </style>
   </defs>
 
   <rect width="1440" height="900" fill="url(#pageBg)"/>
   <rect width="1440" height="900" fill="url(#ambientGlow)"/>
-  <circle cx="740" cy="482" r="318" class="radar-ambient-field"/>
+  <circle cx="706" cy="482" r="318" class="radar-ambient-field"/>
 
   <g class="sans">
     <text x="72" y="76" class="ink" font-size="29" font-weight="760" letter-spacing="-0.8">Subscription health</text>
@@ -96,7 +96,7 @@
       
     </g>
 
-    <g transform="translate(42 -6)">
+    <g transform="translate(8 -6)">
       <circle class="radar-scale-ring" data-scale="100" r="188" cx="698" cy="464"/>
 <circle class="radar-scale-ring" data-scale="80" r="150.4" cx="698" cy="464"/>
 <circle class="radar-scale-ring" data-scale="60" r="112.8" cx="698" cy="464"/>
@@ -105,38 +105,38 @@
     <path class="radar-shape radar-shape--previous" d="M698.0 321.1 L828.5 421.6 L795.2 597.8 L619.5 572.0 L569.3 422.2 Z"/>
     <path class="radar-shape radar-shape--current" d="M698.0 309.8 L837.5 418.7 L798.6 602.4 L624.0 565.9 L565.7 421.0 Z"/>
       <g class="radar-dimension-node">
-      <text class="radar-label radar-label--top" data-outside-ring="true" text-anchor="middle" x="698.0" y="205.0">
+      <text class="radar-label radar-label--top" data-outside-ring="true" text-anchor="middle" x="698.0" y="215.0">
         <tspan x="698.0" text-anchor="middle" class="muted" font-size="11" font-weight="650">Revenue attainment</tspan>
         <tspan x="698.0" dy="20" text-anchor="middle" class="ink" font-size="16" font-weight="760">82%</tspan>
         <tspan x="698.0" dy="18" text-anchor="middle" class="positive" font-size="11" font-weight="700">↑ 6pp</tspan>
       </text>
     </g>
 <g class="radar-dimension-node">
-      <text class="radar-label radar-label--right" data-outside-ring="true" text-anchor="start" x="900.0" y="370.5">
-        <tspan x="900.0" text-anchor="start" class="muted" font-size="11" font-weight="650">Customer target</tspan>
-        <tspan x="900.0" dy="20" text-anchor="start" class="ink" font-size="16" font-weight="760">78%</tspan>
-        <tspan x="900.0" dy="18" text-anchor="start" class="positive" font-size="11" font-weight="700">↑ 5pp</tspan>
+      <text class="radar-label radar-label--right" data-outside-ring="true" text-anchor="start" x="914.8" y="373.5">
+        <tspan x="914.8" text-anchor="start" class="muted" font-size="11" font-weight="650">Customer target</tspan>
+        <tspan x="914.8" dy="20" text-anchor="start" class="ink" font-size="16" font-weight="760">78%</tspan>
+        <tspan x="914.8" dy="18" text-anchor="start" class="positive" font-size="11" font-weight="700">↑ 5pp</tspan>
       </text>
     </g>
 <g class="radar-dimension-node">
-      <text class="radar-label radar-label--right" data-outside-ring="true" text-anchor="start" x="837.9" y="636.5">
-        <tspan x="837.9" text-anchor="start" class="muted" font-size="11" font-weight="650">Retention</tspan>
-        <tspan x="837.9" dy="20" text-anchor="start" class="ink" font-size="16" font-weight="760">91%</tspan>
-        <tspan x="837.9" dy="18" text-anchor="start" class="positive" font-size="11" font-weight="700">↑ 3pp</tspan>
+      <text class="radar-label radar-label--right" data-outside-ring="true" text-anchor="start" x="832.0" y="628.5">
+        <tspan x="832.0" text-anchor="start" class="muted" font-size="11" font-weight="650">Retention</tspan>
+        <tspan x="832.0" dy="20" text-anchor="start" class="ink" font-size="16" font-weight="760">91%</tspan>
+        <tspan x="832.0" dy="18" text-anchor="start" class="positive" font-size="11" font-weight="700">↑ 3pp</tspan>
       </text>
     </g>
 <g class="radar-dimension-node">
-      <text class="radar-label radar-label--left" data-outside-ring="true" text-anchor="end" x="558.1" y="636.5">
-        <tspan x="558.1" text-anchor="end" class="muted" font-size="11" font-weight="650">Trial conversion</tspan>
-        <tspan x="558.1" dy="20" text-anchor="end" class="ink" font-size="16" font-weight="760">67%</tspan>
-        <tspan x="558.1" dy="18" text-anchor="end" class="danger" font-size="11" font-weight="700">↓ 4pp</tspan>
+      <text class="radar-label radar-label--left" data-outside-ring="true" text-anchor="end" x="564.0" y="628.5">
+        <tspan x="564.0" text-anchor="end" class="muted" font-size="11" font-weight="650">Trial conversion</tspan>
+        <tspan x="564.0" dy="20" text-anchor="end" class="ink" font-size="16" font-weight="760">67%</tspan>
+        <tspan x="564.0" dy="18" text-anchor="end" class="danger" font-size="11" font-weight="700">↓ 4pp</tspan>
       </text>
     </g>
 <g class="radar-dimension-node">
-      <text class="radar-label radar-label--left" data-outside-ring="true" text-anchor="end" x="500.0" y="370.5">
-        <tspan x="500.0" text-anchor="end" class="muted" font-size="11" font-weight="650">Expansion</tspan>
-        <tspan x="500.0" dy="20" text-anchor="end" class="ink" font-size="16" font-weight="760">74%</tspan>
-        <tspan x="500.0" dy="18" text-anchor="end" class="positive" font-size="11" font-weight="700">↑ 2pp</tspan>
+      <text class="radar-label radar-label--left" data-outside-ring="true" text-anchor="end" x="481.2" y="373.5">
+        <tspan x="481.2" text-anchor="end" class="muted" font-size="11" font-weight="650">Expansion</tspan>
+        <tspan x="481.2" dy="20" text-anchor="end" class="ink" font-size="16" font-weight="760">74%</tspan>
+        <tspan x="481.2" dy="18" text-anchor="end" class="positive" font-size="11" font-weight="700">↑ 2pp</tspan>
       </text>
     </g>
     </g>
