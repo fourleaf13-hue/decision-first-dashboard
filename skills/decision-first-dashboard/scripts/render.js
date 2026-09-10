@@ -44,22 +44,19 @@ export function deriveOverallDirection(signals = []) {
   return 'unknown';
 }
 
-function synthesisCopy(signals) {
-  const direction = {
-    improving: 'IMPROVING',
-    deteriorating: 'DETERIORATING',
-    mixed: 'MIXED',
-    flat: 'FLAT',
-    unknown: 'UNKNOWN'
-  }[deriveOverallDirection(signals)];
-
-  return { direction, target: 'Target unknown' };
-}
-
 function directionClass(direction) {
   if (direction === 'improving') return 'positive';
   if (direction === 'deteriorating') return 'danger';
   return 'muted';
+}
+
+function deltaWithArrow(delta) {
+  if (!delta) return null;
+  const text = String(delta).trim();
+  if (text.startsWith('+')) return `↑ ${text.slice(1)}`;
+  if (text.startsWith('-')) return `↓ ${text.slice(1)}`;
+  if (/^0(?:\D|$)/.test(text)) return `→ ${text.replace(/^[-+]/, '')}`;
+  return text;
 }
 
 function signalDisplay(signal) {
@@ -167,6 +164,7 @@ function htmlRowXs(count) {
 
 const SVG_RADAR_LAYOUT = { cx: 698, cy: 464, radarRadius: 188, labelRadius: 238 };
 const HTML_RADAR_LAYOUT = { cx: 310, cy: 260, radarRadius: 188, labelRadius: 238 };
+const RADAR_SCALE_STEPS = [40, 60, 80, 100];
 
 function radialPoint(cx, cy, radius, angle) {
   return {
@@ -182,48 +180,103 @@ function pointPath(points, close = false) {
   return close ? `${path} Z` : path;
 }
 
-function radarGeometry(dimensions, min, max, layout) {
+function radarGeometry(dimensions, min, max, layout, valueKey = 'normalizedScore') {
   const span = max - min;
   const count = dimensions.length;
   const axes = [];
   const shape = [];
   const labels = [];
+  const angles = [];
 
   dimensions.forEach((dimension, index) => {
     const angle = -Math.PI / 2 + (Math.PI * 2 * index) / count;
-    const ratio = Math.min(1, Math.max(0, (dimension.normalizedScore - min) / span));
+    const value = dimension[valueKey];
+    const ratio = Math.min(1, Math.max(0, (value - min) / span));
     axes.push(radialPoint(layout.cx, layout.cy, layout.radarRadius, angle));
     shape.push(radialPoint(layout.cx, layout.cy, layout.radarRadius * ratio, angle));
     labels.push(radialPoint(layout.cx, layout.cy, layout.labelRadius, angle));
+    angles.push(angle);
   });
 
   return {
     shape: pointPath(shape, true),
     spokes: axes.map((point) => `M${layout.cx} ${layout.cy} L${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' '),
-    labels
+    labels,
+    angles
   };
 }
 
+function radarScaleRings(layout) {
+  return RADAR_SCALE_STEPS.map((scale) => {
+    const radius = Number((layout.radarRadius * scale / 100).toFixed(1));
+    return `<circle class="radar-scale-ring" data-scale="${scale}" r="${radius}" cx="${layout.cx}" cy="${layout.cy}"/>`;
+  }).join('\n');
+}
+
+function hasCompletePreviousProfile(dimensions) {
+  return dimensions.length > 0 && dimensions.every((dimension) => Number.isFinite(dimension.previousNormalizedScore));
+}
+
+function radarSide(angle) {
+  const x = Math.cos(angle);
+  const y = Math.sin(angle);
+  if (Math.abs(x) < 0.15) return y < 0 ? 'top' : 'bottom';
+  return x < 0 ? 'left' : 'right';
+}
+
+function radarAnchor(side) {
+  if (side === 'left') return 'end';
+  if (side === 'right') return 'start';
+  return 'middle';
+}
+
 function svgRadarVisual(dimensions, min, max) {
-  const geometry = radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT);
-  return `<path class="radar-spokes" d="${geometry.spokes}"/>
-    <path class="radar-shape" d="${geometry.shape}" fill="#6555e8" fill-opacity="0.16" stroke="#6555e8" stroke-width="3" stroke-linejoin="round"/>`;
+  const current = radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT);
+  const previous = hasCompletePreviousProfile(dimensions)
+    ? radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT, 'previousNormalizedScore')
+    : null;
+  const previousPath = previous
+    ? `<path class="radar-shape radar-shape--previous" d="${previous.shape}"/>`
+    : '';
+
+  return `${radarScaleRings(SVG_RADAR_LAYOUT)}
+    <path class="radar-spokes" d="${current.spokes}"/>
+    ${previousPath}
+    <path class="radar-shape radar-shape--current" d="${current.shape}"/>`;
 }
 
 function htmlRadarVisual(dimensions, min, max) {
-  const geometry = radarGeometry(dimensions, min, max, HTML_RADAR_LAYOUT);
-  return `<path class="radar-spokes" d="${geometry.spokes}"></path>
-            <path class="radar-shape" d="${geometry.shape}"></path>`;
+  const current = radarGeometry(dimensions, min, max, HTML_RADAR_LAYOUT);
+  const previous = hasCompletePreviousProfile(dimensions)
+    ? radarGeometry(dimensions, min, max, HTML_RADAR_LAYOUT, 'previousNormalizedScore')
+    : null;
+  const previousPath = previous
+    ? `<path class="radar-shape radar-shape--previous" d="${previous.shape}"></path>`
+    : '';
+
+  return `${radarScaleRings(HTML_RADAR_LAYOUT)}
+            <path class="radar-spokes" d="${current.spokes}"></path>
+            ${previousPath}
+            <path class="radar-shape radar-shape--current" d="${current.shape}"></path>`;
 }
 
 function svgRadarNodes(dimensions, min, max, nodeClass) {
   const geometry = radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT);
   return dimensions.map((dimension, index) => {
     const point = geometry.labels[index];
+    const side = radarSide(geometry.angles[index]);
+    const anchor = radarAnchor(side);
+    const startY = side === 'top' ? point.y - 21 : side === 'bottom' ? point.y - 3 : point.y - 20;
+    const delta = deltaWithArrow(dimension.delta);
+    const deltaNode = delta
+      ? `<tspan x="${point.x.toFixed(1)}" dy="18" class="${directionClass(dimension.direction)}" font-size="11" font-weight="700">${escapeMarkup(delta)}</tspan>`
+      : '';
     return `<g class="${nodeClass}">
-      <rect x="${(point.x - 68).toFixed(1)}" y="${(point.y - 42).toFixed(1)}" width="136" height="68" rx="19" class="metric-orb"/>
-      <text x="${point.x.toFixed(1)}" y="${(point.y - 10).toFixed(1)}" class="accent" font-size="22" font-weight="760" text-anchor="middle">${escapeMarkup(formatScore(dimension.normalizedScore))}</text>
-      <text x="${point.x.toFixed(1)}" y="${(point.y + 13).toFixed(1)}" class="ink" font-size="12" font-weight="670" text-anchor="middle">${escapeMarkup(dimension.label)}</text>
+      <text class="radar-label radar-label--${side}" data-outside-ring="true" text-anchor="${anchor}" x="${point.x.toFixed(1)}" y="${startY.toFixed(1)}">
+        <tspan x="${point.x.toFixed(1)}" class="muted" font-size="11" font-weight="650">${escapeMarkup(dimension.label)}</tspan>
+        <tspan x="${point.x.toFixed(1)}" dy="20" class="ink" font-size="16" font-weight="760">${escapeMarkup(dimension.value)}</tspan>
+        ${deltaNode}
+      </text>
     </g>`;
   }).join('\n');
 }
@@ -232,9 +285,15 @@ function htmlRadarNodes(dimensions, min, max, className) {
   const geometry = radarGeometry(dimensions, min, max, HTML_RADAR_LAYOUT);
   return dimensions.map((dimension, index) => {
     const point = geometry.labels[index];
-    return `<div class="${className}" style="left:${(point.x / 620 * 100).toFixed(2)}%;top:${(point.y / 520 * 100).toFixed(2)}%">
-    <strong>${escapeMarkup(formatScore(dimension.normalizedScore))}</strong>
+    const side = radarSide(geometry.angles[index]);
+    const delta = deltaWithArrow(dimension.delta);
+    const deltaNode = delta
+      ? `<small class="${directionClass(dimension.direction)}">${escapeMarkup(delta)}</small>`
+      : '';
+    return `<div class="${className} radar-label radar-label--${side}" data-outside-ring="true" style="left:${(point.x / 620 * 100).toFixed(2)}%;top:${(point.y / 520 * 100).toFixed(2)}%">
     <span>${escapeMarkup(dimension.label)}</span>
+    <strong>${escapeMarkup(dimension.value)}</strong>
+    ${deltaNode}
   </div>`;
   }).join('\n');
 }
@@ -322,7 +381,7 @@ function svgComponentCluster(components, min, max) {
 function htmlComponentCluster(components, min, max) {
   return {
     visual: htmlRadarVisual(components, min, max),
-    nodes: htmlRadarNodes(components, min, max, 'signal score-component metric-orb')
+    nodes: htmlRadarNodes(components, min, max, 'score-component')
   };
 }
 
@@ -465,15 +524,14 @@ function fillTemplate(template, replacements) {
 
 function noScoreViewModel(data) {
   const revenue = selectRevenueSignal(data.signals);
-  const synthesis = synthesisCopy(data.signals);
   const revenueSeries = data.context?.provenance === 'source' ? data.context.revenueSeries : null;
   const movement = movementSignals(data.signals, revenue?.metric ?? null);
-  return { revenue, synthesis, revenueSeries, movement };
+  return { revenue, revenueSeries, movement };
 }
 
 function renderNoScoreSvg(data) {
   const template = fs.readFileSync(noScoreSvgTemplatePath, 'utf8');
-  const { revenue, synthesis, revenueSeries, movement } = noScoreViewModel(data);
+  const { revenue, revenueSeries, movement } = noScoreViewModel(data);
   const radar = data.radarScale
     ? {
         visual: svgRadarVisual(data.signals, data.radarScale.min, data.radarScale.max),
@@ -492,7 +550,6 @@ function renderNoScoreSvg(data) {
     CURRENT_REVENUE_LABEL: escapeMarkup(currentRevenueLabel(revenue)),
     REVENUE_VISUAL: svgRevenueVisual(revenueSeries),
     MOVEMENT_ROWS: svgMovementRows(movement),
-    SYNTHESIS: synthesis.direction,
     SVG_ORBIT_VISUAL: orbitVisual,
     SVG_SIGNAL_NODES: signalCluster.nodes,
     EXCEPTION_ROWS: svgExceptionRows(data.exceptions),
@@ -503,11 +560,11 @@ function renderNoScoreSvg(data) {
 function renderNoScoreHtml(data) {
   const template = fs.readFileSync(noScoreHtmlTemplatePath, 'utf8');
   const css = fs.readFileSync(cssTemplatePath, 'utf8');
-  const { revenue, synthesis, revenueSeries, movement } = noScoreViewModel(data);
+  const { revenue, revenueSeries, movement } = noScoreViewModel(data);
   const radar = data.radarScale
     ? {
         visual: htmlRadarVisual(data.signals, data.radarScale.min, data.radarScale.max),
-        nodes: htmlRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'signal radar-dimension metric-orb')
+        nodes: htmlRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'radar-dimension')
       }
     : null;
   const signalCluster = radar ?? htmlSignalCluster(data.signals);
@@ -523,7 +580,6 @@ function renderNoScoreHtml(data) {
     CURRENT_REVENUE_LABEL: escapeMarkup(currentRevenueLabel(revenue)),
     HTML_REVENUE_VISUAL: htmlRevenueVisual(revenueSeries),
     HTML_MOVEMENT_ROWS: htmlMovementRows(movement),
-    SYNTHESIS: synthesis.direction,
     HTML_ORBIT_VISUAL: orbitVisual,
     HTML_SIGNAL_NODES: signalCluster.nodes,
     HTML_EXCEPTION_ROWS: htmlExceptionRows(data.exceptions),
