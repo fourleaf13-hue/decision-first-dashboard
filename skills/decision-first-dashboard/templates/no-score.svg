@@ -3,19 +3,19 @@
   <desc id="desc">Subscription metrics, revenue context, account exceptions, and recent events.</desc>
   <defs>
     <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f9fbff"/>
-      <stop offset="1" stop-color="#eef3fb"/>
+      <stop offset="0" stop-color="#f5f8ff"/>
+      <stop offset="1" stop-color="#e9eff9"/>
     </linearGradient>
     <radialGradient id="ambientGlow" cx="52%" cy="43%" r="62%">
-      <stop offset="0" stop-color="#cfc7ff" stop-opacity="0.30"/>
-      <stop offset="0.46" stop-color="#ece9ff" stop-opacity="0.16"/>
+      <stop offset="0" stop-color="#c9c0ff" stop-opacity="0.34"/>
+      <stop offset="0.46" stop-color="#e7e3ff" stop-opacity="0.18"/>
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="centerField" cx="47%" cy="43%" r="58%">
-      <stop offset="0" stop-color="#e8e3ff" stop-opacity="0.76"/>
-      <stop offset="0.35" stop-color="#f1efff" stop-opacity="0.62"/>
-      <stop offset="0.72" stop-color="#fbfbff" stop-opacity="0.92"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0.98"/>
+      <stop offset="0" stop-color="#e5dfff" stop-opacity="0.82"/>
+      <stop offset="0.35" stop-color="#efecff" stop-opacity="0.72"/>
+      <stop offset="0.72" stop-color="#f8f8ff" stop-opacity="0.94"/>
+      <stop offset="1" stop-color="#fbfcff" stop-opacity="0.98"/>
     </radialGradient>
     <linearGradient id="accentLine" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#6555e8"/>
@@ -39,14 +39,15 @@
       .accent { fill: #6555e8; }
       .positive { fill: #238764; }
       .danger { fill: #e25462; }
-      .support-panel { fill: #ffffff; fill-opacity: .84; stroke: #e8e9f5; stroke-opacity: .9; stroke-width: 1; filter: url(#panelShadow); }
+      .support-shadow { fill: #655b8f; fill-opacity: .065; }
+      .support-panel { fill: #ffffff; fill-opacity: .97; stroke: #e1e4f1; stroke-width: 1; filter: url(#panelShadow); }
       .center-halo { fill: none; }
-      .center-halo--outer { stroke: #bfb8ed; stroke-opacity: .26; stroke-width: 1; }
-      .center-halo--inner { stroke: #cec7f5; stroke-opacity: .12; stroke-width: 22; }
-      .center-field { fill: url(#centerField); stroke: #e4e1f7; stroke-width: 1; }
-      .radar-guide { fill: none; stroke: #d8d4f5; stroke-width: 1; stroke-dasharray: 6 9; }
+      .center-halo--outer { stroke: #b8afe9; stroke-opacity: .30; stroke-width: 1; }
+      .center-halo--inner { stroke: #c8c0f2; stroke-opacity: .16; stroke-width: 22; }
+      .center-field { fill: url(#centerField); stroke: #ddd9f5; stroke-width: 1; }
+      .radar-guide { fill: none; stroke: #d2cdf4; stroke-width: 1; stroke-dasharray: 6 9; }
       .radar-shape { marker-start: url(#radarVertex); marker-mid: url(#radarVertex); }
-      .metric-orb { fill: #ffffff; fill-opacity: .88; stroke: #e8e6f7; stroke-width: 1; filter: url(#orbShadow); }
+      .metric-orb { fill: #f8f7ff; fill-opacity: .98; stroke: #d8d3f4; stroke-width: 1; filter: url(#orbShadow); }
       .direction-core { fill: #ffffff; stroke: #ffffff; stroke-width: 10; filter: url(#orbShadow); }
     </style>
   </defs>
@@ -58,6 +59,10 @@
     <text x="72" y="76" class="ink" font-size="29" font-weight="760" letter-spacing="-0.8">Subscription health</text>
     <text x="72" y="107" class="muted" font-size="14">A compact view of movement, exceptions, and business context</text>
 
+    <rect x="70" y="158" width="310" height="300" rx="26" class="support-shadow"/>
+    <rect x="70" y="482" width="310" height="220" rx="26" class="support-shadow"/>
+    <rect x="1040" y="158" width="334" height="286" rx="26" class="support-shadow"/>
+    <rect x="1040" y="472" width="334" height="306" rx="26" class="support-shadow"/>
     <rect x="66" y="150" width="310" height="300" rx="26" class="support-panel"/>
     <rect x="66" y="474" width="310" height="220" rx="26" class="support-panel"/>
     <rect x="1036" y="150" width="334" height="286" rx="26" class="support-panel"/>
