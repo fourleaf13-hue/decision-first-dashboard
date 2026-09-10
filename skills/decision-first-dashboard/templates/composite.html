@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{SCORE_LABEL}}</title>
   <style>{{CSS}}</style>
-  <style>.orbit .radar-shape { marker-start: url(#radarVertex); marker-mid: url(#radarVertex); }</style>
+  <style>.orbit .radar-shape--current { marker-start: url(#currentRadarVertex); marker-mid: url(#currentRadarVertex); }</style>
 </head>
 <body>
   <main class="dashboard-shell">
     <header class="page-header">
       <div>
         <h1>{{SCORE_LABEL}}</h1>
-        <p>Score movement, composition, exceptions, and recent events</p>
+        <p>Score movement, component profile, exceptions, and recent events</p>
       </div>
     </header>
 
@@ -36,26 +36,18 @@
         </article>
       </aside>
 
-      <section class="card synthesis-card score-center" aria-label="{{SCORE_LABEL}} score">
+      <section class="card synthesis-card score-center" aria-label="{{SCORE_LABEL}} component profile">
         <div class="orbit" aria-hidden="true">
-          <div class="orbit-ring orbit-ring--outer"></div>
-          <div class="orbit-ring orbit-ring--middle"></div>
-          <div class="orbit-ring orbit-ring--inner"></div>
           <svg viewBox="0 0 620 520" preserveAspectRatio="none">
             <defs>
-              <marker id="radarVertex" viewBox="0 0 14 14" refX="7" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse">
-                <circle cx="7" cy="7" r="5" fill="#6555e8" stroke="#ffffff" stroke-width="2"></circle>
+              <marker id="currentRadarVertex" viewBox="0 0 14 14" refX="7" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse">
+                <circle cx="7" cy="7" r="4.5" fill="#ffffff" stroke="#f36aa6" stroke-width="2.4"></circle>
               </marker>
             </defs>
             {{HTML_COMPONENT_RADAR}}
           </svg>
           {{HTML_COMPONENT_NODES}}
-        </div>
-
-        <div class="synthesis-core">
-          <strong>{{SCORE_VALUE}}</strong>
-          <span>/ {{SCORE_MAX}}</span>
-          <em>{{SCORE_BAND}}</em>
+          {{HTML_RADAR_LEGEND}}
         </div>
       </section>
 
