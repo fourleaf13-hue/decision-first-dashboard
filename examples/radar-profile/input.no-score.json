@@ -1,0 +1,87 @@
+{
+  "mode": "no_score",
+  "radarScale": {
+    "min": 0,
+    "max": 100,
+    "provenance": "source"
+  },
+  "signals": [
+    {
+      "metric": "mrr",
+      "label": "Revenue attainment",
+      "value": "82%",
+      "delta": "+6pp",
+      "direction": "improving",
+      "normalizedScore": 82,
+      "previousNormalizedScore": 76,
+      "provenance": "source"
+    },
+    {
+      "metric": "active_customers",
+      "label": "Customer target",
+      "value": "78%",
+      "delta": "+5pp",
+      "direction": "improving",
+      "normalizedScore": 78,
+      "previousNormalizedScore": 73,
+      "provenance": "source"
+    },
+    {
+      "metric": "retention",
+      "label": "Retention",
+      "value": "91%",
+      "delta": "+3pp",
+      "direction": "improving",
+      "normalizedScore": 91,
+      "previousNormalizedScore": 88,
+      "provenance": "source"
+    },
+    {
+      "metric": "trial_conversion",
+      "label": "Trial conversion",
+      "value": "67%",
+      "delta": "-4pp",
+      "direction": "deteriorating",
+      "normalizedScore": 67,
+      "previousNormalizedScore": 71,
+      "provenance": "source"
+    },
+    {
+      "metric": "expansion",
+      "label": "Expansion",
+      "value": "74%",
+      "delta": "+2pp",
+      "direction": "improving",
+      "normalizedScore": 74,
+      "previousNormalizedScore": 72,
+      "provenance": "source"
+    }
+  ],
+  "context": {
+    "revenueSeries": [68, 72, 75, 79, 82],
+    "provenance": "source"
+  },
+  "exceptions": [
+    {
+      "name": "Dovetail",
+      "plan": "Basic",
+      "mrr": "$120",
+      "status": "At risk",
+      "provenance": "source"
+    }
+  ],
+  "events": [
+    {
+      "subject": "Dovetail",
+      "event": "Plan cancelled",
+      "time": "1 hr ago",
+      "provenance": "source"
+    },
+    {
+      "subject": "Orbit Systems",
+      "event": "Trial converted",
+      "time": "43 min ago",
+      "provenance": "source"
+    }
+  ]
+}

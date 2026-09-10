@@ -38,7 +38,7 @@ test('skill documents the compiler-enforced routing manifest and production gate
 test('README distinguishes no-score and composite examples without overstating capability', () => {
   assert.match(readme, /No-score mode — no unsupported score invented/);
   assert.match(readme, /Composite mode — when the evidence supports it/);
-  assert.match(readme, /examples\/saas\/output\.no-score\.svg/);
+  assert.match(readme, /examples\/radar-profile\/output\.no-score\.svg/);
   assert.match(readme, /examples\/saas\/composite-mode\.png/);
   assert.equal(fs.existsSync(path.join(root, 'examples/saas/composite-mode.png')), true);
 });

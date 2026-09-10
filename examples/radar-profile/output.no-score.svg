@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Subscription health</title>
+  <desc id="desc">Subscription metrics, revenue context, account exceptions, and recent events.</desc>
+  <defs>
+    <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5f8ff"/>
+      <stop offset="1" stop-color="#e9eff9"/>
+    </linearGradient>
+    <radialGradient id="ambientGlow" cx="52%" cy="43%" r="62%">
+      <stop offset="0" stop-color="#c9c0ff" stop-opacity="0.34"/>
+      <stop offset="0.46" stop-color="#e7e3ff" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="centerField" cx="47%" cy="43%" r="58%">
+      <stop offset="0" stop-color="#e5dfff" stop-opacity="0.50"/>
+      <stop offset="0.35" stop-color="#efecff" stop-opacity="0.48"/>
+      <stop offset="0.72" stop-color="#f8f8ff" stop-opacity="0.82"/>
+      <stop offset="1" stop-color="#fbfcff" stop-opacity="0.94"/>
+    </radialGradient>
+    <linearGradient id="accentLine" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6555e8"/>
+      <stop offset="1" stop-color="#9b8df4"/>
+    </linearGradient>
+    <filter id="panelShadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#403875" flood-opacity="0.10"/>
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#403875" flood-opacity="0.05"/>
+    </filter>
+    <filter id="orbShadow" x="-40%" y="-50%" width="180%" height="210%">
+      <feDropShadow dx="0" dy="9" stdDeviation="10" flood-color="#51468d" flood-opacity="0.12"/>
+    </filter>
+    <marker id="radarVertex" viewBox="0 0 14 14" refX="7" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="5" fill="#f45fa5" stroke="#ffffff" stroke-width="2"/>
+    </marker>
+    <style>
+      .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .ink { fill: #171733; }
+      .muted { fill: #747a9b; }
+      .soft { fill: #a5aac3; }
+      .accent { fill: #6555e8; }
+      .positive { fill: #238764; }
+      .danger { fill: #e25462; }
+      .support-shadow { fill: #655b8f; fill-opacity: .065; }
+      .support-panel { fill: #ffffff; fill-opacity: .97; stroke: #e1e4f1; stroke-width: 1; filter: url(#panelShadow); }
+      .center-halo { fill: none; }
+      .center-halo--outer { stroke: #b8afe9; stroke-opacity: .24; stroke-width: 1; }
+      .center-halo--inner { stroke: #c8c0f2; stroke-opacity: .11; stroke-width: 22; }
+      .center-field { fill: url(#centerField); stroke: #ddd9f5; stroke-width: 1; }
+      .radar-scale-ring { fill: none; stroke: #d8d9eb; stroke-width: 1; stroke-opacity: .82; }
+      .radar-spokes { fill: none; stroke: #dedff0; stroke-width: 1; }
+      .radar-shape--previous { fill: #3b82f6; fill-opacity: .07; stroke: #3b82f6; stroke-width: 3; stroke-linejoin: round; }
+      .radar-shape--current { fill: #f45fa5; fill-opacity: .13; stroke: #f45fa5; stroke-width: 3; stroke-linejoin: round; marker-start: url(#radarVertex); marker-mid: url(#radarVertex); }
+      .metric-orb { fill: #f8f7ff; fill-opacity: .98; stroke: #d8d3f4; stroke-width: 1; filter: url(#orbShadow); }
+    </style>
+  </defs>
+
+  <rect width="1440" height="900" fill="url(#pageBg)"/>
+  <rect width="1440" height="900" fill="url(#ambientGlow)"/>
+
+  <g class="sans">
+    <text x="72" y="76" class="ink" font-size="29" font-weight="760" letter-spacing="-0.8">Subscription health</text>
+    <text x="72" y="107" class="muted" font-size="14">A compact view of movement, exceptions, and business context</text>
+
+    <rect x="70" y="158" width="310" height="300" rx="26" class="support-shadow"/>
+    <rect x="70" y="482" width="310" height="220" rx="26" class="support-shadow"/>
+    <rect x="1040" y="158" width="334" height="286" rx="26" class="support-shadow"/>
+    <rect x="1040" y="472" width="334" height="306" rx="26" class="support-shadow"/>
+    <rect x="66" y="150" width="310" height="300" rx="26" class="support-panel"/>
+    <rect x="66" y="474" width="310" height="220" rx="26" class="support-panel"/>
+    <rect x="1036" y="150" width="334" height="286" rx="26" class="support-panel"/>
+    <rect x="1036" y="464" width="334" height="306" rx="26" class="support-panel"/>
+
+    <text x="98" y="194" class="ink" font-size="15" font-weight="700">Revenue attainment context</text>
+    <text x="98" y="236" class="ink" font-size="34" font-weight="780">82%</text>
+    <text x="98" y="252" class="positive" font-size="14" font-weight="650">+6pp</text>
+    <path d="M98.0 360.0 L156.5 338.9 L215.0 323.0 L273.5 301.9 L332.0 286.0" fill="none" stroke="url(#accentLine)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="98" y1="392" x2="344" y2="392" stroke="#e8e8f2"/>
+    <text x="98" y="422" class="muted" font-size="12">Current Revenue attainment</text>
+    <text x="344" y="422" class="ink" font-size="13" font-weight="700" text-anchor="end">82%</text>
+
+    <text x="98" y="516" class="ink" font-size="15" font-weight="700">Movement context</text>
+    <g>
+      <text x="98" y="552" class="muted" font-size="12">Trial conversion</text>
+      <text x="98" y="579" class="ink" font-size="21" font-weight="700">67%</text>
+      <text x="332" y="579" class="danger" font-size="13" font-weight="650" text-anchor="end">-4pp</text>
+      <line x1="98" y1="600" x2="332" y2="600" stroke="#efedf6"/>
+    </g>
+<g>
+      <text x="98" y="624" class="muted" font-size="12">Customer target</text>
+      <text x="98" y="651" class="ink" font-size="21" font-weight="700">78%</text>
+      <text x="332" y="651" class="positive" font-size="13" font-weight="650" text-anchor="end">+5pp</text>
+      
+    </g>
+
+    <circle cx="740" cy="458" r="366" class="center-halo center-halo--outer"/>
+    <circle cx="740" cy="458" r="338" class="center-halo center-halo--inner"/>
+    <circle cx="740" cy="458" r="314" class="center-field"/>
+
+    <g transform="translate(42 -6)">
+      <circle class="radar-scale-ring" data-scale="40" r="75.2" cx="698" cy="464"/>
+<circle class="radar-scale-ring" data-scale="60" r="112.8" cx="698" cy="464"/>
+<circle class="radar-scale-ring" data-scale="80" r="150.4" cx="698" cy="464"/>
+<circle class="radar-scale-ring" data-scale="100" r="188" cx="698" cy="464"/>
+    <path class="radar-spokes" d="M698 464 L698.0 276.0 M698 464 L876.8 405.9 M698 464 L808.5 616.1 M698 464 L587.5 616.1 M698 464 L519.2 405.9"/>
+    <path class="radar-shape radar-shape--previous" d="M698.0 321.1 L828.5 421.6 L795.2 597.8 L619.5 572.0 L569.3 422.2 Z"/>
+    <path class="radar-shape radar-shape--current" d="M698.0 309.8 L837.5 418.7 L798.6 602.4 L624.0 565.9 L565.7 421.0 Z"/>
+      <g class="radar-dimension-node">
+      <text class="radar-label radar-label--top" data-outside-ring="true" text-anchor="middle" x="698.0" y="205.0">
+        <tspan x="698.0" class="muted" font-size="11" font-weight="650">Revenue attainment</tspan>
+        <tspan x="698.0" dy="20" class="ink" font-size="16" font-weight="760">82%</tspan>
+        <tspan x="698.0" dy="18" class="positive" font-size="11" font-weight="700">↑ 6pp</tspan>
+      </text>
+    </g>
+<g class="radar-dimension-node">
+      <text class="radar-label radar-label--right" data-outside-ring="true" text-anchor="start" x="924.4" y="370.5">
+        <tspan x="924.4" class="muted" font-size="11" font-weight="650">Customer target</tspan>
+        <tspan x="924.4" dy="20" class="ink" font-size="16" font-weight="760">78%</tspan>
+        <tspan x="924.4" dy="18" class="positive" font-size="11" font-weight="700">↑ 5pp</tspan>
+      </text>
+    </g>
+<g class="radar-dimension-node">
+      <text class="radar-label radar-label--right" data-outside-ring="true" text-anchor="start" x="837.9" y="636.5">
+        <tspan x="837.9" class="muted" font-size="11" font-weight="650">Retention</tspan>
+        <tspan x="837.9" dy="20" class="ink" font-size="16" font-weight="760">91%</tspan>
+        <tspan x="837.9" dy="18" class="positive" font-size="11" font-weight="700">↑ 3pp</tspan>
+      </text>
+    </g>
+<g class="radar-dimension-node">
+      <text class="radar-label radar-label--left" data-outside-ring="true" text-anchor="end" x="558.1" y="636.5">
+        <tspan x="558.1" class="muted" font-size="11" font-weight="650">Trial conversion</tspan>
+        <tspan x="558.1" dy="20" class="ink" font-size="16" font-weight="760">67%</tspan>
+        <tspan x="558.1" dy="18" class="danger" font-size="11" font-weight="700">↓ 4pp</tspan>
+      </text>
+    </g>
+<g class="radar-dimension-node">
+      <text class="radar-label radar-label--left" data-outside-ring="true" text-anchor="end" x="471.6" y="370.5">
+        <tspan x="471.6" class="muted" font-size="11" font-weight="650">Expansion</tspan>
+        <tspan x="471.6" dy="20" class="ink" font-size="16" font-weight="760">74%</tspan>
+        <tspan x="471.6" dy="18" class="positive" font-size="11" font-weight="700">↑ 2pp</tspan>
+      </text>
+    </g>
+    </g>
+
+    <text x="1066" y="194" class="ink" font-size="15" font-weight="700">Accounts to watch</text>
+    <g>
+      <circle cx="1072" cy="228" r="5" fill="#e25462"/>
+      <text x="1088" y="232" class="ink" font-size="14" font-weight="650">Dovetail</text>
+      <text x="1088" y="254" class="muted" font-size="12">Basic · $120 MRR</text>
+      <rect x="1268" y="213" width="74" height="26" rx="13" fill="#fff1f3"/>
+      <text x="1305" y="231" class="danger" font-size="11" font-weight="650" text-anchor="middle">At risk</text>
+    </g>
+
+    <text x="1066" y="506" class="ink" font-size="15" font-weight="700">Recent events</text>
+    <g>
+      <circle cx="1072" cy="530" r="4" fill="#6555e8"/>
+      <text x="1088" y="534" class="ink" font-size="13" font-weight="650">Dovetail</text>
+      <text x="1088" y="555" class="muted" font-size="12">Plan cancelled</text>
+      <text x="1342" y="555" class="soft" font-size="11" text-anchor="end">1 hr ago</text>
+    </g>
+<g>
+      <circle cx="1072" cy="598" r="4" fill="#6555e8"/>
+      <text x="1088" y="602" class="ink" font-size="13" font-weight="650">Orbit Systems</text>
+      <text x="1088" y="623" class="muted" font-size="12">Trial converted</text>
+      <text x="1342" y="623" class="soft" font-size="11" text-anchor="end">43 min ago</text>
+    </g>
+  </g>
+</svg>
