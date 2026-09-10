@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { renderSvg } from '../../skills/decision-first-dashboard/scripts/render.js';
+import { renderSvg, deriveOverallDirection } from '../../skills/decision-first-dashboard/scripts/render.js';
 
 const fixture = JSON.parse(
   fs.readFileSync(new URL('../../examples/saas/input.no-score.json', import.meta.url), 'utf8')
@@ -27,23 +27,22 @@ function pointInTimeFixture() {
   };
 }
 
-test('renders a dominant no-score synthesis cluster from validated data', () => {
+test('renders a dominant no-score signal cluster without a synthetic center verdict', () => {
   const svg = renderSvg(fixture);
   assert.match(svg, /Subscription health/);
-  assert.match(svg, /IMPROVING/);
-  assert.match(svg, /Target unknown/);
+  assert.doesNotMatch(svg, />IMPROVING<|Target unknown|OVERALL DIRECTION/);
   assert.match(svg, /\+12\.4%/);
   assert.match(svg, /\+8\.1%/);
   assert.match(svg, /-0\.6pp/);
   assert.match(svg, /\+3\.2%/);
 });
 
-test('derives mixed overall direction from conflicting signal directions', () => {
+test('keeps direction derivation available without rendering it as a verdict', () => {
   const mixed = structuredClone(fixture);
   mixed.signals[2].direction = 'deteriorating';
+  assert.equal(deriveOverallDirection(mixed.signals), 'mixed');
   const svg = renderSvg(mixed);
-  assert.match(svg, />MIXED</);
-  assert.doesNotMatch(svg, />IMPROVING</);
+  assert.doesNotMatch(svg, />MIXED<|>IMPROVING</);
 });
 
 test('renders exactly three signals without inventing a fourth slot', () => {
@@ -78,7 +77,7 @@ test('does not leak framework, compiler, or fabricated verdict copy', () => {
   const svg = renderSvg(fixture);
   assert.doesNotMatch(
     svg,
-    /Executive Decision Dashboard|Primary Decision|Diagnostic Context|Required Interventions|HEALTH GOOD|Healthy|Marginal|No composite score|Decision-first view|Directional evidence is improving/
+    /Executive Decision Dashboard|Primary Decision|Diagnostic Context|Required Interventions|HEALTH GOOD|Healthy|Marginal|No composite score|Decision-first view|Directional evidence is improving|OVERALL DIRECTION|Target unknown/
   );
 });
 
@@ -100,7 +99,7 @@ test('renders point-in-time KPI values prominently without blank movement labels
   for (const value of ['$4.98M', '80.7%', '88.9%', '9.4 mo', '1.5x']) {
     assert.match(svg, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
-  assert.match(svg, />UNKNOWN</);
+  assert.doesNotMatch(svg, />UNKNOWN</);
   assert.doesNotMatch(svg, />\s*<\/text>/);
   assert.doesNotMatch(svg, /undefined/);
 });

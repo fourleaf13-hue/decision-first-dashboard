@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{SCORE_LABEL}}</title>
   <style>{{CSS}}</style>
-  <style>.orbit .radar-shape { marker-start: url(#radarVertex); marker-mid: url(#radarVertex); }</style>
 </head>
 <body>
   <main class="dashboard-shell">
@@ -36,26 +35,17 @@
         </article>
       </aside>
 
-      <section class="card synthesis-card score-center" aria-label="{{SCORE_LABEL}} score">
+      <section class="card synthesis-card score-center" aria-label="{{SCORE_LABEL}} profile">
         <div class="orbit" aria-hidden="true">
-          <div class="orbit-ring orbit-ring--outer"></div>
-          <div class="orbit-ring orbit-ring--middle"></div>
-          <div class="orbit-ring orbit-ring--inner"></div>
-          <svg viewBox="0 0 620 520" preserveAspectRatio="none">
+          <svg viewBox="0 0 620 520" preserveAspectRatio="xMidYMid meet">
             <defs>
               <marker id="radarVertex" viewBox="0 0 14 14" refX="7" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse">
-                <circle cx="7" cy="7" r="5" fill="#6555e8" stroke="#ffffff" stroke-width="2"></circle>
+                <circle cx="7" cy="7" r="5" fill="#f45fa5" stroke="#ffffff" stroke-width="2"></circle>
               </marker>
             </defs>
             {{HTML_COMPONENT_RADAR}}
           </svg>
           {{HTML_COMPONENT_NODES}}
-        </div>
-
-        <div class="synthesis-core">
-          <strong>{{SCORE_VALUE}}</strong>
-          <span>/ {{SCORE_MAX}}</span>
-          <em>{{SCORE_BAND}}</em>
         </div>
       </section>
 

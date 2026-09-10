@@ -135,15 +135,16 @@ function nearlyEqual(a, b, tolerance) {
 function validateNoScoreSemantics(data, errors) {
   const hasRadarScale = Object.hasOwn(data, 'radarScale');
   const scoredSignals = data.signals.filter((signal) => Object.hasOwn(signal, 'normalizedScore'));
+  const previousSignals = data.signals.filter((signal) => Object.hasOwn(signal, 'previousNormalizedScore'));
 
-  if (!hasRadarScale && scoredSignals.length === 0) return;
+  if (!hasRadarScale && scoredSignals.length === 0 && previousSignals.length === 0) return;
 
   if (!hasRadarScale) {
     pushError(
       errors,
       '/radarScale',
       'radarScale',
-      'source-backed radar scale is required when no-score signals contain normalized scores'
+      'source-backed radar scale is required when no-score signals contain normalized radar values'
     );
     return;
   }
@@ -159,7 +160,16 @@ function validateNoScoreSemantics(data, errors) {
       errors,
       '/signals',
       'radarEligibility',
-      'every no-score radar dimension must provide a source-backed normalized score on the shared radar scale'
+      'every no-score radar dimension must provide a source-backed normalized value on the shared radar scale'
+    );
+  }
+
+  if (previousSignals.length > 0 && previousSignals.length !== data.signals.length) {
+    pushError(
+      errors,
+      '/signals',
+      'radarComparison',
+      'previous-period radar comparison must provide a value for every displayed dimension'
     );
   }
 
@@ -173,13 +183,20 @@ function validateNoScoreSemantics(data, errors) {
   }
 
   for (const [index, signal] of data.signals.entries()) {
-    if (!Object.hasOwn(signal, 'normalizedScore')) continue;
-    if (signal.normalizedScore < min || signal.normalizedScore > max) {
+    if (Object.hasOwn(signal, 'normalizedScore') && (signal.normalizedScore < min || signal.normalizedScore > max)) {
       pushError(
         errors,
         `/signals/${index}/normalizedScore`,
         'radarScale',
-        'normalized score must lie within the declared no-score radar scale'
+        'normalized value must lie within the declared no-score radar scale'
+      );
+    }
+    if (Object.hasOwn(signal, 'previousNormalizedScore') && (signal.previousNormalizedScore < min || signal.previousNormalizedScore > max)) {
+      pushError(
+        errors,
+        `/signals/${index}/previousNormalizedScore`,
+        'radarScale',
+        'previous normalized value must lie within the declared no-score radar scale'
       );
     }
   }
