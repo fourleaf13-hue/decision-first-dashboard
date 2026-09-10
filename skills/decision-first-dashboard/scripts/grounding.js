@@ -139,7 +139,7 @@ function requiredNoScorePaths(data) {
     paths.push('/radarScale/min', '/radarScale/max');
   }
   data.signals.forEach((signal, index) => {
-    for (const field of ['label', 'value', 'delta', 'direction', 'normalizedScore']) {
+    for (const field of ['label', 'value', 'delta', 'direction', 'normalizedScore', 'previousNormalizedScore']) {
       if (Object.hasOwn(signal, field)) paths.push(`/signals/${index}/${field}`);
     }
   });
