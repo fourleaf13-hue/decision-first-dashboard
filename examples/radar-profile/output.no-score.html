@@ -219,16 +219,17 @@ body {
 .orbit svg { position: absolute; inset: 0; width: 620px; height: 520px; overflow: visible; }
 .orbit .orbit-spokes { fill: none; stroke: var(--accent-line); stroke-width: 1.45; vector-effect: non-scaling-stroke; }
 .orbit .radar-scale-ring {
-  fill: none;
+  fill: #ffffff;
+  fill-opacity: 1;
   stroke: #d8d9eb;
   stroke-width: 1;
-  stroke-opacity: .76;
+  stroke-opacity: .86;
   vector-effect: non-scaling-stroke;
 }
 .orbit .radar-scale-ring[data-scale="100"] {
-  stroke: #b7b3d4;
+  stroke: #aaa7cb;
   stroke-width: 1.5;
-  stroke-opacity: .98;
+  stroke-opacity: 1;
 }
 .orbit .radar-spokes { fill: none; stroke: #dedff0; stroke-width: 1; vector-effect: non-scaling-stroke; }
 .orbit .radar-shape--previous {
@@ -285,6 +286,7 @@ body {
   width: 132px;
   z-index: 4;
   line-height: 1.1;
+  white-space: nowrap;
 }
 .radar-label span {
   display: block;
@@ -311,7 +313,7 @@ body {
 .radar-label small.danger { color: var(--danger); }
 .radar-label small.muted { color: var(--muted); }
 .radar-label--left { text-align: right; transform: translate(-100%, -50%); }
-.radar-label--right { text-align: left; transform: translate(0, -50%); }
+.radar-label--right { text-align: left; transform: translate(-24px, -50%); }
 .radar-label--top,
 .radar-label--bottom { text-align: center; transform: translate(-50%, -50%); }
 
@@ -459,10 +461,10 @@ body {
                 <circle cx="7" cy="7" r="5" fill="#f45fa5" stroke="#ffffff" stroke-width="2"></circle>
               </marker>
             </defs>
-            <circle class="radar-scale-ring" data-scale="40" r="75.2" cx="310" cy="260"/>
-<circle class="radar-scale-ring" data-scale="60" r="112.8" cx="310" cy="260"/>
+            <circle class="radar-scale-ring" data-scale="100" r="188" cx="310" cy="260"/>
 <circle class="radar-scale-ring" data-scale="80" r="150.4" cx="310" cy="260"/>
-<circle class="radar-scale-ring" data-scale="100" r="188" cx="310" cy="260"/>
+<circle class="radar-scale-ring" data-scale="60" r="112.8" cx="310" cy="260"/>
+<circle class="radar-scale-ring" data-scale="40" r="75.2" cx="310" cy="260"/>
             <path class="radar-spokes" d="M310 260 L310.0 72.0 M310 260 L488.8 201.9 M310 260 L420.5 412.1 M310 260 L199.5 412.1 M310 260 L131.2 201.9"></path>
             <path class="radar-shape radar-shape--previous" d="M310.0 117.1 L440.5 217.6 L407.2 393.8 L231.5 368.0 L181.3 218.2 Z"></path>
             <path class="radar-shape radar-shape--current" d="M310.0 105.8 L449.5 214.7 L410.6 398.4 L236.0 361.9 L177.7 217.0 Z"></path>
@@ -472,7 +474,7 @@ body {
     <strong>82%</strong>
     <small class="positive">↑ 6pp</small>
   </div>
-<div class="radar-dimension radar-label radar-label--right" data-outside-ring="true" style="left:86.51%;top:35.86%">
+<div class="radar-dimension radar-label radar-label--right" data-outside-ring="true" style="left:80.65%;top:35.86%">
     <span>Customer target</span>
     <strong>78%</strong>
     <small class="positive">↑ 5pp</small>
@@ -487,7 +489,7 @@ body {
     <strong>67%</strong>
     <small class="danger">↓ 4pp</small>
   </div>
-<div class="radar-dimension radar-label radar-label--left" data-outside-ring="true" style="left:13.49%;top:35.86%">
+<div class="radar-dimension radar-label radar-label--left" data-outside-ring="true" style="left:19.35%;top:35.86%">
     <span>Expansion</span>
     <strong>74%</strong>
     <small class="positive">↑ 2pp</small>
