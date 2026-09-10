@@ -34,6 +34,32 @@ test('quantitative radar tiers are opaque white circles with visible gray bounda
   assert.match(html, /\.orbit \.radar-scale-ring\s*\{[^}]*fill:\s*#ffffff;[^}]*fill-opacity:\s*1;[^}]*stroke:/i);
 });
 
+test('reference depth system uses four distinct floating white tiers above the ambient field', () => {
+  const svg = renderSvg(comparisonRadar);
+  const html = renderHtml(comparisonRadar);
+
+  for (const scale of [100, 80, 60, 40]) {
+    assert.match(svg, new RegExp(`\\.radar-scale-ring\\[data-scale="${scale}"\\]\\s*\\{[^}]*filter:\\s*url\\(#radarDepth${scale}\\)`, 'i'));
+    assert.match(svg, new RegExp(`<filter id="radarDepth${scale}"`, 'i'));
+    assert.match(html, new RegExp(`\\.orbit \\.radar-scale-ring\\[data-scale="${scale}"\\]\\s*\\{[^}]*filter:\\s*drop-shadow`, 'i'));
+  }
+});
+
+test('reference palette uses soft gray page chrome and exact blue/pink comparison strokes', () => {
+  const svg = renderSvg(comparisonRadar);
+  const html = renderHtml(comparisonRadar);
+
+  assert.match(svg, /<stop offset="0" stop-color="#F8F8FC"\/>/i);
+  assert.match(svg, /<stop offset="1" stop-color="#F5F6FB"\/>/i);
+  assert.match(svg, /\.radar-shape--previous\s*\{[^}]*fill:\s*none;[^}]*stroke:\s*#4D82E2;[^}]*stroke-width:\s*4/i);
+  assert.match(svg, /\.radar-shape--current\s*\{[^}]*fill:\s*#FF7BC2;[^}]*fill-opacity:\s*\.1;[^}]*stroke:\s*#ED69AD;[^}]*stroke-width:\s*4/i);
+
+  assert.match(html, /--bg-a:\s*#F8F8FC/i);
+  assert.match(html, /--bg-b:\s*#F5F6FB/i);
+  assert.match(html, /--previous:\s*#4D82E2/i);
+  assert.match(html, /--current:\s*#ED69AD/i);
+});
+
 test('previous month is blue below the current pink profile and current vertices stay visible', () => {
   const svg = renderSvg(comparisonRadar);
   const previousIndex = svg.indexOf('radar-shape radar-shape--previous');
@@ -41,8 +67,8 @@ test('previous month is blue below the current pink profile and current vertices
 
   assert.ok(previousIndex >= 0, 'previous profile should render');
   assert.ok(currentIndex > previousIndex, 'current profile must render above previous profile');
-  assert.match(svg, /\.radar-shape--previous\s*\{[^}]*stroke:\s*#3b82f6/i);
-  assert.match(svg, /\.radar-shape--current\s*\{[^}]*stroke:\s*#f45fa5/i);
+  assert.match(svg, /\.radar-shape--previous\s*\{[^}]*stroke:\s*#4D82E2/i);
+  assert.match(svg, /\.radar-shape--current\s*\{[^}]*stroke:\s*#ED69AD/i);
   assert.match(svg, /\.radar-shape--current\s*\{[^}]*marker-start:/i);
 });
 
