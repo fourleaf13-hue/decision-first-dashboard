@@ -62,6 +62,15 @@ function directionClass(direction) {
   return 'muted';
 }
 
+function deltaCue(delta) {
+  if (!delta) return null;
+  const value = String(delta).trim();
+  if (/^[↑↓→]/.test(value)) return value;
+  if (value.startsWith('+')) return `↑ ${value.slice(1)}`;
+  if (value.startsWith('-')) return `↓ ${value.slice(1)}`;
+  return `→ ${value}`;
+}
+
 function signalDisplay(signal) {
   const hasMovement = Boolean(signal.delta);
   return {
@@ -165,8 +174,8 @@ function htmlRowXs(count) {
   }[count] ?? [];
 }
 
-const SVG_RADAR_LAYOUT = { cx: 698, cy: 464, radarRadius: 188, labelRadius: 238 };
-const HTML_RADAR_LAYOUT = { cx: 310, cy: 260, radarRadius: 188, labelRadius: 238 };
+const SVG_RADAR_LAYOUT = { cx: 698, cy: 464, radarRadius: 188, labelRadius: 244 };
+const HTML_RADAR_LAYOUT = { cx: 310, cy: 260, radarRadius: 188, labelRadius: 244 };
 
 function radialPoint(cx, cy, radius, angle) {
   return {
@@ -182,7 +191,17 @@ function pointPath(points, close = false) {
   return close ? `${path} Z` : path;
 }
 
-function radarGeometry(dimensions, min, max, layout) {
+function currentRadarValue(dimension) {
+  if (Object.hasOwn(dimension, 'radarValue')) return dimension.radarValue;
+  return dimension.normalizedScore;
+}
+
+function previousRadarValue(dimension) {
+  if (Object.hasOwn(dimension, 'previousRadarValue')) return dimension.previousRadarValue;
+  return dimension.previousNormalizedScore;
+}
+
+function radarGeometry(dimensions, min, max, layout, valueAccessor = currentRadarValue) {
   const span = max - min;
   const count = dimensions.length;
   const axes = [];
@@ -191,7 +210,8 @@ function radarGeometry(dimensions, min, max, layout) {
 
   dimensions.forEach((dimension, index) => {
     const angle = -Math.PI / 2 + (Math.PI * 2 * index) / count;
-    const ratio = Math.min(1, Math.max(0, (dimension.normalizedScore - min) / span));
+    const rawValue = valueAccessor(dimension);
+    const ratio = Math.min(1, Math.max(0, (rawValue - min) / span));
     axes.push(radialPoint(layout.cx, layout.cy, layout.radarRadius, angle));
     shape.push(radialPoint(layout.cx, layout.cy, layout.radarRadius * ratio, angle));
     labels.push(radialPoint(layout.cx, layout.cy, layout.labelRadius, angle));
@@ -204,39 +224,100 @@ function radarGeometry(dimensions, min, max, layout) {
   };
 }
 
-function svgRadarVisual(dimensions, min, max) {
-  const geometry = radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT);
-  return `<path class="radar-spokes" d="${geometry.spokes}"/>
-    <path class="radar-shape" d="${geometry.shape}" fill="#6555e8" fill-opacity="0.16" stroke="#6555e8" stroke-width="3" stroke-linejoin="round"/>`;
+function svgScaleRings(layout) {
+  return [0.25, 0.5, 0.75, 1]
+    .map((ratio) => `<circle cx="${layout.cx}" cy="${layout.cy}" r="${(layout.radarRadius * ratio).toFixed(1)}" class="radar-scale-ring"/>`)
+    .join('\n');
 }
 
-function htmlRadarVisual(dimensions, min, max) {
-  const geometry = radarGeometry(dimensions, min, max, HTML_RADAR_LAYOUT);
-  return `<path class="radar-spokes" d="${geometry.spokes}"></path>
-            <path class="radar-shape" d="${geometry.shape}"></path>`;
+function htmlScaleRings(layout) {
+  return [0.25, 0.5, 0.75, 1]
+    .map((ratio) => `<circle cx="${layout.cx}" cy="${layout.cy}" r="${(layout.radarRadius * ratio).toFixed(1)}" class="radar-scale-ring"></circle>`)
+    .join('\n');
 }
 
-function svgRadarNodes(dimensions, min, max, nodeClass) {
-  const geometry = radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT);
+function hasFullComparison(dimensions, comparison) {
+  return Boolean(comparison) && dimensions.every((dimension) => previousRadarValue(dimension) !== undefined);
+}
+
+function svgRadarVisual(dimensions, min, max, comparison = null) {
+  const current = radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT, currentRadarValue);
+  const previous = hasFullComparison(dimensions, comparison)
+    ? radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT, previousRadarValue)
+    : null;
+  const previousShape = previous
+    ? `<path class="radar-shape radar-shape--previous" d="${previous.shape}"/>`
+    : '';
+
+  return `${svgScaleRings(SVG_RADAR_LAYOUT)}
+    <path class="radar-spokes" d="${current.spokes}"/>
+    ${previousShape}
+    <path class="radar-shape radar-shape--current" d="${current.shape}"/>`;
+}
+
+function htmlRadarVisual(dimensions, min, max, comparison = null) {
+  const current = radarGeometry(dimensions, min, max, HTML_RADAR_LAYOUT, currentRadarValue);
+  const previous = hasFullComparison(dimensions, comparison)
+    ? radarGeometry(dimensions, min, max, HTML_RADAR_LAYOUT, previousRadarValue)
+    : null;
+  const previousShape = previous
+    ? `<path class="radar-shape radar-shape--previous" d="${previous.shape}"></path>`
+    : '';
+
+  return `${htmlScaleRings(HTML_RADAR_LAYOUT)}
+            <path class="radar-spokes" d="${current.spokes}"></path>
+            ${previousShape}
+            <path class="radar-shape radar-shape--current" d="${current.shape}"></path>`;
+}
+
+function svgRadarNodes(dimensions, min, max, nodeClass, { showDelta = false } = {}) {
+  const geometry = radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT, currentRadarValue);
   return dimensions.map((dimension, index) => {
     const point = geometry.labels[index];
+    const cue = showDelta ? deltaCue(dimension.delta) : null;
+    const deltaNode = cue
+      ? `<text x="${point.x.toFixed(1)}" y="${(point.y + 29).toFixed(1)}" class="${directionClass(dimension.direction)}" font-size="11" font-weight="700" text-anchor="middle">${escapeMarkup(cue)}</text>`
+      : '';
     return `<g class="${nodeClass}">
-      <rect x="${(point.x - 68).toFixed(1)}" y="${(point.y - 42).toFixed(1)}" width="136" height="68" rx="19" class="metric-orb"/>
-      <text x="${point.x.toFixed(1)}" y="${(point.y - 10).toFixed(1)}" class="accent" font-size="22" font-weight="760" text-anchor="middle">${escapeMarkup(formatScore(dimension.normalizedScore))}</text>
-      <text x="${point.x.toFixed(1)}" y="${(point.y + 13).toFixed(1)}" class="ink" font-size="12" font-weight="670" text-anchor="middle">${escapeMarkup(dimension.label)}</text>
+      <text x="${point.x.toFixed(1)}" y="${(point.y - 17).toFixed(1)}" class="ink" font-size="12" font-weight="670" text-anchor="middle">${escapeMarkup(dimension.label)}</text>
+      <text x="${point.x.toFixed(1)}" y="${(point.y + 7).toFixed(1)}" class="ink" font-size="19" font-weight="780" text-anchor="middle">${escapeMarkup(dimension.value)}</text>
+      ${deltaNode}
     </g>`;
   }).join('\n');
 }
 
-function htmlRadarNodes(dimensions, min, max, className) {
-  const geometry = radarGeometry(dimensions, min, max, HTML_RADAR_LAYOUT);
+function htmlRadarNodes(dimensions, min, max, className, { showDelta = false } = {}) {
+  const geometry = radarGeometry(dimensions, min, max, HTML_RADAR_LAYOUT, currentRadarValue);
   return dimensions.map((dimension, index) => {
     const point = geometry.labels[index];
+    const cue = showDelta ? deltaCue(dimension.delta) : null;
+    const deltaNode = cue
+      ? `<em class="${directionClass(dimension.direction)}">${escapeMarkup(cue)}</em>`
+      : '';
     return `<div class="${className}" style="left:${(point.x / 620 * 100).toFixed(2)}%;top:${(point.y / 520 * 100).toFixed(2)}%">
-    <strong>${escapeMarkup(formatScore(dimension.normalizedScore))}</strong>
     <span>${escapeMarkup(dimension.label)}</span>
+    <strong>${escapeMarkup(dimension.value)}</strong>
+    ${deltaNode}
   </div>`;
   }).join('\n');
+}
+
+function svgRadarLegend(comparison) {
+  if (!comparison) return '';
+  return `<g class="radar-legend">
+    <circle cx="650" cy="724" r="5" fill="#4f8df7"/>
+    <text x="662" y="728" class="muted" font-size="11">${escapeMarkup(comparison.previousLabel)}</text>
+    <circle cx="764" cy="724" r="5" fill="#f36aa6"/>
+    <text x="776" y="728" class="muted" font-size="11">${escapeMarkup(comparison.currentLabel)}</text>
+  </g>`;
+}
+
+function htmlRadarLegend(comparison) {
+  if (!comparison) return '';
+  return `<div class="radar-legend">
+    <span><i class="legend-dot legend-dot--previous"></i>${escapeMarkup(comparison.previousLabel)}</span>
+    <span><i class="legend-dot legend-dot--current"></i>${escapeMarkup(comparison.currentLabel)}</span>
+  </div>`;
 }
 
 function svgSignalCluster(signals) {
@@ -312,17 +393,17 @@ function formatWeight(weight) {
   return `${Number((weight * 100).toFixed(1))}%`;
 }
 
-function svgComponentCluster(components, min, max) {
+function svgComponentCluster(components, min, max, comparison) {
   return {
-    visual: svgRadarVisual(components, min, max),
+    visual: svgRadarVisual(components, min, max, comparison),
     nodes: svgRadarNodes(components, min, max, 'score-component-node')
   };
 }
 
-function htmlComponentCluster(components, min, max) {
+function htmlComponentCluster(components, min, max, comparison) {
   return {
-    visual: htmlRadarVisual(components, min, max),
-    nodes: htmlRadarNodes(components, min, max, 'signal score-component metric-orb')
+    visual: htmlRadarVisual(components, min, max, comparison),
+    nodes: htmlRadarNodes(components, min, max, 'signal score-component radar-dimension')
   };
 }
 
@@ -471,13 +552,34 @@ function noScoreViewModel(data) {
   return { revenue, synthesis, revenueSeries, movement };
 }
 
+function svgDirectionCore(synthesis) {
+  return `<circle cx="740" cy="458" r="82" class="direction-core"/>
+    <circle cx="740" cy="458" r="70" fill="#fbfaff"/>
+    <text x="740" y="451" class="accent" font-size="22" font-weight="790" text-anchor="middle">${escapeMarkup(synthesis.direction)}</text>
+    <text x="740" y="482" class="muted" font-size="12" text-anchor="middle">Target unknown</text>`;
+}
+
+function htmlDirectionCore(synthesis) {
+  return `<div class="synthesis-core">
+          <strong>${escapeMarkup(synthesis.direction)}</strong>
+          <span>Target unknown</span>
+        </div>`;
+}
+
+function htmlDecorativeRings() {
+  return `<div class="orbit-ring orbit-ring--outer"></div>
+          <div class="orbit-ring orbit-ring--middle"></div>
+          <div class="orbit-ring orbit-ring--inner"></div>`;
+}
+
 function renderNoScoreSvg(data) {
   const template = fs.readFileSync(noScoreSvgTemplatePath, 'utf8');
   const { revenue, synthesis, revenueSeries, movement } = noScoreViewModel(data);
-  const radar = data.radarScale
+  const hasRadar = Boolean(data.radarScale);
+  const radar = hasRadar
     ? {
-        visual: svgRadarVisual(data.signals, data.radarScale.min, data.radarScale.max),
-        nodes: svgRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'radar-dimension-node')
+        visual: svgRadarVisual(data.signals, data.radarScale.min, data.radarScale.max, data.radarComparison),
+        nodes: svgRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'radar-dimension-node', { showDelta: true })
       }
     : null;
   const signalCluster = radar ?? svgSignalCluster(data.signals);
@@ -492,7 +594,9 @@ function renderNoScoreSvg(data) {
     CURRENT_REVENUE_LABEL: escapeMarkup(currentRevenueLabel(revenue)),
     REVENUE_VISUAL: svgRevenueVisual(revenueSeries),
     MOVEMENT_ROWS: svgMovementRows(movement),
-    SYNTHESIS: synthesis.direction,
+    CENTER_EYEBROW: hasRadar ? '' : 'OVERALL DIRECTION',
+    SVG_CENTER_CONTENT: hasRadar ? '' : svgDirectionCore(synthesis),
+    SVG_RADAR_LEGEND: hasRadar ? svgRadarLegend(data.radarComparison) : '',
     SVG_ORBIT_VISUAL: orbitVisual,
     SVG_SIGNAL_NODES: signalCluster.nodes,
     EXCEPTION_ROWS: svgExceptionRows(data.exceptions),
@@ -504,10 +608,11 @@ function renderNoScoreHtml(data) {
   const template = fs.readFileSync(noScoreHtmlTemplatePath, 'utf8');
   const css = fs.readFileSync(cssTemplatePath, 'utf8');
   const { revenue, synthesis, revenueSeries, movement } = noScoreViewModel(data);
-  const radar = data.radarScale
+  const hasRadar = Boolean(data.radarScale);
+  const radar = hasRadar
     ? {
-        visual: htmlRadarVisual(data.signals, data.radarScale.min, data.radarScale.max),
-        nodes: htmlRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'signal radar-dimension metric-orb')
+        visual: htmlRadarVisual(data.signals, data.radarScale.min, data.radarScale.max, data.radarComparison),
+        nodes: htmlRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'signal radar-dimension', { showDelta: true })
       }
     : null;
   const signalCluster = radar ?? htmlSignalCluster(data.signals);
@@ -523,7 +628,10 @@ function renderNoScoreHtml(data) {
     CURRENT_REVENUE_LABEL: escapeMarkup(currentRevenueLabel(revenue)),
     HTML_REVENUE_VISUAL: htmlRevenueVisual(revenueSeries),
     HTML_MOVEMENT_ROWS: htmlMovementRows(movement),
-    SYNTHESIS: synthesis.direction,
+    CENTER_EYEBROW: hasRadar ? '' : 'Overall direction',
+    HTML_DECORATIVE_RINGS: hasRadar ? '' : htmlDecorativeRings(),
+    HTML_CENTER_CONTENT: hasRadar ? '' : htmlDirectionCore(synthesis),
+    HTML_RADAR_LEGEND: hasRadar ? htmlRadarLegend(data.radarComparison) : '',
     HTML_ORBIT_VISUAL: orbitVisual,
     HTML_SIGNAL_NODES: signalCluster.nodes,
     HTML_EXCEPTION_ROWS: htmlExceptionRows(data.exceptions),
@@ -534,7 +642,7 @@ function renderNoScoreHtml(data) {
 function renderCompositeSvg(data) {
   const template = fs.readFileSync(compositeSvgTemplatePath, 'utf8');
   const scoreSeries = data.context?.provenance === 'source' ? data.context.scoreSeries : null;
-  const cluster = svgComponentCluster(data.model.components, data.score.min, data.score.max);
+  const cluster = svgComponentCluster(data.model.components, data.score.min, data.score.max, data.radarComparison);
 
   return fillTemplate(template, {
     SCORE_LABEL: escapeMarkup(data.score.label),
@@ -545,6 +653,7 @@ function renderCompositeSvg(data) {
     SVG_COMPOSITION_ROWS: svgCompositionRows(data.model.components),
     SVG_COMPONENT_RADAR: cluster.visual,
     SVG_COMPONENT_NODES: cluster.nodes,
+    SVG_RADAR_LEGEND: svgRadarLegend(data.radarComparison),
     EXCEPTION_ROWS: svgExceptionRows(data.exceptions),
     EVENT_ROWS: svgEventRows(data.events)
   });
@@ -554,7 +663,7 @@ function renderCompositeHtml(data) {
   const template = fs.readFileSync(compositeHtmlTemplatePath, 'utf8');
   const css = fs.readFileSync(cssTemplatePath, 'utf8');
   const scoreSeries = data.context?.provenance === 'source' ? data.context.scoreSeries : null;
-  const cluster = htmlComponentCluster(data.model.components, data.score.min, data.score.max);
+  const cluster = htmlComponentCluster(data.model.components, data.score.min, data.score.max, data.radarComparison);
 
   return fillTemplate(template, {
     CSS: css,
@@ -566,6 +675,7 @@ function renderCompositeHtml(data) {
     HTML_COMPOSITION_ROWS: htmlCompositionRows(data.model.components),
     HTML_COMPONENT_RADAR: cluster.visual,
     HTML_COMPONENT_NODES: cluster.nodes,
+    HTML_RADAR_LEGEND: htmlRadarLegend(data.radarComparison),
     HTML_EXCEPTION_ROWS: htmlExceptionRows(data.exceptions),
     HTML_EVENT_ROWS: htmlEventRows(data.events)
   });

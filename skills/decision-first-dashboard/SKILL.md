@@ -190,7 +190,7 @@ Compiler-enforced routing rules:
 - `drilldown` metrics must stay `on_demand`.
 - `scorecard_only` metrics must stay `scorecard` and cannot claim to change the current decision.
 - **Active exceptions cannot be hidden** because a stakeholder dislikes red or negative states. An active exception must use `visibility: "first_view"` and its `surfacePath` must resolve to an actually rendered `/exceptions/<n>` or `/events/<n>` item in the decision state.
-- Current first-view information budget is at most 11 decision items: 3–6 primary signals plus active exceptions. Do not solve overload by shrinking type or adding more equal-weight cards.
+- Current first-view information budget is at most 11 decision items: 3–6 primary signals plus active exceptions. Do not solve overload by shrinking type or adding equal-weight KPI cards.
 - Do not promote a metric because it is easy to visualize, numerically large, or already placed in a KPI card.
 - Do not leak role labels such as `primary_signal` or `scorecard_only` into product UI.
 
@@ -216,17 +216,19 @@ Composite accepts only:
 
 If any required composite scoring fact cannot be mechanically grounded, transition to `FALLBACK_TO_NO_SCORE`. Do not fill gaps with inferred formulas, guessed weights, or invented benchmarks.
 
-For `no_score`, do not create `Healthy`, `Marginal`, `At risk`, or a 0–100 overall score. Overall direction remains a deterministic renderer derivation from validated signal directions.
+For `no_score`, do not create `Healthy`, `Marginal`, `At risk`, or a 0–100 overall score. Overall direction remains a deterministic renderer derivation from validated signal directions for the ordinary non-radar composition.
 
-**Radar eligibility is independent of overall-score eligibility.** A `no_score` dashboard may render a closed radar profile only when the source explicitly provides:
+**Radar eligibility is independent of overall-score eligibility.** A radar is a multi-dimensional profile, not a score by definition. A `no_score` dashboard may render a closed radar profile only when the source explicitly provides:
 
 - **3–6 peer dimensions** describing the same object or condition as one profile;
 - one shared, source-backed numeric scale in `radarScale.min` / `radarScale.max`;
-- a source-grounded `normalizedScore` for every displayed dimension.
+- a source-grounded `radarValue` for every displayed dimension on that shared scale.
+
+Legacy `normalizedScore` remains accepted for backward compatibility with older no-score bundles, but new non-score profiles should use `radarValue` and should not be described as scores unless the source truly defines them as scores.
 
 Three dimensions are sufficient and render as a triangle. **Fewer than three dimensions are not radar-eligible.** Four to six dimensions render with the corresponding number of vertices.
 
-Radar is a profile chart, not a generic multi-metric chart. Do not connect heterogeneous raw KPIs such as revenue dollars, customer counts, percentages, latency, ratios, or unrelated business outcomes merely because several numbers exist.
+Radar is a profile chart, not a generic multi-metric chart. Do not connect heterogeneous raw KPIs such as revenue dollars, customer counts, percentages, latency, ratios, or unrelated business outcomes merely because several numbers exist. Different visible business units may still participate only when their plotted `radarValue` values are explicitly comparable on the same grounded scale.
 
 A radar must pass two gates:
 
@@ -234,6 +236,8 @@ A radar must pass two gates:
 - **Action Trigger Test** — every displayed radar dimension must also be a routed `primary_signal`, meaning a material change can alter the confirmed decision or action.
 
 If the Profile Test passes but the Action Trigger Test fails, keep those dimensions in diagnostic/drilldown/scorecard layers instead of using a decorative radar as the dominant visual.
+
+For an optional period comparison, use `radarComparison` only when the source provides both period labels and a previous value for **every** displayed dimension. Use `previousRadarValue` in `no_score`; use `previousNormalizedScore` for composite components. Partial comparison data is invalid: never infer, interpolate, copy, or fabricate a prior-period polygon.
 
 ### 6. Build a grounded bundle
 
@@ -272,16 +276,18 @@ For `composite`, ground all source-dependent scoring facts:
 - each component label/value/normalized score/weight;
 - each score-band label/min/max;
 - score-series values when present;
-- visible exception/event fields when present.
+- visible exception/event fields when present;
+- `radarComparison.currentLabel`, `radarComparison.previousLabel`, and every `previousNormalizedScore` when a period comparison is present.
 
 For ordinary `no_score`, ground each visible signal label/value, optional source delta/direction, source series values, and visible exception/event fields.
 
 For a `no_score` radar, additionally ground:
 
 - `radarScale.min` and `radarScale.max`;
-- every signal `normalizedScore` used as a radar vertex.
+- every signal `radarValue` used as a radar vertex, or legacy `normalizedScore` when reading an older bundle;
+- `radarComparison.currentLabel`, `radarComparison.previousLabel`, and every signal `previousRadarValue` when a period comparison is present.
 
-A missing radar-scale or normalized-score claim returns to evidence extraction. Do not silently fall back to an ungrounded radar.
+A missing radar-scale, radar-value, period-label, or previous-value claim returns to evidence extraction. Do not silently fall back to an ungrounded radar or manufacture a comparison series.
 
 Do not ground deterministic renderer synthesis or Metric Router role decisions as if they were source facts.
 
@@ -322,15 +328,21 @@ The renderer owns layout after routing and grounding have passed.
 
 For `no_score`:
 
-- when all 3–6 routed primary dimensions have grounded `normalizedScore` values on one grounded `radarScale`, render a true closed radar profile;
+- when all 3–6 routed primary dimensions have grounded comparable `radarValue` values on one grounded `radarScale`, render a true closed radar profile; legacy `normalizedScore` remains readable for older bundles;
+- keep the radar center empty and neutral: no synthetic total score, health verdict, or alarm label;
+- use four concentric circular scale rings to make radial distance legible and add depth;
+- keep each dimension's concrete current `value` visible outside the profile;
+- when a source-backed delta exists, arrow direction follows numeric movement and color follows business direction (`improving` green, `deteriorating` red, flat/unknown neutral);
+- when complete grounded period comparison data exists, draw previous period in blue first and current period in pink/coral above it; otherwise render only the current profile;
 - otherwise use the non-radar signal layout and never connect heterogeneous raw KPI values into a fake radar;
 - compact left business context;
 - compact right exceptions/events.
 
 For `composite`:
 
-- dominant center source-supported score and band;
-- 3–6 routed normalized weighted components form a true closed radar profile;
+- keep the source-supported score and band visible in the left supporting score context instead of turning the radar center into a score badge;
+- 3–6 routed normalized weighted components form a true closed radar profile with the same empty-center, concentric-ring treatment;
+- optionally overlay a fully grounded previous component profile in blue beneath the current pink/coral profile;
 - compact left score trend and score composition;
 - compact right exceptions/events.
 
@@ -374,11 +386,12 @@ Before delivery, verify:
 - source SHA-256 matches actual source bytes;
 - every required visible/source scoring fact has a resolvable claim and evidence anchor;
 - every grounded value matches the referenced decision-state value under allowed deterministic normalization only;
-- `no_score` overall direction matches signal directions;
+- `no_score` overall direction matches signal directions when the non-radar composition is used;
 - a `no_score` radar passes both the Profile Test and Action Trigger Test;
+- every radar comparison uses identical dimensions/scale and fully grounded period labels plus previous values;
 - raw mixed-unit KPIs never masquerade as radar dimensions;
 - `composite` weights, weighted score, score scale, and score band pass semantic validation;
 - no unsupported score/status/target/action appears;
 - no framework or compiler labels leak into visible UI;
-- the center is the first focal point;
+- the center is the first focal point and radar centers remain neutral rather than becoming synthetic score badges;
 - outputs contain no unresolved template tokens.

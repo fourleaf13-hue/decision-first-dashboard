@@ -109,15 +109,21 @@ function visibleObjectPaths(prefix, item, fields) {
   return fields.filter((field) => Object.hasOwn(item, field)).map((field) => `${prefix}/${field}`);
 }
 
+function requiredComparisonPaths(data) {
+  if (!data.radarComparison) return [];
+  return ['/radarComparison/currentLabel', '/radarComparison/previousLabel'];
+}
+
 function requiredCompositePaths(data) {
   const paths = [
     '/score/label', '/score/value', '/score/min', '/score/max', '/score/band',
-    '/model/normalization', '/model/aggregation'
+    '/model/normalization', '/model/aggregation',
+    ...requiredComparisonPaths(data)
   ];
 
   data.model.components.forEach((component, index) => {
-    for (const field of ['label', 'value', 'normalizedScore', 'weight']) {
-      paths.push(`/model/components/${index}/${field}`);
+    for (const field of ['label', 'value', 'normalizedScore', 'previousNormalizedScore', 'weight']) {
+      if (Object.hasOwn(component, field)) paths.push(`/model/components/${index}/${field}`);
     }
   });
 
@@ -134,12 +140,12 @@ function requiredCompositePaths(data) {
 }
 
 function requiredNoScorePaths(data) {
-  const paths = [];
+  const paths = [...requiredComparisonPaths(data)];
   if (data.radarScale) {
     paths.push('/radarScale/min', '/radarScale/max');
   }
   data.signals.forEach((signal, index) => {
-    for (const field of ['label', 'value', 'delta', 'direction', 'normalizedScore']) {
+    for (const field of ['label', 'value', 'delta', 'direction', 'radarValue', 'previousRadarValue', 'normalizedScore']) {
       if (Object.hasOwn(signal, field)) paths.push(`/signals/${index}/${field}`);
     }
   });

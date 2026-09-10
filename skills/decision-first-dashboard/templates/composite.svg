@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
   <title id="title">{{SCORE_LABEL}}</title>
-  <desc id="desc">Score movement, score composition, account exceptions, and recent events.</desc>
+  <desc id="desc">Score movement, component profile, account exceptions, and recent events.</desc>
   <defs>
     <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#f5f8ff"/>
@@ -12,9 +12,9 @@
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="centerField" cx="47%" cy="43%" r="58%">
-      <stop offset="0" stop-color="#e5dfff" stop-opacity="0.82"/>
-      <stop offset="0.35" stop-color="#efecff" stop-opacity="0.72"/>
-      <stop offset="0.72" stop-color="#f8f8ff" stop-opacity="0.94"/>
+      <stop offset="0" stop-color="#e5dfff" stop-opacity="0.56"/>
+      <stop offset="0.35" stop-color="#efecff" stop-opacity="0.50"/>
+      <stop offset="0.72" stop-color="#f8f8ff" stop-opacity="0.90"/>
       <stop offset="1" stop-color="#fbfcff" stop-opacity="0.98"/>
     </radialGradient>
     <linearGradient id="accentLine" x1="0" y1="0" x2="1" y2="1">
@@ -28,8 +28,8 @@
     <filter id="orbShadow" x="-40%" y="-50%" width="180%" height="210%">
       <feDropShadow dx="0" dy="9" stdDeviation="10" flood-color="#51468d" flood-opacity="0.12"/>
     </filter>
-    <marker id="radarVertex" viewBox="0 0 14 14" refX="7" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse">
-      <circle cx="7" cy="7" r="5" fill="#6555e8" stroke="#ffffff" stroke-width="2"/>
+    <marker id="currentRadarVertex" viewBox="0 0 14 14" refX="7" refY="7" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse">
+      <circle cx="7" cy="7" r="4.5" fill="#ffffff" stroke="#f36aa6" stroke-width="2.4"/>
     </marker>
     <style>
       .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
@@ -44,10 +44,11 @@
       .center-halo--outer { stroke: #b8afe9; stroke-opacity: .30; stroke-width: 1; }
       .center-halo--inner { stroke: #c8c0f2; stroke-opacity: .16; stroke-width: 22; }
       .center-field { fill: url(#centerField); stroke: #ddd9f5; stroke-width: 1; }
-      .radar-guide { fill: none; stroke: #d2cdf4; stroke-width: 1; stroke-dasharray: 6 9; }
-      .radar-shape { marker-start: url(#radarVertex); marker-mid: url(#radarVertex); }
+      .radar-scale-ring { fill: none; stroke: #d7dcef; stroke-width: 1; }
+      .radar-spokes { fill: none; stroke: #d9dded; stroke-width: 1; }
+      .radar-shape--previous { fill: #4f8df7; fill-opacity: .04; stroke: #4f8df7; stroke-width: 2.3; stroke-linejoin: round; }
+      .radar-shape--current { fill: #f36aa6; fill-opacity: .13; stroke: #f36aa6; stroke-width: 3; stroke-linejoin: round; marker-start: url(#currentRadarVertex); marker-mid: url(#currentRadarVertex); }
       .metric-orb { fill: #f8f7ff; fill-opacity: .98; stroke: #d8d3f4; stroke-width: 1; filter: url(#orbShadow); }
-      .score-core { fill: #ffffff; stroke: #ffffff; stroke-width: 10; filter: url(#orbShadow); }
     </style>
   </defs>
 
@@ -56,7 +57,7 @@
 
   <g class="sans">
     <text x="72" y="76" class="ink" font-size="29" font-weight="760" letter-spacing="-0.8">{{SCORE_LABEL}}</text>
-    <text x="72" y="107" class="muted" font-size="14">Score movement, composition, exceptions, and recent events</text>
+    <text x="72" y="107" class="muted" font-size="14">Score movement, component profile, exceptions, and recent events</text>
 
     <rect x="70" y="158" width="310" height="300" rx="26" class="support-shadow"/>
     <rect x="70" y="482" width="310" height="220" rx="26" class="support-shadow"/>
@@ -83,20 +84,11 @@
     <circle cx="740" cy="458" r="338" class="center-halo center-halo--inner"/>
     <circle cx="740" cy="458" r="314" class="center-field"/>
 
-    <circle cx="740" cy="458" r="214" class="radar-guide"/>
-    <circle cx="740" cy="458" r="158" class="radar-guide"/>
-    <circle cx="740" cy="458" r="104" class="radar-guide"/>
-
     <g transform="translate(42 -6)">
       {{SVG_COMPONENT_RADAR}}
       {{SVG_COMPONENT_NODES}}
     </g>
-
-    <circle cx="740" cy="458" r="68" class="score-core"/>
-    <circle cx="740" cy="458" r="57" fill="#fbfaff"/>
-    <text x="740" y="452" class="accent" font-size="46" font-weight="800" text-anchor="middle">{{SCORE_VALUE}}</text>
-    <text x="740" y="480" class="muted" font-size="13" text-anchor="middle">/ {{SCORE_MAX}}</text>
-    <text x="740" y="506" class="danger" font-size="12" font-weight="700" text-anchor="middle">{{SCORE_BAND}}</text>
+    {{SVG_RADAR_LEGEND}}
 
     <text x="1066" y="194" class="ink" font-size="15" font-weight="700">Accounts to watch</text>
     {{EXCEPTION_ROWS}}

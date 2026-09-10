@@ -1,0 +1,94 @@
+{
+  "mode": "no_score",
+  "radarScale": {
+    "min": 0,
+    "max": 100,
+    "provenance": "source"
+  },
+  "radarComparison": {
+    "currentLabel": "This month",
+    "previousLabel": "Last month",
+    "provenance": "source"
+  },
+  "signals": [
+    {
+      "metric": "mrr",
+      "label": "MRR",
+      "value": "$184,320",
+      "delta": "+6pp",
+      "direction": "improving",
+      "radarValue": 82,
+      "previousRadarValue": 76,
+      "provenance": "source"
+    },
+    {
+      "metric": "retention",
+      "label": "Retention",
+      "value": "96.8%",
+      "delta": "+0.9pp",
+      "direction": "improving",
+      "radarValue": 96.8,
+      "previousRadarValue": 95.9,
+      "provenance": "source"
+    },
+    {
+      "metric": "conversion",
+      "label": "Conversion",
+      "value": "74%",
+      "delta": "-8pp",
+      "direction": "deteriorating",
+      "radarValue": 74,
+      "previousRadarValue": 82,
+      "provenance": "source"
+    },
+    {
+      "metric": "activation",
+      "label": "Activation",
+      "value": "68%",
+      "delta": "-11pp",
+      "direction": "deteriorating",
+      "radarValue": 68,
+      "previousRadarValue": 79,
+      "provenance": "source"
+    },
+    {
+      "metric": "adoption",
+      "label": "Adoption",
+      "value": "63%",
+      "delta": "+5pp",
+      "direction": "improving",
+      "radarValue": 63,
+      "previousRadarValue": 58,
+      "provenance": "source"
+    },
+    {
+      "metric": "sla",
+      "label": "SLA",
+      "value": "91%",
+      "delta": "+2pp",
+      "direction": "improving",
+      "radarValue": 91,
+      "previousRadarValue": 89,
+      "provenance": "source"
+    }
+  ],
+  "context": {
+    "revenueSeries": [148000, 156000, 161000, 169000, 173000, 184320],
+    "provenance": "source"
+  },
+  "exceptions": [
+    {
+      "name": "Enterprise conversion",
+      "status": "Watch",
+      "provenance": "source"
+    }
+  ],
+  "events": [
+    {
+      "subject": "Activation",
+      "event": "Declined vs last month",
+      "time": "This month",
+      "provenance": "source"
+    }
+  ]
+}

@@ -8,6 +8,8 @@
   --accent: #6555e8;
   --accent-2: #8f7df2;
   --accent-line: #d9d6f7;
+  --radar-previous: #4f8df7;
+  --radar-current: #f36aa6;
   --positive: #238764;
   --danger: #e25462;
   --danger-bg: #fff0f3;
@@ -191,7 +193,7 @@ body {
   border-radius: 50%;
   border: 1px solid rgba(224, 221, 246, .82);
   background:
-    radial-gradient(circle at 47% 43%, rgba(210, 202, 255, .50) 0%, rgba(235, 231, 255, .38) 25%, rgba(249, 249, 255, .70) 56%, rgba(255,255,255,.94) 76%, rgba(255,255,255,.98) 100%);
+    radial-gradient(circle at 47% 43%, rgba(210, 202, 255, .34) 0%, rgba(235, 231, 255, .30) 25%, rgba(249, 249, 255, .70) 56%, rgba(255,255,255,.94) 76%, rgba(255,255,255,.98) 100%);
   box-shadow: 0 34px 100px rgba(77, 69, 143, .09), inset 0 0 80px rgba(255,255,255,.75);
   z-index: -1;
 }
@@ -220,6 +222,7 @@ body {
   font-size: 10px;
   z-index: 4;
 }
+.synthesis-eyebrow:empty { display: none; }
 
 .orbit {
   position: absolute;
@@ -242,14 +245,33 @@ body {
 .orbit-ring--middle { width: 336px; height: 336px; opacity: .56; }
 .orbit-ring--inner { width: 222px; height: 222px; opacity: .42; }
 .orbit svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.orbit path { fill: none; stroke: var(--accent-line); stroke-width: 1.45; vector-effect: non-scaling-stroke; }
-.orbit .radar-spokes { fill: none; stroke: #dcd8f6; stroke-width: 1.05; }
-.orbit .radar-shape {
-  fill: rgba(101, 85, 232, .16);
-  stroke: var(--accent);
+.orbit path { vector-effect: non-scaling-stroke; }
+.orbit .orbit-spokes { fill: none; stroke: var(--accent-line); stroke-width: 1.45; }
+.orbit .radar-scale-ring {
+  fill: none;
+  stroke: #d7dcef;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.orbit .radar-spokes {
+  fill: none;
+  stroke: #d9dded;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.orbit .radar-shape--previous {
+  fill: rgba(79, 141, 247, .04);
+  stroke: var(--radar-previous);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 6px 10px rgba(79, 141, 247, .08));
+}
+.orbit .radar-shape--current {
+  fill: rgba(243, 106, 166, .13);
+  stroke: var(--radar-current);
   stroke-width: 2.8;
   stroke-linejoin: round;
-  filter: drop-shadow(0 10px 16px rgba(101, 85, 232, .12));
+  filter: drop-shadow(0 10px 16px rgba(243, 106, 166, .12));
 }
 
 .synthesis-core {
@@ -309,6 +331,66 @@ body {
 }
 .signal small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
 
+.radar-dimension {
+  width: 142px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.radar-dimension span {
+  display: block;
+  margin: 0;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 650;
+}
+.radar-dimension strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 19px;
+  line-height: 1.05;
+  font-weight: 790;
+  letter-spacing: -0.025em;
+}
+.radar-dimension em {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+  line-height: 1;
+  font-style: normal;
+  font-weight: 760;
+}
+.radar-dimension em.positive { color: var(--positive); }
+.radar-dimension em.danger { color: var(--danger); }
+.radar-dimension em.muted { color: var(--muted); }
+
+.radar-legend {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.radar-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.legend-dot--previous { background: var(--radar-previous); }
+.legend-dot--current { background: var(--radar-current); }
+
 .score-value-line {
   display: flex;
   align-items: baseline;
@@ -340,25 +422,7 @@ body {
 .composition-row span { font-size: 12px; font-weight: 660; }
 .composition-row small { color: var(--muted); font-size: 10px; }
 
-.score-center .synthesis-core {
-  width: 142px;
-  height: 142px;
-  border-width: 10px;
-}
-.score-center .synthesis-core strong {
-  font-size: 48px;
-  line-height: 1;
-  letter-spacing: -0.045em;
-}
-.score-center .synthesis-core span { margin-top: 4px; }
-.score-center .synthesis-core em {
-  margin-top: 8px;
-  color: var(--danger);
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 720;
-}
-.score-component strong { font-size: 23px; }
+.score-component strong { font-size: 19px; }
 
 .compact-card {
   padding: 23px 24px 18px;
