@@ -17,7 +17,7 @@ Preferred balance:
 The signature visual language is:
 
 - a large open circular center field as the first focal point;
-- layered ambient halos that create depth without pretending to be quantitative scale;
+- one soft ambient field beneath the center visualization and its surrounding labels, creating depth without pretending to be quantitative scale;
 - a true profile radar only when 3–6 dimensions are comparable on one grounded scale;
 - elevated translucent support surfaces at the sides for context, diagnosis, exceptions, and events;
 - asymmetric information density: profile in the center, explanation on the left, attention items on the right;
@@ -76,8 +76,22 @@ The quantitative grid is fixed and must not be improvised for visual effect.
 - All four rings share exactly one center.
 - Ring radii are proportional: `0.4R`, `0.6R`, `0.8R`, `1.0R`.
 - The scale rings are thin and quiet. They are measurement guides, not decorative halos.
-- Decorative ambient halos may sit behind the radar, but they must remain visually distinct from the four quantitative rings.
+- The **100% ring is the outer quantitative boundary** and should be slightly more legible than the inner 40/60/80 guides.
 - All polygon vertices stay inside the 100% ring.
+
+## Ambient field layer
+
+The ambient field is presentation only. It exists to give the 100% boundary and the center profile more depth, not to add another ring.
+
+- Use **one soft colored ambient field**, not multiple crisp halos.
+- The ambient field sits at the **lowest visual layer** beneath the radar grid, polygons, vertices, dimension labels, values, and deltas.
+- It may extend beyond the 100% ring and behind the surrounding labels.
+- It should feel closer to a soft environmental shadow or glow than a circle that can be read as `120%`.
+- Do not give it a hard outline or a white filled disc.
+- Use a low-contrast cool environmental color with a soft edge; a slight downward emphasis is allowed to create a floating effect.
+- The ambient field never receives a scale label, data attribute, business meaning, or interaction.
+
+The key separation is: **40/60/80/100 are data; the ambient field is atmosphere.**
 
 ## Current versus previous profile
 
@@ -108,6 +122,8 @@ Alignment follows physical position around the circle:
 - right-side labels and values: **left-aligned**;
 - exact top and bottom labels: centered.
 
+The ambient field may sit visually behind this copy. It does not change the positioning rule: the 100% ring remains the only boundary used to decide whether a label is inside or outside the radar.
+
 Delta arrows communicate numeric movement:
 
 - positive numeric change → `↑`;
@@ -123,7 +139,7 @@ Delta **color** communicates business favorability and must use the grounded sig
 - Account exceptions and events render only with source provenance.
 - No-score mode never renders a 0–100 overall score or unsupported health band.
 - Radar scale, current normalized values, and any previous-period normalized values must be grounded.
-- Visual depth, ambient halos, cards, and connection lines are presentation only. They do not create evidence or business semantics.
+- Visual depth, ambient fields, cards, and connection lines are presentation only. They do not create evidence or business semantics.
 
 ## Product language
 
