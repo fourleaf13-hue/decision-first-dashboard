@@ -1,1 +1,0 @@
-Acceptance scope: improve the radar showcase visual depth to match the supplied reference language while keeping the existing decision-first data semantics, deterministic rendering, label safety, and comparison logic.
