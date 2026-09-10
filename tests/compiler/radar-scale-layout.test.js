@@ -14,7 +14,7 @@ const comparisonRadar = {
 };
 
 function scaleRadii(markup) {
-  return [...markup.matchAll(/class="radar-scale-ring"[^>]*data-scale="(40|60|80|100)"[^>]*r="([0-9.]+)"/g)]
+  return [...markup.matchAll(/class="radar-scale-ring(?: radar-scale-ring--outer)?"[^>]*data-scale="(40|60|80|100)"[^>]*r="([0-9.]+)"/g)]
     .map((match) => [Number(match[1]), Number(match[2])]);
 }
 
@@ -59,4 +59,25 @@ test('left labels are right-aligned and right labels are left-aligned', () => {
   assert.match(svg, /class="radar-label radar-label--right"[^>]*text-anchor="start"/);
   assert.match(svg, /class="radar-label radar-label--top"[^>]*text-anchor="middle"/);
   assert.match(svg, /class="radar-label radar-label--bottom"[^>]*text-anchor="middle"/);
+});
+
+test('ambient field is a non-quantitative bottom layer and the 100% ring remains the outer data boundary', () => {
+  const svg = renderSvg(comparisonRadar);
+  const html = renderHtml(comparisonRadar);
+  const ambientIndex = svg.indexOf('class="radar-ambient-field"');
+  const firstRingIndex = svg.indexOf('class="radar-scale-ring');
+  const firstLabelIndex = svg.indexOf('class="radar-label');
+
+  assert.ok(ambientIndex >= 0, 'ambient field should render');
+  assert.ok(ambientIndex < firstRingIndex, 'ambient field must sit below quantitative rings');
+  assert.ok(ambientIndex < firstLabelIndex, 'ambient field must sit below labels and values');
+  assert.doesNotMatch(svg, /class="center-halo|class="center-field/);
+  assert.match(svg, /\.radar-ambient-field\s*\{[^}]*stroke:\s*none/i);
+  assert.match(svg, /class="radar-scale-ring radar-scale-ring--outer"[^>]*data-scale="100"/);
+  assert.match(svg, /\.radar-scale-ring--outer\s*\{[^}]*stroke-width:\s*1\.5/i);
+
+  assert.match(html, /\.synthesis-card::before\s*\{[^}]*radial-gradient[^}]*z-index:\s*0/is);
+  assert.doesNotMatch(html, /\.synthesis-card::after\s*\{/);
+  assert.match(html, /\.orbit\s*\{[^}]*z-index:\s*1/is);
+  assert.match(html, /\.radar-scale-ring--outer\s*\{[^}]*stroke-width:\s*1\.5/is);
 });
