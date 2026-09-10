@@ -45,11 +45,14 @@
       .support-shadow { fill: #655b8f; fill-opacity: .065; }
       .support-panel { fill: #ffffff; fill-opacity: .97; stroke: #e1e4f1; stroke-width: 1; filter: url(#panelShadow); }
       .radar-ambient-field { fill: url(#radarAmbient); stroke: none; filter: url(#ambientFieldBlur); }
-      .radar-scale-ring { fill: none; stroke: #d8d9eb; stroke-width: 1; stroke-opacity: .76; }
-      .radar-scale-ring[data-scale="100"] { stroke: #b7b3d4; stroke-width: 1.5; stroke-opacity: .98; }
+      .radar-scale-ring { fill: #ffffff; fill-opacity: 1; stroke: #d8d9eb; stroke-width: 1; stroke-opacity: .86; }
+      .radar-scale-ring[data-scale="100"] { stroke: #aaa7cb; stroke-width: 1.5; stroke-opacity: 1; }
       .radar-spokes { fill: none; stroke: #dedff0; stroke-width: 1; }
       .radar-shape--previous { fill: #3b82f6; fill-opacity: .07; stroke: #3b82f6; stroke-width: 3; stroke-linejoin: round; }
       .radar-shape--current { fill: #f45fa5; fill-opacity: .13; stroke: #f45fa5; stroke-width: 3; stroke-linejoin: round; marker-start: url(#radarVertex); marker-mid: url(#radarVertex); }
+      .radar-label--left, .radar-label--left tspan { text-anchor: end; }
+      .radar-label--right, .radar-label--right tspan { text-anchor: start; }
+      .radar-label--right { transform: translateX(-24px); }
       .metric-orb { fill: #f8f7ff; fill-opacity: .98; stroke: #d8d3f4; stroke-width: 1; filter: url(#orbShadow); }
     </style>
   </defs>
@@ -94,46 +97,46 @@
     </g>
 
     <g transform="translate(42 -6)">
-      <circle class="radar-scale-ring" data-scale="40" r="75.2" cx="698" cy="464"/>
-<circle class="radar-scale-ring" data-scale="60" r="112.8" cx="698" cy="464"/>
+      <circle class="radar-scale-ring" data-scale="100" r="188" cx="698" cy="464"/>
 <circle class="radar-scale-ring" data-scale="80" r="150.4" cx="698" cy="464"/>
-<circle class="radar-scale-ring" data-scale="100" r="188" cx="698" cy="464"/>
+<circle class="radar-scale-ring" data-scale="60" r="112.8" cx="698" cy="464"/>
+<circle class="radar-scale-ring" data-scale="40" r="75.2" cx="698" cy="464"/>
     <path class="radar-spokes" d="M698 464 L698.0 276.0 M698 464 L876.8 405.9 M698 464 L808.5 616.1 M698 464 L587.5 616.1 M698 464 L519.2 405.9"/>
     <path class="radar-shape radar-shape--previous" d="M698.0 321.1 L828.5 421.6 L795.2 597.8 L619.5 572.0 L569.3 422.2 Z"/>
     <path class="radar-shape radar-shape--current" d="M698.0 309.8 L837.5 418.7 L798.6 602.4 L624.0 565.9 L565.7 421.0 Z"/>
       <g class="radar-dimension-node">
       <text class="radar-label radar-label--top" data-outside-ring="true" text-anchor="middle" x="698.0" y="205.0">
-        <tspan x="698.0" class="muted" font-size="11" font-weight="650">Revenue attainment</tspan>
-        <tspan x="698.0" dy="20" class="ink" font-size="16" font-weight="760">82%</tspan>
-        <tspan x="698.0" dy="18" class="positive" font-size="11" font-weight="700">↑ 6pp</tspan>
+        <tspan x="698.0" text-anchor="middle" class="muted" font-size="11" font-weight="650">Revenue attainment</tspan>
+        <tspan x="698.0" dy="20" text-anchor="middle" class="ink" font-size="16" font-weight="760">82%</tspan>
+        <tspan x="698.0" dy="18" text-anchor="middle" class="positive" font-size="11" font-weight="700">↑ 6pp</tspan>
       </text>
     </g>
 <g class="radar-dimension-node">
-      <text class="radar-label radar-label--right" data-outside-ring="true" text-anchor="start" x="924.4" y="370.5">
-        <tspan x="924.4" class="muted" font-size="11" font-weight="650">Customer target</tspan>
-        <tspan x="924.4" dy="20" class="ink" font-size="16" font-weight="760">78%</tspan>
-        <tspan x="924.4" dy="18" class="positive" font-size="11" font-weight="700">↑ 5pp</tspan>
+      <text class="radar-label radar-label--right" data-outside-ring="true" text-anchor="start" x="900.0" y="370.5">
+        <tspan x="900.0" text-anchor="start" class="muted" font-size="11" font-weight="650">Customer target</tspan>
+        <tspan x="900.0" dy="20" text-anchor="start" class="ink" font-size="16" font-weight="760">78%</tspan>
+        <tspan x="900.0" dy="18" text-anchor="start" class="positive" font-size="11" font-weight="700">↑ 5pp</tspan>
       </text>
     </g>
 <g class="radar-dimension-node">
       <text class="radar-label radar-label--right" data-outside-ring="true" text-anchor="start" x="837.9" y="636.5">
-        <tspan x="837.9" class="muted" font-size="11" font-weight="650">Retention</tspan>
-        <tspan x="837.9" dy="20" class="ink" font-size="16" font-weight="760">91%</tspan>
-        <tspan x="837.9" dy="18" class="positive" font-size="11" font-weight="700">↑ 3pp</tspan>
+        <tspan x="837.9" text-anchor="start" class="muted" font-size="11" font-weight="650">Retention</tspan>
+        <tspan x="837.9" dy="20" text-anchor="start" class="ink" font-size="16" font-weight="760">91%</tspan>
+        <tspan x="837.9" dy="18" text-anchor="start" class="positive" font-size="11" font-weight="700">↑ 3pp</tspan>
       </text>
     </g>
 <g class="radar-dimension-node">
       <text class="radar-label radar-label--left" data-outside-ring="true" text-anchor="end" x="558.1" y="636.5">
-        <tspan x="558.1" class="muted" font-size="11" font-weight="650">Trial conversion</tspan>
-        <tspan x="558.1" dy="20" class="ink" font-size="16" font-weight="760">67%</tspan>
-        <tspan x="558.1" dy="18" class="danger" font-size="11" font-weight="700">↓ 4pp</tspan>
+        <tspan x="558.1" text-anchor="end" class="muted" font-size="11" font-weight="650">Trial conversion</tspan>
+        <tspan x="558.1" dy="20" text-anchor="end" class="ink" font-size="16" font-weight="760">67%</tspan>
+        <tspan x="558.1" dy="18" text-anchor="end" class="danger" font-size="11" font-weight="700">↓ 4pp</tspan>
       </text>
     </g>
 <g class="radar-dimension-node">
-      <text class="radar-label radar-label--left" data-outside-ring="true" text-anchor="end" x="471.6" y="370.5">
-        <tspan x="471.6" class="muted" font-size="11" font-weight="650">Expansion</tspan>
-        <tspan x="471.6" dy="20" class="ink" font-size="16" font-weight="760">74%</tspan>
-        <tspan x="471.6" dy="18" class="positive" font-size="11" font-weight="700">↑ 2pp</tspan>
+      <text class="radar-label radar-label--left" data-outside-ring="true" text-anchor="end" x="500.0" y="370.5">
+        <tspan x="500.0" text-anchor="end" class="muted" font-size="11" font-weight="650">Expansion</tspan>
+        <tspan x="500.0" dy="20" text-anchor="end" class="ink" font-size="16" font-weight="760">74%</tspan>
+        <tspan x="500.0" dy="18" text-anchor="end" class="positive" font-size="11" font-weight="700">↑ 2pp</tspan>
       </text>
     </g>
     </g>
