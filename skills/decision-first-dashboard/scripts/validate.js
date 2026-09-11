@@ -7,6 +7,21 @@ const currentDir = path.dirname(currentFile);
 const schemaPath = path.resolve(currentDir, '../schemas/decision-state.schema.json');
 const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
 
+const UI_COPY_FIREWALL_PATTERNS = [
+  /\bdecision[-\s]?first\b/i,
+  /\bprimary\s+decision\b/i,
+  /\bsource[-\s]?grounded\b/i,
+  /\battention\s+surface\b/i,
+  /\breview\s+order\b/i,
+  /\bdesign\s+readout\b/i,
+  /\bafter\s+concept\b/i,
+  /\bfirst[-\s]?view\s+attention\b/i,
+  /\bno\s+synthetic\s+score\b/i,
+  /\bmetric\s+router\b/i,
+  /\bprimary_signal\b/i,
+  /\bscorecard_only\b/i
+];
+
 function resolveRef(rootSchema, ref) {
   if (!ref.startsWith('#/')) throw new Error(`Unsupported schema ref: ${ref}`);
   return ref
@@ -130,6 +145,62 @@ function validateNode(value, nodeSchema, instancePath, errors, rootSchema) {
 
 function nearlyEqual(a, b, tolerance) {
   return Math.abs(a - b) <= tolerance;
+}
+
+function visibleCopyFields(data) {
+  const fields = [];
+  const add = (instancePath, value) => {
+    if (typeof value === 'string' && value.trim()) fields.push({ instancePath, value });
+  };
+
+  if (data.mode === 'no_score') {
+    for (const [index, signal] of data.signals.entries()) {
+      add(`/signals/${index}/label`, signal.label);
+      add(`/signals/${index}/value`, signal.value);
+      add(`/signals/${index}/delta`, signal.delta);
+    }
+  }
+
+  if (data.mode === 'composite') {
+    add('/score/label', data.score.label);
+    add('/score/band', data.score.band);
+    for (const [index, component] of data.model.components.entries()) {
+      add(`/model/components/${index}/label`, component.label);
+      add(`/model/components/${index}/value`, component.value);
+    }
+    for (const [index, band] of data.model.bands.entries()) {
+      add(`/model/bands/${index}/label`, band.label);
+    }
+  }
+
+  for (const [index, item] of (data.exceptions ?? []).entries()) {
+    add(`/exceptions/${index}/name`, item.name);
+    add(`/exceptions/${index}/plan`, item.plan);
+    add(`/exceptions/${index}/mrr`, item.mrr);
+    add(`/exceptions/${index}/status`, item.status);
+  }
+
+  for (const [index, item] of (data.events ?? []).entries()) {
+    add(`/events/${index}/subject`, item.subject);
+    add(`/events/${index}/event`, item.event);
+    add(`/events/${index}/detail`, item.detail);
+    add(`/events/${index}/time`, item.time);
+  }
+
+  return fields;
+}
+
+function validateUiCopySemantics(data, errors) {
+  for (const { instancePath, value } of visibleCopyFields(data)) {
+    if (UI_COPY_FIREWALL_PATTERNS.some((pattern) => pattern.test(value))) {
+      pushError(
+        errors,
+        instancePath,
+        'uiCopyFirewall',
+        'visible dashboard copy must use product/source language, not Decision-First framework or compiler vocabulary'
+      );
+    }
+  }
 }
 
 function validateNoScoreSemantics(data, errors) {
@@ -276,6 +347,10 @@ export function validateAgainstSchema(data, targetSchema) {
 
 export function validateDecisionState(data) {
   const { errors } = validateAgainstSchema(data, schema);
+
+  if (errors.length === 0) {
+    validateUiCopySemantics(data, errors);
+  }
 
   if (errors.length === 0 && data.mode === 'no_score') {
     validateNoScoreSemantics(data, errors);
