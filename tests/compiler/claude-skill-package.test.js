@@ -18,7 +18,7 @@ function listRelativeFiles(root) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const absolute = path.join(dir, entry.name);
       if (entry.isDirectory()) walk(absolute);
-      else files.push(path.relative(root, absolute).replaceAll('\\\\', '/'));
+      else files.push(path.relative(root, absolute).split(path.sep).join('/'));
     }
   };
   walk(root);
