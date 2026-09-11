@@ -1,0 +1,9 @@
+{
+  "responseType": "question",
+  "questionCount": 1,
+  "askedSlots": ["decision", "action"],
+  "assumptions": [],
+  "outputs": [],
+  "canonicalProvenance": false,
+  "text": "这张 dashboard 主要是谁定期看？当收入、利润或利润率明显变化时，他们通常会做什么不同的决定或动作？"
+}
