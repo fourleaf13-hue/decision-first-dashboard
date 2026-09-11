@@ -68,3 +68,13 @@ test('primary-only center layout uses the compact density path instead of the le
   assert.match(html, /\.decision-layout--center-only \.synthesis-card\{[^}]*min-height:min\(40vh,420px\)/);
   assert.match(html, /\.decision-layout--center-only \.signal-focus\{[^}]*gap:32px/);
 });
+
+test('mobile CSS preserves the compact center-only height instead of restoring a 540px empty stage', () => {
+  const primaryOnly = structuredClone(bundle.decisionState);
+  delete primaryOnly.supportingSignals;
+  const html = renderHtml(primaryOnly);
+  assert.match(
+    html,
+    /@media\(max-width:620px\)\{[^}]*\.synthesis-card\{min-height:540px\}[\s\S]*?\.decision-layout--center-only \.synthesis-card\{min-height:min\(40vh,420px\)\}/
+  );
+});
