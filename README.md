@@ -79,7 +79,7 @@ The After showcase uses five source-backed percentage dimensions on one 0–100 
 
 You don't need to know the perfect KPI set or chart type first.
 
-The skill first checks whether a persistent dashboard is warranted. If it is, it asks only enough questions to understand the decision and what action could change. Then it routes the available metrics by role instead of putting everything on the first screen.
+The skill first checks whether a persistent dashboard is warranted. If it is, it asks only enough questions to understand the decision and what action could change. **Decision and Action must be explicitly confirmed before routing or rendering can proceed.** Then it routes the available metrics by role instead of putting everything on the first screen.
 
 A source can contain 70 valid KPIs without becoming a 70-KPI dashboard.
 
@@ -131,7 +131,11 @@ Give your agent a dashboard screenshot, Figma frame, existing dashboard code, or
 
 The skill will first check whether a dashboard is the right format. If it is, it clarifies the decision if needed, routes the metrics, verifies source support, and renders the decision-first output.
 
-**HTML is the primary After deliverable** when file generation is available: use `output.no-score.html` or `output.composite.html` as the browser-openable redesigned dashboard. SVG remains the static preview/support artifact for README comparisons, review, and regression testing rather than the main user deliverable.
+An ambiguous prompt such as “redesign this dashboard” is **not render permission**. A screenshot can establish source facts, but it cannot silently confirm the user's Decision or Action. If either is unresolved, the machine intake gate returns `ASK_DECISION_BRIEF_QUESTION` and no dashboard artifact is produced.
+
+**HTML is the primary After deliverable** when file generation is available: use the canonical `output.no-score.html` or `output.composite.html` written by `compile-dashboard.js`. SVG remains the static preview/support artifact for README comparisons, review, and regression testing rather than the main user deliverable.
+
+The canonical compiler also writes `output.manifest.json` and stamps the HTML/SVG with machine-verifiable provenance. A second agent-authored HTML, image, SVG, React app, or native artifact is not the canonical After merely because it looks better.
 
 Attention is intentionally restrained by default. Ordinary deterioration and routed exceptions stay visible through values, deltas, profile shape, and compact exception surfaces; large red warning banners, alarm icons, and `Action needed` / `Critical` / `Warning` language require explicit source-grounded alert semantics or an explicit user-supplied alert policy.
 
@@ -153,15 +157,25 @@ REDIRECT_NON_DASHBOARD
 FIX_WORTHINESS_ASSESSMENT
 ```
 
-If the request is only “visibility” or is better handled as a one-off analysis, scheduled summary, alert, report, or chat/query workflow, dashboard rendering stops by default. If the user explicitly chooses a dashboard after seeing that trade-off, `userOverride: true` can continue to the Decision Brief — but it still must pass routing and grounding.
+If the request is only “visibility” or is better handled as a one-off analysis, scheduled summary, alert, report, or chat/query workflow, dashboard rendering stops by default. If the user explicitly chooses a dashboard after seeing that trade-off, `userOverride: true` can continue to the Decision Brief — but it still must pass intake, routing, and grounding.
 
-This machine gate checks schema and internal semantic consistency. **It does not prove the agent interpreted the user's natural-language intent correctly.** A separate end-to-end agent eval suite is still needed to measure model behavior on raw prompts.
+This machine gate checks schema and internal semantic consistency. **It does not prove the agent interpreted the user's natural-language intent correctly.** Live host/model behavior still requires end-to-end evaluation.
 
 Any Worthiness questions count toward the same five-question intake budget as the Decision Brief; this is not a second questionnaire.
 
-### Adaptive Decision Brief
+### Adaptive Decision Brief + machine intake gate
 
-The skill asks one question at a time, no more than five total across Worthiness + Decision Brief intake, and stops as soon as it has enough confirmed context. Source facts can suggest intent, but they do not silently become business intent. Unless Decision + Action are already explicit, the skill asks for confirmation before routing or rendering.
+The skill asks one question at a time, no more than five total across Worthiness + Decision Brief intake, and stops as soon as it has enough confirmed context. Source facts can suggest intent, but they do not silently become business intent.
+
+The structured Decision Brief matches `schemas/decision-brief.schema.json`. `scripts/intake.js` requires both `decision.status` and `action.status` to be `confirmed` before routing is allowed:
+
+```text
+ALLOW_ROUTING
+ASK_DECISION_BRIEF_QUESTION
+FIX_DECISION_BRIEF
+```
+
+An inferred Decision or Action is not equivalent to confirmation. The routing manifest must also preserve the confirmed Decision and Action wording; changing either downstream is a routing failure.
 
 ### Metric Router
 
@@ -169,17 +183,21 @@ The Action Trigger Test asks: **if this metric changes materially, what decision
 
 The routing manifest preserves the complete extracted inventory while keeping only the minimum sufficient first-view signals visible. Active exceptions cannot be hidden to make the dashboard look healthier.
 
-### Three production gates
+### Four production gates
 
-The production compiler has three ordered gates:
+The canonical production compiler has four ordered gates:
 
 1. **Worthiness gate** — validates the structured Worthiness Assessment and decides whether to continue, clarify, redirect, or repair the assessment.
-2. **Routing gate** — verifies metric-routing semantics.
-3. **Grounding gate** — verifies that rendered source claims resolve back to source evidence.
+2. **Intake gate** — validates the Decision Brief and blocks routing until Decision + Action are confirmed.
+3. **Routing gate** — verifies metric-routing semantics and exact binding to the confirmed Decision + Action.
+4. **Grounding gate** — verifies that rendered source claims resolve back to source evidence.
 
-Downstream transitions remain:
+Downstream transitions include:
 
 ```text
+ALLOW_ROUTING
+ASK_DECISION_BRIEF_QUESTION
+FIX_DECISION_BRIEF
 PASS
 FIX_METRIC_ROUTING
 RETURN_TO_EVIDENCE_EXTRACTION
@@ -188,6 +206,14 @@ FIX_DECISION_STATE
 ```
 
 Composite output is allowed only when all score-model facts are mechanically grounded. Screenshot workflows should first create a verifiable text/JSON sidecar for claims that need byte-level grounding.
+
+### Canonical output provenance
+
+A successful `compile-dashboard.js` run stamps the final HTML with canonical renderer metadata and embeds a provenance record in the SVG. It also writes `output.manifest.json` containing hashes for the source, Worthiness Assessment, Decision Brief, routing manifest, grounded bundle, decision state, HTML, and SVG.
+
+This turns “does this look like our renderer?” into a machine-verifiable question. If a final artifact does not have canonical provenance, it is not the canonical Decision-First After.
+
+The repository also includes a recorded agent E2E regression based on a real ambiguous Sales Dashboard prompt. The passing first turn asks one question for missing decision context; a native artifact that skips intake is rejected. This is a deterministic recorded-turn contract, not a live model benchmark.
 
 ### Visual rules
 
@@ -206,7 +232,8 @@ Composite output is allowed only when all score-model facts are mechanically gro
 User context
 → structured Worthiness Assessment
 → worthiness validation
-→ Decision Brief
+→ structured Decision Brief
+→ intake validation
 → evidence extraction
 → Metric Router
 → no_score / composite decision
@@ -214,13 +241,15 @@ User context
 → routing validation
 → grounding validation
 → deterministic render
+→ canonical HTML / SVG + output.manifest.json
 ```
 
 From the skill directory:
 
 ```bash
 node scripts/worthiness.js path/to/worthiness-assessment.json
-node scripts/compile-dashboard.js path/to/worthiness-assessment.json path/to/routing-manifest.json path/to/grounded-bundle.json path/to/output-directory
+node scripts/intake.js path/to/decision-brief.json
+node scripts/compile-dashboard.js path/to/worthiness-assessment.json path/to/decision-brief.json path/to/routing-manifest.json path/to/grounded-bundle.json path/to/output-directory
 ```
 
 Mode-specific outputs:
@@ -228,6 +257,7 @@ Mode-specific outputs:
 ```text
 no_score   → primary: output.no-score.html    | preview: output.no-score.svg
 composite  → primary: output.composite.html   | preview: output.composite.svg
+both       → audit: output.manifest.json
 ```
 
 </details>
@@ -249,13 +279,13 @@ For Anthropic plugin packaging, validate the repository root with a current Clau
 claude plugin validate . --strict
 ```
 
-GitHub Actions runs the compiler suite, including the plugin manifest contract, executable Worthiness scenario fixtures, Decision Brief intake, 70-KPI Metric Router behavior, routed production compilation, grounded composite/no-score compilation, radar rendering, byte-level golden snapshots, the HTML delivery/attention-intensity contract, and the standalone Claude Upload Skill packaging contract.
+GitHub Actions runs the compiler suite, including the plugin manifest contract, executable Worthiness scenario fixtures, the machine Decision Brief intake gate, the recorded ambiguous-prompt agent E2E contract, 70-KPI Metric Router behavior, canonical provenance, routed production compilation, grounded composite/no-score compilation, radar rendering, byte-level golden snapshots, the HTML delivery/attention-intensity contract, and the standalone Claude Upload Skill packaging contract.
 
 ## What this is not
 
 This is not a generic chart library and not a prompt that asks AI to freestyle a prettier admin dashboard.
 
-It is a decision-first workflow with worthiness, routing, evidence checks, and deterministic rendering so the output is useful **and** auditable.
+It is a decision-first workflow with worthiness, intake, routing, evidence checks, canonical provenance, and deterministic rendering so the output is useful **and** auditable.
 
 ## License
 
