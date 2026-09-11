@@ -40,14 +40,15 @@ The production compiler validates, in order:
 1. the Worthiness Assessment against `schemas/worthiness-assessment.schema.json` plus its semantic consistency rules;
 2. the Metric Routing Manifest and its semantic rules;
 3. exact agreement between routed `primary_signal` metrics and the visible center metrics/components;
-4. active-exception surfacing rules;
-5. the closed grounded-bundle contract;
-6. the closed `decision-state` contract;
-7. source file SHA-256;
-8. evidence reference integrity;
-9. exact JSON Pointer or text-span grounding;
-10. required claim coverage;
-11. composite score mathematics and score-band semantics.
+4. exact agreement between no-score diagnostics routed as supporting and `decisionState.supportingSignals`;
+5. active-exception surfacing rules;
+6. the closed grounded-bundle contract;
+7. the closed `decision-state` contract;
+8. source file SHA-256;
+9. evidence reference integrity;
+10. exact JSON Pointer or text-span grounding;
+11. required claim coverage;
+12. composite score mathematics and score-band semantics.
 
 Worthiness transitions are:
 
@@ -68,7 +69,7 @@ Downstream machine-readable transitions remain:
 
 `render.js` consumes only validated decision state and fills fixed SVG/HTML templates. It does not inspect the hidden routing inventory, source data, or invent business meaning.
 
-Keeping hidden routing inventory out of the renderer is intentional: metrics assigned to `diagnostic`, `drilldown`, or `scorecard_only` stay preserved for traceability without becoming hidden DOM, eager chart work, or first-view clutter.
+Keeping hidden routing inventory out of the renderer is intentional: `drilldown`, `scorecard_only`, and diagnostics routed `on_demand` stay preserved for traceability without becoming hidden DOM, eager chart work, or first-view clutter. Only diagnostics explicitly routed with `visibility: "supporting"` may enter the closed `supportingSignals` decision-state layer and render as subordinate context.
 
 ## Workflow
 
@@ -181,18 +182,25 @@ Apply the **Action Trigger Test** to every candidate metric:
 5. If it matters only after investigation begins, route it to `drilldown`.
 6. If no decision, action, diagnosis, or exception handling changes, route it to `scorecard_only`.
 
+Do not promote several metrics to `primary_signal` merely because they are all relevant. If one metric mainly explains another primary signal, or is a **complementary slice** of the same distribution, route it as `diagnostic` unless a material change would independently alter the confirmed decision or action.
+
 Compiler-enforced routing rules:
 
 - `primary_signal` must have `changesDecision: true`, a non-empty `decisionImpact`, and `visibility: "first_view"`.
 - The current deterministic renderer accepts **3–6 primary signals**; more than six fails the first-view information budget instead of silently squeezing more KPI peers into the layout.
 - The routed `primary_signal` metric IDs must exactly equal `decisionState.signals[*].metric` in `no_score`, or `decisionState.model.components[*].metric` in `composite`.
 - `diagnostic` metrics must have `changesDecision: false`, must point via `explains` to a routed `primary_signal` or `exception`, and must stay `supporting` or `on_demand`.
+- In `no_score`, the metric IDs in `decisionState.supportingSignals` must exactly equal the diagnostics routed with `visibility: "supporting"`; a supporting diagnostic must explain a routed primary signal or active exception.
+- At most four diagnostics may use `visibility: "supporting"`; additional diagnostics must use `on_demand`. The renderer never truncates a larger set silently.
+- `supportingSignals` are subordinate diagnostic context only: they never replace a routed primary signal, never participate in radar eligibility, and cannot contain a metric already present in `signals`.
 - `drilldown` metrics must stay `on_demand`.
 - `scorecard_only` metrics must stay `scorecard` and cannot claim to change the current decision.
 - **Active exceptions cannot be hidden** because a stakeholder dislikes red or negative states. An active exception must use `visibility: "first_view"` and its `surfacePath` must resolve to an actually rendered `/exceptions/<n>` or `/events/<n>` item in the decision state.
-- Current first-view information budget is at most 11 decision items: 3–6 primary signals plus active exceptions. Do not solve overload by shrinking type or adding more equal-weight cards.
+- Current first-view information budget is at most 11 decision items: 3–6 primary signals plus active exceptions. Supporting diagnostics have their separate four-item subordinate budget. Do not solve overload by shrinking type or adding more equal-weight cards.
 - Do not promote a metric because it is easy to visualize, numerically large, or already placed in a KPI card.
 - Do not leak role labels such as `primary_signal` or `scorecard_only` into product UI.
+
+A supporting-context semantic mismatch is a routing failure and must return `FIX_METRIC_ROUTING`; do not silently drop or repair the metric in the renderer. If the routing is valid but a visible supporting signal lacks source evidence, grounding must return `RETURN_TO_EVIDENCE_EXTRACTION`.
 
 The routing manifest is a durable decision trace. It preserves what was considered, why it was promoted or demoted, and what would change the decision, so later analysis does not have to rediscover the same KPI-prioritization logic from scratch.
 
@@ -274,14 +282,14 @@ For `composite`, ground all source-dependent scoring facts:
 - score-series values when present;
 - visible exception/event fields when present.
 
-For ordinary `no_score`, ground each visible signal label/value, optional source delta/direction, source series values, and visible exception/event fields.
+For ordinary `no_score`, ground each visible primary signal label/value, optional source delta/direction, every visible `supportingSignals` label/value and optional source delta/direction, source series values, and visible exception/event fields.
 
 For a `no_score` radar, additionally ground:
 
 - `radarScale.min` and `radarScale.max`;
 - every signal `normalizedScore` used as a radar vertex.
 
-A missing radar-scale or normalized-score claim returns to evidence extraction. Do not silently fall back to an ungrounded radar.
+A missing supporting-signal claim returns to evidence extraction just like any other visible source claim. A missing radar-scale or normalized-score claim also returns to evidence extraction. Do not silently fall back to an ungrounded visual.
 
 Do not ground deterministic renderer synthesis or Metric Router role decisions as if they were source facts.
 
@@ -314,7 +322,7 @@ SVG remains the deterministic **preview** and regression/support artifact for RE
 - `ASK_WORTHINESS_QUESTION` → ask only the minimum missing question and keep the same five-question total intake budget.
 - `REDIRECT_NON_DASHBOARD` → stop dashboard compilation and use the validated `recommendedFormat` unless the user explicitly overrides after the trade-off is explained.
 - `BUILD_DECISION_BRIEF` → continue into the existing Decision Brief; this is not final render permission.
-- `FIX_METRIC_ROUTING` → repair routing roles, action-trigger logic, first-view budget, primary/visible mismatch, or exception surfacing; do not bypass the gate.
+- `FIX_METRIC_ROUTING` → repair routing roles, action-trigger logic, first-view budget, primary/visible mismatch, supporting-context mismatch, or exception surfacing; do not bypass the gate.
 - `FIX_DECISION_STATE` → repair contract/schema errors only; do not weaken validation.
 - `RETURN_TO_EVIDENCE_EXTRACTION` → re-read source and repair evidence/claims.
 - `FALLBACK_TO_NO_SCORE` → abandon unsupported composite scoring and rebuild a grounded no-score state.
@@ -330,8 +338,11 @@ For `no_score`:
 
 - when all 3–6 routed primary dimensions have grounded `normalizedScore` values on one grounded `radarScale`, render a true closed radar profile;
 - otherwise use the non-radar signal layout and never connect heterogeneous raw KPI values into a fake radar;
-- compact left business context;
-- compact right exceptions/events.
+- one lead primary signal is the dominant focal point and the remaining primaries stay in the decision tier;
+- validated `supportingSignals` render only as a compact, lower-weight diagnostic rail and collapse completely when absent;
+- a primary-only center layout uses the compact density path rather than preserving a giant empty stage;
+- compact left business context only when source-supported;
+- compact right exceptions/events only when present.
 
 For `composite`:
 
@@ -377,12 +388,14 @@ Before delivery, verify:
 - `inventoryCount` equals the routed metric inventory and no metric is duplicated or omitted;
 - every `primary_signal` passes the Action Trigger Test and the visible center matches the primary set exactly;
 - diagnostics explain routed primary/exception items rather than competing as peer headlines;
+- no-score `supportingSignals` exactly match diagnostics routed with supporting visibility, stay within the four-item budget, and do not overlap primaries;
+- complementary distribution slices were not promoted to peer primaries unless they independently change the confirmed decision/action;
 - active exceptions cannot be hidden and every active exception has a valid rendered `surfacePath`;
 - ordinary exceptions use restrained soft-attention styling unless hard-alert intensity is explicitly grounded;
 - the first-view information budget is respected instead of shrinking typography or adding equal-weight KPI cards;
 - the grounded-bundle schema passes;
 - source SHA-256 matches actual source bytes;
-- every required visible/source scoring fact has a resolvable claim and evidence anchor;
+- every required visible/source scoring fact, including rendered supporting context, has a resolvable claim and evidence anchor;
 - every grounded value matches the referenced decision-state value under allowed deterministic normalization only;
 - `no_score` overall direction matches signal directions;
 - a `no_score` radar passes both the Profile Test and Action Trigger Test;
