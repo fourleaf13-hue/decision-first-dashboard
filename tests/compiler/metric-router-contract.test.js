@@ -35,6 +35,15 @@ test('skill documents the compiler-enforced routing manifest and production gate
   assert.match(skill, /first-view information budget/i);
 });
 
+test('skill keeps supporting diagnostics subordinate and rejects complementary primary inflation', () => {
+  assert.match(skill, /supportingSignals/);
+  assert.match(skill, /at most four diagnostics/i);
+  assert.match(skill, /additional diagnostics[^\n]*on_demand/i);
+  assert.match(skill, /complementary slice/i);
+  assert.match(skill, /independently alters? the confirmed decision or action/i);
+  assert.match(skill, /must exactly equal[^\n]*supporting/i);
+});
+
 test('README distinguishes no-score and composite examples without overstating capability', () => {
   assert.match(readme, /No-score mode — no unsupported score invented/);
   assert.match(readme, /Composite mode — when the evidence supports it/);
