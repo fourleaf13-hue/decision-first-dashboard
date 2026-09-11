@@ -147,44 +147,48 @@ function nearlyEqual(a, b, tolerance) {
   return Math.abs(a - b) <= tolerance;
 }
 
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
 function visibleCopyFields(data) {
   const fields = [];
   const add = (instancePath, value) => {
     if (typeof value === 'string' && value.trim()) fields.push({ instancePath, value });
   };
 
-  if (data.mode === 'no_score') {
-    for (const [index, signal] of data.signals.entries()) {
-      add(`/signals/${index}/label`, signal.label);
-      add(`/signals/${index}/value`, signal.value);
-      add(`/signals/${index}/delta`, signal.delta);
+  if (data?.mode === 'no_score') {
+    for (const [index, signal] of asArray(data.signals).entries()) {
+      add(`/signals/${index}/label`, signal?.label);
+      add(`/signals/${index}/value`, signal?.value);
+      add(`/signals/${index}/delta`, signal?.delta);
     }
   }
 
-  if (data.mode === 'composite') {
-    add('/score/label', data.score.label);
-    add('/score/band', data.score.band);
-    for (const [index, component] of data.model.components.entries()) {
-      add(`/model/components/${index}/label`, component.label);
-      add(`/model/components/${index}/value`, component.value);
+  if (data?.mode === 'composite') {
+    add('/score/label', data.score?.label);
+    add('/score/band', data.score?.band);
+    for (const [index, component] of asArray(data.model?.components).entries()) {
+      add(`/model/components/${index}/label`, component?.label);
+      add(`/model/components/${index}/value`, component?.value);
     }
-    for (const [index, band] of data.model.bands.entries()) {
-      add(`/model/bands/${index}/label`, band.label);
+    for (const [index, band] of asArray(data.model?.bands).entries()) {
+      add(`/model/bands/${index}/label`, band?.label);
     }
   }
 
-  for (const [index, item] of (data.exceptions ?? []).entries()) {
-    add(`/exceptions/${index}/name`, item.name);
-    add(`/exceptions/${index}/plan`, item.plan);
-    add(`/exceptions/${index}/mrr`, item.mrr);
-    add(`/exceptions/${index}/status`, item.status);
+  for (const [index, item] of asArray(data?.exceptions).entries()) {
+    add(`/exceptions/${index}/name`, item?.name);
+    add(`/exceptions/${index}/plan`, item?.plan);
+    add(`/exceptions/${index}/mrr`, item?.mrr);
+    add(`/exceptions/${index}/status`, item?.status);
   }
 
-  for (const [index, item] of (data.events ?? []).entries()) {
-    add(`/events/${index}/subject`, item.subject);
-    add(`/events/${index}/event`, item.event);
-    add(`/events/${index}/detail`, item.detail);
-    add(`/events/${index}/time`, item.time);
+  for (const [index, item] of asArray(data?.events).entries()) {
+    add(`/events/${index}/subject`, item?.subject);
+    add(`/events/${index}/event`, item?.event);
+    add(`/events/${index}/detail`, item?.detail);
+    add(`/events/${index}/time`, item?.time);
   }
 
   return fields;
@@ -348,7 +352,7 @@ export function validateAgainstSchema(data, targetSchema) {
 export function validateDecisionState(data) {
   const { errors } = validateAgainstSchema(data, schema);
 
-  if (errors.length === 0) {
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
     validateUiCopySemantics(data, errors);
   }
 
