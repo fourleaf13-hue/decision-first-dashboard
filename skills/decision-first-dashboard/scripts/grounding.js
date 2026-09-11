@@ -143,6 +143,11 @@ function requiredNoScorePaths(data) {
       if (Object.hasOwn(signal, field)) paths.push(`/signals/${index}/${field}`);
     }
   });
+  data.supportingSignals?.forEach((signal, index) => {
+    for (const field of ['label', 'value', 'delta', 'direction']) {
+      if (Object.hasOwn(signal, field)) paths.push(`/supportingSignals/${index}/${field}`);
+    }
+  });
   data.context?.revenueSeries?.forEach((_, index) => paths.push(`/context/revenueSeries/${index}`));
   data.exceptions?.forEach((item, index) => paths.push(...visibleObjectPaths(`/exceptions/${index}`, item, ['name', 'plan', 'mrr', 'status'])));
   data.events?.forEach((item, index) => paths.push(...visibleObjectPaths(`/events/${index}`, item, ['subject', 'event', 'detail', 'time'])));
