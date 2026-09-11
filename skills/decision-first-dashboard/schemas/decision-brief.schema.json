@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "action"],
+  "properties": {
+    "decision": { "$ref": "#/definitions/slot" },
+    "action": { "$ref": "#/definitions/slot" },
+    "exception": { "$ref": "#/definitions/slot" },
+    "diagnosis": { "$ref": "#/definitions/slot" },
+    "audience": { "$ref": "#/definitions/slot" },
+    "cadence": { "$ref": "#/definitions/slot" }
+  },
+  "definitions": {
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["confirmed", "inferred", "absent"] },
+        "value": { "type": "string", "minLength": 1, "maxLength": 240 }
+      }
+    }
+  }
+}
