@@ -6,6 +6,7 @@ import {
   renderHtml as renderHtmlCore,
   renderSvg as renderSvgCore
 } from './render-core.js';
+import { renderNonRadarHtml, renderNonRadarSvg } from './render-non-radar.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 
@@ -34,6 +35,10 @@ function radarDimensions(data) {
   if (data?.mode === 'composite') return data.model?.components ?? null;
   if (data?.radarScale && Array.isArray(data.signals)) return data.signals;
   return null;
+}
+
+function isPlainNoScore(data) {
+  return data?.mode === 'no_score' && !data.radarScale;
 }
 
 function radialPoint(cx, cy, radius, angle) {
@@ -130,15 +135,17 @@ function tuneHtmlRadar(markup, dimensions) {
 }
 
 export function renderSvg(data) {
-  const markup = renderSvgCore(data);
+  const coreMarkup = renderSvgCore(data);
+  if (isPlainNoScore(data)) return renderNonRadarSvg(data);
   const dimensions = radarDimensions(data);
-  return dimensions?.length ? tuneSvgRadar(markup, dimensions) : markup;
+  return dimensions?.length ? tuneSvgRadar(coreMarkup, dimensions) : coreMarkup;
 }
 
 export function renderHtml(data) {
-  const markup = renderHtmlCore(data);
+  const coreMarkup = renderHtmlCore(data);
+  if (isPlainNoScore(data)) return renderNonRadarHtml(data);
   const dimensions = radarDimensions(data);
-  return dimensions?.length ? tuneHtmlRadar(markup, dimensions) : markup;
+  return dimensions?.length ? tuneHtmlRadar(coreMarkup, dimensions) : coreMarkup;
 }
 
 if (process.argv[1] === currentFile) {

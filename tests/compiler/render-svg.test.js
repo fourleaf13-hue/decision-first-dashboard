@@ -27,9 +27,22 @@ function pointInTimeFixture() {
   };
 }
 
+function inventoryFixture() {
+  return {
+    mode: 'no_score',
+    signals: [
+      { metric: 'out_of_stock_products', label: 'Out of Stock Products', value: '453', provenance: 'source' },
+      { metric: 'low_stock_share', label: 'Low Stock', value: '14.61%', provenance: 'source' },
+      { metric: 'average_discount', label: 'Average Discount', value: '7.62%', provenance: 'source' }
+    ],
+    exceptions: [],
+    events: []
+  };
+}
+
 test('renders a dominant no-score signal cluster without a synthetic center verdict', () => {
   const svg = renderSvg(fixture);
-  assert.match(svg, /Subscription health/);
+  assert.match(svg, /Current overview/);
   assert.doesNotMatch(svg, />IMPROVING<|Target unknown|OVERALL DIRECTION/);
   assert.match(svg, /\+12\.4%/);
   assert.match(svg, /\+8\.1%/);
@@ -73,6 +86,30 @@ test('keeps confirmed exceptions and events compact on the right', () => {
   assert.match(svg, /Trial converted/);
 });
 
+test('uses a domain-neutral adaptive fallback for non-radar inventory snapshots', () => {
+  const svg = renderSvg(inventoryFixture());
+  for (const forbidden of [
+    'Subscription health',
+    'Revenue context',
+    'Revenue metric unavailable',
+    'Trend data unavailable',
+    'Movement context',
+    'No additional movement signals',
+    'Accounts to watch',
+    'No confirmed exceptions visible',
+    'Recent events',
+    'No recent source-supported events'
+  ]) {
+    assert.doesNotMatch(svg, new RegExp(forbidden));
+  }
+  assert.match(svg, /signal-lead/);
+  assert.doesNotMatch(svg, /class="orbit-spokes"/);
+  assert.match(svg, />453</);
+  assert.match(svg, />Out of Stock Products</);
+  assert.match(svg, />14\.61%</);
+  assert.match(svg, />7\.62%</);
+});
+
 test('does not leak framework, compiler, or fabricated verdict copy', () => {
   const svg = renderSvg(fixture);
   assert.doesNotMatch(
@@ -104,11 +141,8 @@ test('renders point-in-time KPI values prominently without blank movement labels
   assert.doesNotMatch(svg, /undefined/);
 });
 
-test('uses ARR as source-driven revenue context without inventing MRR movement', () => {
+test('does not invent SaaS revenue chrome for a point-in-time ARR signal', () => {
   const svg = renderSvg(pointInTimeFixture());
-  assert.match(svg, /ARR context/);
-  assert.match(svg, /Current ARR/);
   assert.match(svg, /\$4\.98M/);
-  assert.doesNotMatch(svg, /Current MRR/);
-  assert.doesNotMatch(svg, /vs last month/);
+  assert.doesNotMatch(svg, /ARR context|Current ARR|Current MRR|vs last month|Trend data unavailable/);
 });
