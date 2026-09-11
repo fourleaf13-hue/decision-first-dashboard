@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/compiler/*.test.js",
+    "package:claude-skill": "node scripts/stage-claude-skill.mjs",
     "validate:saas": "node skills/decision-first-dashboard/scripts/validate.js examples/saas/input.no-score.json",
     "render:saas": "node skills/decision-first-dashboard/scripts/render.js examples/saas/input.no-score.json examples/saas",
     "validate:radar-showcase": "node skills/decision-first-dashboard/scripts/validate.js examples/radar-profile/input.no-score.json",
