@@ -19,6 +19,11 @@ function visibleMetricIds(decisionState) {
   return [];
 }
 
+function visibleSupportingMetricIds(decisionState) {
+  if (!decisionState || decisionState.mode !== 'no_score') return [];
+  return (decisionState.supportingSignals ?? []).map((item) => item.metric).filter(Boolean);
+}
+
 function resolvePointer(root, pointer) {
   if (typeof pointer !== 'string' || !pointer.startsWith('/')) return { found: false };
   let node = root;
@@ -126,14 +131,23 @@ export function validateMetricRouting(manifest, decisionState) {
 
   const primaries = metrics.filter((item) => item?.role === 'primary_signal');
   const activeExceptions = metrics.filter((item) => item?.role === 'exception' && item.active === true);
+  const supportingDiagnostics = metrics.filter((item) => item?.role === 'diagnostic' && item.visibility === 'supporting');
   if (primaries.length < 3) add(errors, 'PRIMARY_SIGNAL_MINIMUM_NOT_MET', '/metrics', 'the current deterministic renderer requires at least 3 primary signals');
   if (primaries.length > 6) add(errors, 'PRIMARY_SIGNAL_BUDGET_EXCEEDED', '/metrics', 'the first view may contain at most 6 primary signals');
   if (primaries.length + activeExceptions.length > 11) add(errors, 'FIRST_VIEW_BUDGET_EXCEEDED', '/metrics', 'first-view primary signals plus active exceptions exceed the current information budget');
+  if (supportingDiagnostics.length > 4) add(errors, 'SUPPORTING_DIAGNOSTIC_BUDGET_EXCEEDED', '/metrics', 'at most 4 diagnostics may use supporting visibility; additional diagnostics must be on_demand');
 
   const explainable = new Set(metrics.filter((item) => item?.role === 'primary_signal' || item?.role === 'exception').map((item) => item.metric));
+  const supportExplainable = new Set([
+    ...primaries.map((item) => item.metric),
+    ...activeExceptions.map((item) => item.metric)
+  ]);
   for (const [index, item] of metrics.entries()) {
     if (item?.role === 'diagnostic' && typeof item.explains === 'string' && !explainable.has(item.explains)) {
       add(errors, 'DIAGNOSTIC_TARGET_INVALID', `/metrics/${index}/explains`, 'diagnostic must explain a routed primary signal or exception');
+    }
+    if (item?.role === 'diagnostic' && item.visibility === 'supporting' && typeof item.explains === 'string' && !supportExplainable.has(item.explains)) {
+      add(errors, 'SUPPORTING_DIAGNOSTIC_TARGET_INVALID', `/metrics/${index}/explains`, 'a visible supporting diagnostic must explain a routed primary signal or active exception');
     }
   }
 
@@ -143,11 +157,24 @@ export function validateMetricRouting(manifest, decisionState) {
     add(errors, 'VISIBLE_PRIMARY_MISMATCH', '/metrics', 'rendered center metrics must exactly match the routed primary_signal set');
   }
 
+  if (decisionState?.mode === 'no_score') {
+    const routedSupportingIds = supportingDiagnostics.map((item) => item.metric);
+    const renderedSupportingIds = visibleSupportingMetricIds(decisionState);
+    const primarySet = new Set(renderedIds);
+    if (renderedSupportingIds.some((metric) => primarySet.has(metric))) {
+      add(errors, 'PRIMARY_SUPPORTING_OVERLAP', '/supportingSignals', 'a metric cannot appear in both primary signals and supporting context');
+    }
+    if (!sameSet(routedSupportingIds, renderedSupportingIds)) {
+      add(errors, 'VISIBLE_SUPPORTING_MISMATCH', '/metrics', 'rendered supporting metrics must exactly match diagnostics routed with supporting visibility');
+    }
+  }
+
   const summary = {
     inventoryCount: metrics.length,
     primaryCount: primaries.length,
+    supportingCount: supportingDiagnostics.length,
     activeExceptionCount: activeExceptions.length,
-    hiddenCount: metrics.length - primaries.length - activeExceptions.length,
+    hiddenCount: metrics.length - primaries.length - supportingDiagnostics.length - activeExceptions.length,
     firstViewCount: primaries.length + activeExceptions.length
   };
   return { valid: errors.length === 0, errors, summary };
