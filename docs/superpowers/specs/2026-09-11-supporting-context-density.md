@@ -7,7 +7,7 @@ PR #34 fixed domain leakage and empty-module filler in the non-radar renderer, b
 There are four distinct bugs to fix together:
 
 1. **The real Zepto regression is not locked in.** The current inventory test fixture is simplified and does not preserve the exact primary/diagnostic split observed in the real run.
-2. **`decisionState` has no domain-neutral supporting-context channel.** For `no_score`, the renderer currently receives primary signals, optional revenue series, exceptions, and events. Grounded diagnostics cannot be rendered without being promoted to primary signals.
+2. **`decisionState` has no domain-neutral supporting-context channel.** For `no_score`, the renderer currently receives primary signals, optional revenue series, exceptions, and events. Grounded diagnostics cannot be rendered without being promoted to primary signals. `supportingSignals` is therefore a contract-layer concept, not a renderer-private payload field.
 3. **Routing guidance does not explicitly reject redundant/complementary primaries.** A related metric can be promoted merely because it is relevant, even when it only explains another primary signal or represents another slice of the same distribution.
 4. **The non-radar renderer has only one density mode.** It can render a lead signal plus other primaries, but cannot restore grounded diagnostic context in a lower visual tier.
 
@@ -41,7 +41,9 @@ Allowed fields match ordinary signal copy where useful (`metric`, `label`, `valu
 Constraints:
 
 - optional;
-- maximum 4 supporting signals;
+- maximum 4 supporting signals because the supporting rail is intentionally a compact first-view diagnostic surface sized for at most four items, not a second KPI grid;
+- routing may contain more than 4 diagnostics overall, but at most 4 diagnostics may use `visibility: "supporting"`; any additional diagnostics must be `on_demand`;
+- the renderer must never silently truncate a larger supporting set;
 - every item must be source/derived according to the existing provenance rules;
 - no metric may appear in both `signals` and `supportingSignals`;
 - supporting signals are not part of radar eligibility and are never treated as primary signals.
@@ -52,16 +54,20 @@ The routing manifest remains the source of truth for role assignment.
 
 `decisionState.signals[*].metric` must continue to equal the routed `primary_signal` set exactly.
 
-`decisionState.supportingSignals[*].metric` may only come from routing entries where:
+`decisionState.supportingSignals[*].metric` must equal the routed diagnostic set whose entries all satisfy:
 
 - `role === "diagnostic"`;
 - `visibility === "supporting"`;
 - `changesDecision === false`;
 - `explains` resolves to a routed `primary_signal` or active `exception`.
 
+This is an exact set equality, not a subset rule. If routing marks a diagnostic as `supporting`, it must be present in `supportingSignals`; if a diagnostic should not be rendered, route it as `on_demand` instead.
+
+At most 4 diagnostics may use `visibility: "supporting"`. Exceeding that budget is a routing error, not a renderer truncation case.
+
 `scorecard_only` metrics stay out of the first-view decision surface by default. This change does **not** promote scorecard-only metrics into the dashboard merely to fill space.
 
-Add semantic validation so supporting metrics cannot silently substitute for or replace primary metrics.
+Any supporting-context semantic mismatch must fail the routing gate with `FIX_METRIC_ROUTING`; it must not be silently dropped or repaired by the renderer. Missing or invalid evidence for an otherwise valid visible supporting signal remains a grounding failure and returns `RETURN_TO_EVIDENCE_EXTRACTION`.
 
 ## Redundancy / complementary metric rule
 
@@ -87,7 +93,7 @@ This remains an agent judgment rule; the compiler validates consistency but does
 - exact source evidence resolution;
 - source SHA verification.
 
-The compiler must fail or return to evidence extraction if a visible supporting signal lacks valid evidence.
+The compiler must return `RETURN_TO_EVIDENCE_EXTRACTION` if a visible supporting signal lacks valid evidence. It must never silently omit the unsupported item while still producing output.
 
 ## Renderer behavior
 
@@ -113,10 +119,17 @@ The renderer must remain domain-neutral. No SaaS-only titles, revenue placeholde
 
 The layout must adapt to content:
 
-- primary-only: compact hero layout, no giant empty stage;
+- primary-only: compact hero layout;
 - primary + supporting: hero plus compact context rail;
 - real source-supported trend / movement / exceptions / events: existing support modules may appear in addition to the context rail;
 - radar-eligible: existing radar renderer remains unchanged.
+
+The primary-only compact layout must be mechanically testable rather than described only as “no giant empty stage”:
+
+- when `supportingSignals` is absent/empty and no optional side modules render, the center-only decision layout must not retain the old `610px` stage minimum;
+- the center-only synthesis area must use a compact height rule capped at `40vh` / `420px` maximum layout target, with actual content allowed to exceed that if necessary;
+- vertical gaps in the center-only composition must stay at or below `2rem` (`32px`);
+- tests must assert the compact center-only CSS path and absence of the old giant-stage rule.
 
 The page should not manufacture filler solely to occupy space.
 
@@ -133,11 +146,15 @@ Expected role split:
 - `low_stock_share` — `14.61%`
 - `inventory_value` — `₹2.243M`
 
+`low_stock_share` is primary because it directly changes replenishment urgency in the confirmed stockout-replenishment decision. `high_stock_share` and `medium_stock_share` are diagnostic because they explain inventory mix / how high inventory value can coexist with stockout exposure; they do not independently change the replenishment action in this Decision Brief.
+
 ### Diagnostics
 
 - `total_products` — `3.731K`
 - `high_stock_share` — `43.42%`
 - `medium_stock_share` — `29.83%`
+
+All three diagnostics use `visibility: "supporting"` in this regression and therefore must appear exactly in `supportingSignals`.
 
 ### Scorecard-only
 
@@ -147,12 +164,13 @@ Expected role split:
 The exact regression must verify:
 
 - the four routed primaries remain exactly the four rendered primary signals;
-- `high_stock_share` / `medium_stock_share` / `total_products` can appear only through `supportingSignals`, never as primaries;
+- `high_stock_share` / `medium_stock_share` / `total_products` appear only through `supportingSignals`, never as primaries;
 - `average_discount` and `total_categories` do not enter the first-view decision surface unless a different confirmed Decision Brief changes their routing;
 - no radar is rendered because the primary metrics are heterogeneous raw units;
 - no fake spokes / relationship lines;
 - no empty placeholder modules;
 - no SaaS-specific copy;
+- center-only layout uses the compact density path rather than the legacy giant stage;
 - HTML remains the primary deliverable.
 
 ## Compatibility
@@ -168,13 +186,14 @@ The exact regression must verify:
 Use TDD.
 
 1. Add the real Zepto routing + grounded decision-state fixture and regression tests first.
-2. Verify RED because the current schema/renderer does not support `supportingSignals`.
+2. Verify RED because the current schema/renderer does not support `supportingSignals` and the routing validator has no supporting-set equality/budget rules.
 3. Extend schema and routing validation.
 4. Extend grounding coverage.
 5. Extend non-radar HTML/SVG rendering and compact density rules.
-6. Add/adjust golden hashes only after semantic tests are green.
-7. Run the full compiler workflow, not only targeted tests.
-8. Merge only after PR CI and post-merge main CI are green.
+6. Update the Skill contract with the redundancy/complementary rule and supporting-diagnostic budget.
+7. Add/adjust golden hashes only after semantic tests are green.
+8. Run the full compiler workflow, not only targeted tests.
+9. Merge only after PR CI and post-merge main CI are green.
 
 ## Non-goals
 
