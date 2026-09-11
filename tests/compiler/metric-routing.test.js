@@ -40,8 +40,10 @@ function make70() {
   };
 }
 
-function noScoreState(metrics = ['m1', 'm2', 'm3', 'm4']) {
-  return { mode: 'no_score', signals: metrics.map((metric) => ({ metric })) };
+function noScoreState(metrics = ['m1', 'm2', 'm3', 'm4'], supporting = ['m5', 'm6']) {
+  const state = { mode: 'no_score', signals: metrics.map((metric) => ({ metric })) };
+  if (supporting.length) state.supportingSignals = supporting.map((metric) => ({ metric }));
+  return state;
 }
 
 test('accepts a 70-KPI inventory while keeping only a small primary set', () => {
@@ -49,7 +51,8 @@ test('accepts a 70-KPI inventory while keeping only a small primary set', () => 
   assert.equal(result.valid, true);
   assert.equal(result.summary.inventoryCount, 70);
   assert.equal(result.summary.primaryCount, 4);
-  assert.equal(result.summary.hiddenCount, 66);
+  assert.equal(result.summary.supportingCount, 2);
+  assert.equal(result.summary.hiddenCount, 64);
 });
 
 test('rejects KPI sprawl when too many metrics are promoted to first-view primary signals', () => {
@@ -61,7 +64,7 @@ test('rejects KPI sprawl when too many metrics are promoted to first-view primar
     decisionImpact: 'changes decision',
     visibility: 'first_view'
   }));
-  const result = validateMetricRouting(manifest, noScoreState(manifest.metrics.map(({ metric }) => metric)));
+  const result = validateMetricRouting(manifest, noScoreState(manifest.metrics.map(({ metric }) => metric), []));
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((error) => error.code === 'PRIMARY_SIGNAL_BUDGET_EXCEEDED'));
 });
@@ -111,6 +114,28 @@ test('rendered center metrics must exactly match the routed primary signals', ()
   const result = validateMetricRouting(make70(), noScoreState(['m1', 'm2', 'm3', 'm9']));
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((error) => error.code === 'VISIBLE_PRIMARY_MISMATCH'));
+});
+
+test('visible supporting metrics must exactly match routed supporting diagnostics', () => {
+  const result = validateMetricRouting(make70(), noScoreState(['m1', 'm2', 'm3', 'm4'], ['m5']));
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((error) => error.code === 'VISIBLE_SUPPORTING_MISMATCH'));
+});
+
+test('supporting diagnostics have a four-item first-view budget instead of renderer truncation', () => {
+  const manifest = make70();
+  manifest.metrics[6] = makeMetric('m7', 'diagnostic', { explains: 'm1' });
+  manifest.metrics[7] = makeMetric('m8', 'diagnostic', { explains: 'm2' });
+  manifest.metrics[8] = makeMetric('m9', 'diagnostic', { explains: 'm3' });
+  const result = validateMetricRouting(manifest, noScoreState(['m1', 'm2', 'm3', 'm4'], ['m5', 'm6', 'm7', 'm8', 'm9']));
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((error) => error.code === 'SUPPORTING_DIAGNOSTIC_BUDGET_EXCEEDED'));
+});
+
+test('a metric cannot appear as both primary and supporting context', () => {
+  const result = validateMetricRouting(make70(), noScoreState(['m1', 'm2', 'm3', 'm4'], ['m5', 'm6', 'm1']));
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((error) => error.code === 'PRIMARY_SUPPORTING_OVERLAP'));
 });
 
 test('composite components use the same primary routing contract', () => {

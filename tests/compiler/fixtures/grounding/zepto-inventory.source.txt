@@ -1,0 +1,9 @@
+Out of Stock Products: 453
+Out of Stock: 12.14%
+Low Stock: 14.61%
+Inventory Value: ₹2.243M
+Total Products: 3.731K
+High Stock: 43.42%
+Medium Stock: 29.83%
+Average Discount: 7.62%
+Total Categories: 14

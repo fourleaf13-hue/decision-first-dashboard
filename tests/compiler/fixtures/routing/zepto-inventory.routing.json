@@ -1,0 +1,68 @@
+{
+  "decision": "Prioritize replenishment for inventory at risk of stockout",
+  "action": "Increase replenishment priority, create replenishment tasks, or reallocate stock when stockout exposure rises",
+  "inventoryCount": 9,
+  "metrics": [
+    {
+      "metric": "out_of_stock_products",
+      "role": "primary_signal",
+      "changesDecision": true,
+      "decisionImpact": "A higher count increases replenishment urgency and the number of items requiring action",
+      "visibility": "first_view"
+    },
+    {
+      "metric": "out_of_stock_share",
+      "role": "primary_signal",
+      "changesDecision": true,
+      "decisionImpact": "A higher stockout share increases replenishment urgency relative to the inventory base",
+      "visibility": "first_view"
+    },
+    {
+      "metric": "low_stock_share",
+      "role": "primary_signal",
+      "changesDecision": true,
+      "decisionImpact": "A higher low-stock share increases the set of products likely to require near-term replenishment",
+      "visibility": "first_view"
+    },
+    {
+      "metric": "inventory_value",
+      "role": "primary_signal",
+      "changesDecision": true,
+      "decisionImpact": "Inventory value changes how replenishment and reallocation are prioritized against capital already tied up in stock",
+      "visibility": "first_view"
+    },
+    {
+      "metric": "total_products",
+      "role": "diagnostic",
+      "changesDecision": false,
+      "visibility": "supporting",
+      "explains": "out_of_stock_share"
+    },
+    {
+      "metric": "high_stock_share",
+      "role": "diagnostic",
+      "changesDecision": false,
+      "visibility": "supporting",
+      "explains": "inventory_value"
+    },
+    {
+      "metric": "medium_stock_share",
+      "role": "diagnostic",
+      "changesDecision": false,
+      "visibility": "supporting",
+      "explains": "inventory_value"
+    },
+    {
+      "metric": "average_discount",
+      "role": "scorecard_only",
+      "changesDecision": false,
+      "visibility": "scorecard"
+    },
+    {
+      "metric": "total_categories",
+      "role": "scorecard_only",
+      "changesDecision": false,
+      "visibility": "scorecard"
+    }
+  ]
+}

@@ -17,6 +17,11 @@
           "maxItems": 6,
           "items": { "$ref": "#/definitions/signal" }
         },
+        "supportingSignals": {
+          "type": "array",
+          "maxItems": 4,
+          "items": { "$ref": "#/definitions/supportingSignal" }
+        },
         "radarScale": { "$ref": "#/definitions/radarScale" },
         "context": { "$ref": "#/definitions/noScoreContext" },
         "exceptions": {
@@ -64,6 +69,19 @@
         "direction": { "enum": ["improving", "deteriorating", "flat", "unknown"] },
         "normalizedScore": { "type": "number" },
         "previousNormalizedScore": { "type": "number" },
+        "provenance": { "enum": ["source", "derived"] }
+      }
+    },
+    "supportingSignal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric", "label", "value", "provenance"],
+      "properties": {
+        "metric": { "type": "string", "pattern": "^[a-z0-9_]{1,40}$" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "value": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "delta": { "type": "string", "minLength": 1, "maxLength": 20 },
+        "direction": { "enum": ["improving", "deteriorating", "flat", "unknown"] },
         "provenance": { "enum": ["source", "derived"] }
       }
     },

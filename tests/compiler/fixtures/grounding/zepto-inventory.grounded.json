@@ -1,0 +1,55 @@
+{
+  "source": {
+    "kind": "text",
+    "path": "zepto-inventory.source.txt",
+    "sha256": "8c7dddad77a229bb5ca1559966bea560a8cb3702e38aef5b5c163e0ca2157deb"
+  },
+  "decisionState": {
+    "mode": "no_score",
+    "signals": [
+      { "metric": "out_of_stock_products", "label": "Out of Stock Products", "value": "453", "provenance": "source" },
+      { "metric": "out_of_stock_share", "label": "Out of Stock", "value": "12.14%", "provenance": "source" },
+      { "metric": "low_stock_share", "label": "Low Stock", "value": "14.61%", "provenance": "source" },
+      { "metric": "inventory_value", "label": "Inventory Value", "value": "₹2.243M", "provenance": "source" }
+    ],
+    "supportingSignals": [
+      { "metric": "total_products", "label": "Total Products", "value": "3.731K", "provenance": "source" },
+      { "metric": "high_stock_share", "label": "High Stock", "value": "43.42%", "provenance": "source" },
+      { "metric": "medium_stock_share", "label": "Medium Stock", "value": "29.83%", "provenance": "source" }
+    ],
+    "exceptions": [],
+    "events": []
+  },
+  "evidence": [
+    { "id": "ev_p0_label", "anchor": { "type": "text_span", "literal": "Out of Stock Products: 453", "valueText": "Out of Stock Products" } },
+    { "id": "ev_p0_value", "anchor": { "type": "text_span", "literal": "Out of Stock Products: 453", "valueText": "453" } },
+    { "id": "ev_p1_label", "anchor": { "type": "text_span", "literal": "Out of Stock: 12.14%", "valueText": "Out of Stock" } },
+    { "id": "ev_p1_value", "anchor": { "type": "text_span", "literal": "Out of Stock: 12.14%", "valueText": "12.14%" } },
+    { "id": "ev_p2_label", "anchor": { "type": "text_span", "literal": "Low Stock: 14.61%", "valueText": "Low Stock" } },
+    { "id": "ev_p2_value", "anchor": { "type": "text_span", "literal": "Low Stock: 14.61%", "valueText": "14.61%" } },
+    { "id": "ev_p3_label", "anchor": { "type": "text_span", "literal": "Inventory Value: ₹2.243M", "valueText": "Inventory Value" } },
+    { "id": "ev_p3_value", "anchor": { "type": "text_span", "literal": "Inventory Value: ₹2.243M", "valueText": "₹2.243M" } },
+    { "id": "ev_s0_label", "anchor": { "type": "text_span", "literal": "Total Products: 3.731K", "valueText": "Total Products" } },
+    { "id": "ev_s0_value", "anchor": { "type": "text_span", "literal": "Total Products: 3.731K", "valueText": "3.731K" } },
+    { "id": "ev_s1_label", "anchor": { "type": "text_span", "literal": "High Stock: 43.42%", "valueText": "High Stock" } },
+    { "id": "ev_s1_value", "anchor": { "type": "text_span", "literal": "High Stock: 43.42%", "valueText": "43.42%" } },
+    { "id": "ev_s2_label", "anchor": { "type": "text_span", "literal": "Medium Stock: 29.83%", "valueText": "Medium Stock" } },
+    { "id": "ev_s2_value", "anchor": { "type": "text_span", "literal": "Medium Stock: 29.83%", "valueText": "29.83%" } }
+  ],
+  "claims": [
+    { "decisionPath": "/signals/0/label", "evidenceRef": "ev_p0_label" },
+    { "decisionPath": "/signals/0/value", "evidenceRef": "ev_p0_value" },
+    { "decisionPath": "/signals/1/label", "evidenceRef": "ev_p1_label" },
+    { "decisionPath": "/signals/1/value", "evidenceRef": "ev_p1_value" },
+    { "decisionPath": "/signals/2/label", "evidenceRef": "ev_p2_label" },
+    { "decisionPath": "/signals/2/value", "evidenceRef": "ev_p2_value" },
+    { "decisionPath": "/signals/3/label", "evidenceRef": "ev_p3_label" },
+    { "decisionPath": "/signals/3/value", "evidenceRef": "ev_p3_value" },
+    { "decisionPath": "/supportingSignals/0/label", "evidenceRef": "ev_s0_label" },
+    { "decisionPath": "/supportingSignals/0/value", "evidenceRef": "ev_s0_value" },
+    { "decisionPath": "/supportingSignals/1/label", "evidenceRef": "ev_s1_label" },
+    { "decisionPath": "/supportingSignals/1/value", "evidenceRef": "ev_s1_value" },
+    { "decisionPath": "/supportingSignals/2/label", "evidenceRef": "ev_s2_label" },
+    { "decisionPath": "/supportingSignals/2/value", "evidenceRef": "ev_s2_value" }
+  ]
+}
