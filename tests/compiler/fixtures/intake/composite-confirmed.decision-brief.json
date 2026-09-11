@@ -1,0 +1,10 @@
+{
+  "decision": {
+    "status": "confirmed",
+    "value": "Decide whether subscription health requires intervention"
+  },
+  "action": {
+    "status": "confirmed",
+    "value": "Prioritize retention, growth, or conversion intervention"
+  }
+}
