@@ -1,0 +1,9 @@
+{
+  "responseType": "artifact",
+  "questionCount": 0,
+  "askedSlots": [],
+  "assumptions": ["audience", "decision", "action"],
+  "outputs": ["image", "key_insights", "action_recommendations"],
+  "canonicalProvenance": false,
+  "text": "Generated a redesigned sales dashboard with KPI deltas, Key Insights, and recommended next actions."
+}
