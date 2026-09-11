@@ -48,17 +48,17 @@ test('UI copy firewall blocks the Zepto regression vocabulary', () => {
   }
 });
 
-test('skill requires deterministic output instead of free-form dashboard rendering', () => {
-  assert.match(skill, /UI Copy Firewall \(mandatory\)/);
-  assert.match(skill, /Do not hand-author, freestyle, or regenerate an alternate dashboard UI/i);
-  assert.match(skill, /Decision Brief.*internal.*never.*visible UI copy/is);
-  assert.match(skill, /preserve the source dashboard's primary language/i);
-  assert.match(skill, /Decision-First changes information hierarchy, not the voice of the dashboard/i);
+test('skill already requires deterministic rendering rather than agent-authored UI', () => {
+  assert.match(skill, /may not.*choose a free-form dashboard layout during ordinary compilation/is);
+  assert.match(skill, /The agent must not render UI/i);
+  assert.match(skill, /no compiler\/framework methodology labels in visible UI/i);
+  assert.match(skill, /The Decision Brief is internal design context/i);
 });
 
-test('visual reference keeps copy provenance closed and method vocabulary out of product UI', () => {
+test('visual reference defines a closed visible-copy policy and language preservation', () => {
   assert.match(visualPattern, /Visible-copy closed world/i);
   assert.match(visualPattern, /source-grounded visible fields/i);
   assert.match(visualPattern, /fixed neutral renderer vocabulary/i);
   assert.match(visualPattern, /do not translate or make the dashboard bilingual/i);
+  assert.match(visualPattern, /Decision-First changes information hierarchy, not the voice of the dashboard/i);
 });
