@@ -11,9 +11,15 @@ const root = path.resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const groundingDir = fileURLToPath(new URL('./fixtures/grounding/', import.meta.url));
 const routingDir = fileURLToPath(new URL('./fixtures/routing/', import.meta.url));
 const worthinessDir = fileURLToPath(new URL('./fixtures/worthiness/', import.meta.url));
+const intakeDir = fileURLToPath(new URL('./fixtures/intake/', import.meta.url));
 const noScoreBundle = JSON.parse(fs.readFileSync(path.join(groundingDir, 'no-score.grounded.json'), 'utf8'));
 const noScoreRouting = JSON.parse(fs.readFileSync(path.join(routingDir, 'no-score.routing.json'), 'utf8'));
 const dashboardWorthiness = JSON.parse(fs.readFileSync(path.join(worthinessDir, 'dashboard.worthiness.json'), 'utf8'));
+const noScoreBrief = JSON.parse(fs.readFileSync(path.join(intakeDir, 'confirmed.decision-brief.json'), 'utf8'));
+
+function briefNameFor(routingName) {
+  return routingName.startsWith('composite') ? 'composite-confirmed.decision-brief.json' : 'confirmed.decision-brief.json';
+}
 
 function runCli(routingName, bundleName) {
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-first-routed-'));
@@ -21,6 +27,7 @@ function runCli(routingName, bundleName) {
   const result = spawnSync(process.execPath, [
     script,
     path.join(worthinessDir, 'dashboard.worthiness.json'),
+    path.join(intakeDir, briefNameFor(routingName)),
     path.join(routingDir, routingName),
     path.join(groundingDir, bundleName),
     outputDir
@@ -28,28 +35,29 @@ function runCli(routingName, bundleName) {
   return { result, outputDir };
 }
 
-test('production compile passes worthiness before routing, grounding, and rendering', () => {
-  const compiled = compileDecisionDashboard(dashboardWorthiness, noScoreRouting, noScoreBundle, { baseDir: groundingDir });
+test('production compile passes worthiness and intake before routing, grounding, and rendering', () => {
+  const compiled = compileDecisionDashboard(dashboardWorthiness, noScoreBrief, noScoreRouting, noScoreBundle, { baseDir: groundingDir });
   assert.equal(compiled.result.valid, true);
   assert.equal(compiled.result.transition, 'PASS');
   assert.equal(compiled.result.worthinessSummary.accountabilityMode, 'single_owner');
+  assert.equal(compiled.result.intakeSummary.decisionStatus, 'confirmed');
+  assert.equal(compiled.result.intakeSummary.actionStatus, 'confirmed');
   assert.equal(compiled.result.routingSummary.inventoryCount, 5);
   assert.equal(compiled.result.routingSummary.primaryCount, 5);
   assert.match(compiled.svg, /Current overview/);
   assert.match(compiled.html, /Current overview/);
+  assert.match(compiled.html, /decision-first-renderer/);
   assert.doesNotMatch(compiled.svg, /Subscription health|Revenue context|Trend data unavailable/);
   assert.doesNotMatch(compiled.html, /Subscription health|Revenue context|Trend data unavailable/);
 });
 
-test('invalid Metric Router output blocks compilation after worthiness and before grounding', () => {
+test('invalid Metric Router output blocks compilation after intake and before grounding', () => {
   const routing = structuredClone(noScoreRouting);
   routing.metrics[0].changesDecision = false;
   delete routing.metrics[0].decisionImpact;
-
   const bundle = structuredClone(noScoreBundle);
   bundle.source.sha256 = '0'.repeat(64);
-
-  const compiled = compileDecisionDashboard(dashboardWorthiness, routing, bundle, { baseDir: groundingDir });
+  const compiled = compileDecisionDashboard(dashboardWorthiness, noScoreBrief, routing, bundle, { baseDir: groundingDir });
   assert.equal(compiled.result.valid, false);
   assert.equal(compiled.result.stage, 'routing');
   assert.equal(compiled.result.transition, 'FIX_METRIC_ROUTING');
@@ -58,16 +66,18 @@ test('invalid Metric Router output blocks compilation after worthiness and befor
   assert.equal(compiled.html, null);
 });
 
-test('production CLI writes no-score output only after all three gates pass', () => {
+test('production CLI writes no-score output only after all four gates pass', () => {
   const { result, outputDir } = runCli('no-score.routing.json', 'no-score.grounded.json');
   assert.equal(result.status, 0, result.stderr);
   assert.equal(fs.existsSync(path.join(outputDir, 'output.no-score.svg')), true);
   assert.equal(fs.existsSync(path.join(outputDir, 'output.no-score.html')), true);
+  assert.equal(fs.existsSync(path.join(outputDir, 'output.manifest.json')), true);
 });
 
-test('production CLI writes composite output only after all three gates pass', () => {
+test('production CLI writes composite output only after all four gates pass', () => {
   const { result, outputDir } = runCli('composite.routing.json', 'composite.grounded.json');
   assert.equal(result.status, 0, result.stderr);
   assert.equal(fs.existsSync(path.join(outputDir, 'output.composite.svg')), true);
   assert.equal(fs.existsSync(path.join(outputDir, 'output.composite.html')), true);
+  assert.equal(fs.existsSync(path.join(outputDir, 'output.manifest.json')), true);
 });
