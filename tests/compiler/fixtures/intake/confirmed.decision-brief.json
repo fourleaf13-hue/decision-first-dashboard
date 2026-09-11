@@ -1,0 +1,10 @@
+{
+  "decision": {
+    "status": "confirmed",
+    "value": "Decide whether the SaaS business needs intervention"
+  },
+  "action": {
+    "status": "confirmed",
+    "value": "Prioritize the next business follow-up"
+  }
+}
