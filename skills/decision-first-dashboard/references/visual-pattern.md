@@ -143,9 +143,29 @@ Delta **color** communicates business favorability and must use the grounded sig
 
 ## Product language
 
-Use product-native labels such as `Subscription health`, `Revenue growth`, `Movement context`, `Accounts to watch`, and `Recent events`.
+Use product-native labels from the source domain. Fixed labels should be neutral and subordinate to source-grounded content.
 
 Do not expose method labels such as `Primary Decision`, `Diagnostic`, `Outcome`, `Actionable`, `Required Interventions`, or `Decision-first view`.
+
+## Visible-copy closed world
+
+Visible dashboard copy is a closed world. Final SVG/HTML may contain only:
+
+1. source-grounded visible fields carried by validated decision state;
+2. exact user-supplied wording when the user explicitly asked for that wording to appear; or
+3. fixed neutral renderer vocabulary needed to label the UI structure.
+
+Decision Brief text, routing roles, grounding status, design rationale, compiler state, and implementation commentary are internal. They may change hierarchy, routing, or geometry, but they are never visible UI copy by default.
+
+In particular, do not surface framework/meta language such as `Decision-first`, `Primary Decision`, `Source-grounded`, `Attention Surface`, `Review Order`, `Design Readout`, `After Concept`, `No synthetic score`, `Metric Router`, `primary_signal`, or `scorecard_only`.
+
+Do not hand-author, freestyle, or regenerate an alternate dashboard UI after the compiler path has produced or can produce a deterministic output. If the current deterministic renderer cannot express the requested domain safely without invented copy, fail closed and report the limitation instead of bypassing the renderer with a one-off concept dashboard.
+
+Preserve the source dashboard's primary language. If the supplied dashboard is primarily English, keep the output English; if it is primarily Chinese, keep the output Chinese. Do not translate or make the dashboard bilingual unless the user explicitly asks for translation or bilingual output.
+
+Keep interface copy terse. Do not convert the Decision Brief, diagnosis rationale, routing explanation, or design critique into explanatory paragraphs inside the dashboard.
+
+**Decision-First changes information hierarchy, not the voice of the dashboard.**
 
 ## Geometry guardrails
 
