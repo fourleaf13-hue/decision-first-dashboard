@@ -35,8 +35,10 @@ test('production compile passes worthiness before routing, grounding, and render
   assert.equal(compiled.result.worthinessSummary.accountabilityMode, 'single_owner');
   assert.equal(compiled.result.routingSummary.inventoryCount, 5);
   assert.equal(compiled.result.routingSummary.primaryCount, 5);
-  assert.match(compiled.svg, /Subscription health/);
-  assert.match(compiled.html, /Subscription health/);
+  assert.match(compiled.svg, /Current overview/);
+  assert.match(compiled.html, /Current overview/);
+  assert.doesNotMatch(compiled.svg, /Subscription health|Revenue context|Trend data unavailable/);
+  assert.doesNotMatch(compiled.html, /Subscription health|Revenue context|Trend data unavailable/);
 });
 
 test('invalid Metric Router output blocks compilation after worthiness and before grounding', () => {
