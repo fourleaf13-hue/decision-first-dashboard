@@ -141,6 +141,18 @@ Delta **color** communicates business favorability and must use the grounded sig
 - Radar scale, current normalized values, and any previous-period normalized values must be grounded.
 - Visual depth, ambient fields, cards, and connection lines are presentation only. They do not create evidence or business semantics.
 
+## Attention intensity
+
+**Soft attention is the default** for ordinary business deterioration and exceptions. Visibility and visual intensity are separate decisions.
+
+- A routed `exception` must be surfaced, but the exception role **does not by itself authorize a hard alert** treatment.
+- Prefer compact exception cards, small semantic red/amber accents, source-backed status text, delta arrows, and profile contraction/imbalance for ordinary deterioration.
+- A **hard alert requires explicit source-grounded alert semantics**, such as a source-defined critical/warning state, a breached source threshold, a safety/compliance/security/regulatory/contractual/outage hard stop, or an explicit user-supplied alert policy.
+- Without that support, do not introduce a **large red background**, red banner, **alarm icon**, exclamation badge, or alarm language such as `Action needed`, `Critical`, `Warning`, or equivalent.
+- Do not confuse restrained presentation with suppression: active exceptions remain visible, but their visual intensity must match the evidence.
+
+This keeps executive-facing views calm enough to scan while still surfacing real problems. The shape, concrete values, direction arrows, and compact exception treatment should carry ordinary warning meaning before alarm-style UI is considered.
+
 ## Product language
 
 Use product-native labels from the source domain. Fixed labels should be neutral and subordinate to source-grounded content.
