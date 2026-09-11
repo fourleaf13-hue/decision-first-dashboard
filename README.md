@@ -113,7 +113,15 @@ If those facts are missing, it falls back to `no_score` instead of guessing.
 npx skills add fourleaf13-hue/decision-first-dashboard
 ```
 
-The repository is also packaged as a standard Claude plugin via `.claude-plugin/plugin.json` for Anthropic Plugin Directory submission. Until directory approval, the skill install command above remains the public install path.
+### Claude workspace — Upload skill
+
+For Claude's **Skills → Upload skill** flow, use the dedicated `decision-first-dashboard-skill` artifact from the latest successful [Compiler tests](https://github.com/fourleaf13-hue/decision-first-dashboard/actions/workflows/compiler-tests.yml) run. Download that artifact ZIP and upload it directly to Claude.
+
+That artifact is built from only `skills/decision-first-dashboard/`, with `SKILL.md` at the ZIP root and without `.claude-plugin/plugin.json`.
+
+**Do not use GitHub's Download ZIP for Claude Upload skill.** The repository ZIP contains the plugin manifest and nests `SKILL.md` under the repository/skill folders, which Claude rejects for a standalone skill upload.
+
+The repository is also packaged as a standard Claude plugin via `.claude-plugin/plugin.json` for Anthropic Plugin Directory submission. The plugin package and the standalone Claude Upload Skill package intentionally remain separate.
 
 ## Use
 
@@ -223,6 +231,7 @@ composite  → output.composite.svg / output.composite.html
 
 ```bash
 npm test
+npm run package:claude-skill
 npm run validate:saas
 npm run render:saas
 npm run validate:radar-showcase
@@ -235,7 +244,7 @@ For Anthropic plugin packaging, validate the repository root with a current Clau
 claude plugin validate . --strict
 ```
 
-GitHub Actions runs the compiler suite, including the plugin manifest contract, executable Worthiness scenario fixtures, Decision Brief intake, 70-KPI Metric Router behavior, routed production compilation, grounded composite/no-score compilation, radar rendering, and byte-level golden snapshots.
+GitHub Actions runs the compiler suite, including the plugin manifest contract, executable Worthiness scenario fixtures, Decision Brief intake, 70-KPI Metric Router behavior, routed production compilation, grounded composite/no-score compilation, radar rendering, byte-level golden snapshots, and the standalone Claude Upload Skill packaging contract.
 
 ## What this is not
 
