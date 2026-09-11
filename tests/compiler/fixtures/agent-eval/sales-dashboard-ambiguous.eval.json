@@ -1,0 +1,16 @@
+{
+  "id": "sales-dashboard-ambiguous-redesign",
+  "source": {
+    "kind": "image",
+    "name": "Dark Neon Sales Analytics Dashboard.png",
+    "sha256": "43bc1a34946d4a7f5932787c2af1271e16750760bbdec8a8615876b25401e707"
+  },
+  "userPrompt": "帮我 redesign 一下这个 dashboard，感觉信息很多但不好用。",
+  "expectedFirstTurn": {
+    "artifactAllowed": false,
+    "requiredQuestionCount": 1,
+    "requiredMissingSlots": ["decision", "action"],
+    "forbiddenAssumptions": ["audience", "decision", "action"],
+    "forbiddenOutputs": ["image", "html", "dashboard", "key_insights", "action_recommendations"]
+  }
+}
