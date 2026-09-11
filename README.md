@@ -131,6 +131,10 @@ Give your agent a dashboard screenshot, Figma frame, existing dashboard code, or
 
 The skill will first check whether a dashboard is the right format. If it is, it clarifies the decision if needed, routes the metrics, verifies source support, and renders the decision-first output.
 
+**HTML is the primary After deliverable** when file generation is available: use `output.no-score.html` or `output.composite.html` as the browser-openable redesigned dashboard. SVG remains the static preview/support artifact for README comparisons, review, and regression testing rather than the main user deliverable.
+
+Attention is intentionally restrained by default. Ordinary deterioration and routed exceptions stay visible through values, deltas, profile shape, and compact exception surfaces; large red warning banners, alarm icons, and `Action needed` / `Critical` / `Warning` language require explicit source-grounded alert semantics or an explicit user-supplied alert policy.
+
 <details>
 <summary><strong>Under the hood</strong></summary>
 
@@ -193,7 +197,8 @@ Composite output is allowed only when all score-model facts are mechanically gro
 - radar only for 3–6 comparable peer dimensions on one grounded scale;
 - no invented action buttons, targets, scores, weights, or thresholds;
 - active negative/critical exceptions cannot be cosmetically suppressed;
-- SVG and HTML consume the same validated decision state.
+- soft attention is the default; hard-alert treatment requires explicit source-grounded alert semantics;
+- SVG and HTML consume the same validated decision state, with HTML as the primary user-facing deliverable and SVG as preview/support output.
 
 ### Production path
 
@@ -221,8 +226,8 @@ node scripts/compile-dashboard.js path/to/worthiness-assessment.json path/to/rou
 Mode-specific outputs:
 
 ```text
-no_score   → output.no-score.svg / output.no-score.html
-composite  → output.composite.svg / output.composite.html
+no_score   → primary: output.no-score.html    | preview: output.no-score.svg
+composite  → primary: output.composite.html   | preview: output.composite.svg
 ```
 
 </details>
@@ -244,7 +249,7 @@ For Anthropic plugin packaging, validate the repository root with a current Clau
 claude plugin validate . --strict
 ```
 
-GitHub Actions runs the compiler suite, including the plugin manifest contract, executable Worthiness scenario fixtures, Decision Brief intake, 70-KPI Metric Router behavior, routed production compilation, grounded composite/no-score compilation, radar rendering, byte-level golden snapshots, and the standalone Claude Upload Skill packaging contract.
+GitHub Actions runs the compiler suite, including the plugin manifest contract, executable Worthiness scenario fixtures, Decision Brief intake, 70-KPI Metric Router behavior, routed production compilation, grounded composite/no-score compilation, radar rendering, byte-level golden snapshots, the HTML delivery/attention-intensity contract, and the standalone Claude Upload Skill packaging contract.
 
 ## What this is not
 

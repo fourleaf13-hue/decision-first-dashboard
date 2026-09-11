@@ -300,6 +300,12 @@ On final `PASS`, the CLI writes:
 - `no_score` → `output.no-score.svg` and `output.no-score.html`;
 - `composite` → `output.composite.svg` and `output.composite.html`.
 
+### Primary delivery contract
+
+The **primary After deliverable is HTML** whenever file generation is available. Present or link `output.no-score.html` or `output.composite.html` first so the redesigned dashboard is an actual browser-openable interface rather than only a design image.
+
+SVG remains the deterministic **preview** and regression/support artifact for README comparisons, static review, and snapshot testing. A screenshot, PNG, SVG, mockup, or concept image alone does not complete an ordinary dashboard redesign when the HTML renderer is available. Do not regenerate a separate free-form image as the “real” After after deterministic HTML has been rendered.
+
 `worthiness.js` is the lower-level Worthiness evaluator. `compile.js` remains the lower-level grounding-only compiler for tests and internal compatibility. `validate.js` and `render.js` remain lower-level Layer 2 / Layer 3 tools. Do not use these lower-level entry points as a substitute for `compile-dashboard.js` in ordinary Decision-First production workflows.
 
 ### 9. Follow failure transitions literally
@@ -342,6 +348,9 @@ For both modes:
 - product-native labels only;
 - no compiler/framework methodology labels in visible UI;
 - restrained color and generous whitespace;
+- **soft attention is the default** for ordinary deterioration and business exceptions;
+- a **hard alert** treatment requires **explicit source-grounded** alert severity, a breached source threshold, a hard-stop condition, or an explicit user-supplied alert policy;
+- routing something to `exception` requires visibility but does not by itself authorize a large red banner, alarm icon, exclamation badge, or alarm language such as `Action needed`, `Critical`, or `Warning`;
 - negative or critical states may not be cosmetically suppressed;
 - hidden diagnostic/drilldown/scorecard routes are not rendered eagerly.
 
@@ -369,6 +378,7 @@ Before delivery, verify:
 - every `primary_signal` passes the Action Trigger Test and the visible center matches the primary set exactly;
 - diagnostics explain routed primary/exception items rather than competing as peer headlines;
 - active exceptions cannot be hidden and every active exception has a valid rendered `surfacePath`;
+- ordinary exceptions use restrained soft-attention styling unless hard-alert intensity is explicitly grounded;
 - the first-view information budget is respected instead of shrinking typography or adding equal-weight KPI cards;
 - the grounded-bundle schema passes;
 - source SHA-256 matches actual source bytes;
@@ -380,5 +390,6 @@ Before delivery, verify:
 - `composite` weights, weighted score, score scale, and score band pass semantic validation;
 - no unsupported score/status/target/action appears;
 - no framework or compiler labels leak into visible UI;
+- when file delivery is available, HTML is presented as the primary After deliverable and SVG is treated as preview/support output;
 - the center is the first focal point;
 - outputs contain no unresolved template tokens.
