@@ -27,9 +27,22 @@ function pointInTimeFixture() {
   };
 }
 
+function inventoryFixture() {
+  return {
+    mode: 'no_score',
+    signals: [
+      { metric: 'out_of_stock_products', label: 'Out of Stock Products', value: '453', provenance: 'source' },
+      { metric: 'low_stock_share', label: 'Low Stock', value: '14.61%', provenance: 'source' },
+      { metric: 'average_discount', label: 'Average Discount', value: '7.62%', provenance: 'source' }
+    ],
+    exceptions: [],
+    events: []
+  };
+}
+
 test('renders the same canonical decision state into a fixed HTML composition without a center verdict', () => {
   const html = renderHtml(fixture);
-  assert.match(html, /Subscription health/);
+  assert.match(html, /Current overview/);
   assert.doesNotMatch(html, />IMPROVING<|Target unknown|OVERALL DIRECTION/);
   assert.match(html, /\$184,320/);
   assert.match(html, /Dovetail/);
@@ -51,19 +64,44 @@ test('renders every signal in the supported 3 to 6 range', () => {
   }
 });
 
-test('renders an intentionally styled unavailable state instead of an invented trend line', () => {
-  const html = renderHtml(fixture);
-  assert.match(html, /Trend data unavailable/);
-  assert.match(html, /\.trend-unavailable\s*\{/);
-  assert.doesNotMatch(html, /aria-label="Revenue trend"/);
+test('collapses unavailable support modules instead of rendering placeholder cards', () => {
+  const html = renderHtml(pointInTimeFixture());
+  assert.doesNotMatch(html, /Trend data unavailable|Revenue metric unavailable|No additional movement signals/);
+  assert.doesNotMatch(html, /ARR context|Current ARR/);
 });
 
-test('renders a trend line only when an exact source-supported series is supplied', () => {
+test('renders a trend card only when an exact source-supported series is supplied', () => {
   const sourced = structuredClone(fixture);
   sourced.context = { revenueSeries: [100, 120, 140], provenance: 'source' };
   const html = renderHtml(sourced);
   assert.match(html, /aria-label="Revenue trend"/);
   assert.doesNotMatch(html, /Trend data unavailable/);
+});
+
+test('uses a domain-neutral adaptive fallback for non-radar inventory snapshots', () => {
+  const html = renderHtml(inventoryFixture());
+  for (const forbidden of [
+    'Subscription health',
+    'Revenue context',
+    'Revenue metric unavailable',
+    'Trend data unavailable',
+    'Movement context',
+    'No additional movement signals',
+    'Accounts to watch',
+    'No confirmed exceptions visible',
+    'Recent events',
+    'No recent source-supported events'
+  ]) {
+    assert.doesNotMatch(html, new RegExp(forbidden));
+  }
+  assert.match(html, /decision-layout--center-only/);
+  assert.match(html, /signal-focus/);
+  assert.match(html, /signal-lead/);
+  assert.doesNotMatch(html, /class="orbit-spokes"/);
+  assert.match(html, />453</);
+  assert.match(html, />Out of Stock Products</);
+  assert.match(html, />14\.61%</);
+  assert.match(html, />7\.62%</);
 });
 
 test('does not expose layout freedom as KPI grids, tables, action controls, or synthetic center verdicts', () => {
@@ -89,11 +127,8 @@ test('refuses to render a payload that fails the decision-state schema', () => {
   assert.throws(() => renderHtml(bad), /failed schema validation/);
 });
 
-test('uses ARR as source-driven HTML revenue context without inventing MRR movement', () => {
+test('does not invent SaaS revenue chrome for a point-in-time ARR signal', () => {
   const html = renderHtml(pointInTimeFixture());
-  assert.match(html, /ARR context/);
-  assert.match(html, /Current ARR/);
   assert.match(html, /\$4\.98M/);
-  assert.doesNotMatch(html, /Current MRR/);
-  assert.doesNotMatch(html, /vs last month/);
+  assert.doesNotMatch(html, /ARR context|Current ARR|Current MRR|vs last month/);
 });
