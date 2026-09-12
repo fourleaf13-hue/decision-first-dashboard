@@ -148,14 +148,26 @@ export function renderHtml(data) {
   return dimensions?.length ? tuneHtmlRadar(coreMarkup, dimensions) : coreMarkup;
 }
 
-if (process.argv[1] === currentFile) {
-  const inputPath = process.argv[2];
-  const outputDir = process.argv[3] ?? path.dirname(inputPath ?? '.');
+function resolveWithinCwd(candidatePath, label) {
+  const cwd = process.cwd();
+  const resolved = path.resolve(cwd, candidatePath);
+  if (resolved !== cwd && !resolved.startsWith(cwd + path.sep)) {
+    console.error(`Refusing to use ${label} outside the current working directory: ${candidatePath}`);
+    process.exit(2);
+  }
+  return resolved;
+}
 
-  if (!inputPath) {
+if (process.argv[1] === currentFile) {
+  const rawInputPath = process.argv[2];
+
+  if (!rawInputPath) {
     console.error('Usage: node render.js <decision-state.json> [output-dir]');
     process.exit(2);
   }
+
+  const inputPath = resolveWithinCwd(rawInputPath, 'input path');
+  const outputDir = resolveWithinCwd(process.argv[3] ?? path.dirname(rawInputPath), 'output directory');
 
   const data = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
   const svg = renderSvg(data);
