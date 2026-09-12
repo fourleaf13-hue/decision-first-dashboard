@@ -1,6 +1,6 @@
 {
   "name": "decision-first-dashboard",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Turn KPI-heavy dashboards into grounded, decision-first views with dashboard-worthiness checks, metric routing, evidence validation, and deterministic rendering.",
   "author": {
     "name": "fourleaf13-hue",
