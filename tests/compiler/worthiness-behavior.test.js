@@ -8,13 +8,15 @@ import { compileDecisionDashboard } from '../../skills/decision-first-dashboard/
 const groundingDir = fileURLToPath(new URL('./fixtures/grounding/', import.meta.url));
 const routingDir = fileURLToPath(new URL('./fixtures/routing/', import.meta.url));
 const worthinessDir = fileURLToPath(new URL('./fixtures/worthiness/', import.meta.url));
+const intakeDir = fileURLToPath(new URL('./fixtures/intake/', import.meta.url));
 const noScoreBundle = JSON.parse(fs.readFileSync(path.join(groundingDir, 'no-score.grounded.json'), 'utf8'));
 const noScoreRouting = JSON.parse(fs.readFileSync(path.join(routingDir, 'no-score.routing.json'), 'utf8'));
+const noScoreBrief = JSON.parse(fs.readFileSync(path.join(intakeDir, 'confirmed.decision-brief.json'), 'utf8'));
 const dashboardWorthiness = JSON.parse(fs.readFileSync(path.join(worthinessDir, 'dashboard.worthiness.json'), 'utf8'));
 const scenarios = JSON.parse(fs.readFileSync(path.join(worthinessDir, 'scenarios.json'), 'utf8'));
 
 function compile(worthiness) {
-  return compileDecisionDashboard(worthiness, noScoreRouting, noScoreBundle, { baseDir: groundingDir });
+  return compileDecisionDashboard(worthiness, noScoreBrief, noScoreRouting, noScoreBundle, { baseDir: groundingDir });
 }
 
 for (const scenario of scenarios) {
@@ -56,7 +58,7 @@ test('a non-dashboard redirect cannot smuggle dashboard back in as the recommend
   assert.ok(result.result.errors.some((error) => error.code === 'FORMAT_TRANSITION_CONFLICT'));
 });
 
-test('an explicit user override can proceed to Decision Brief while keeping downstream gates intact', () => {
+test('an explicit user override can proceed through the Decision Brief while keeping downstream gates intact', () => {
   const visibility = structuredClone(scenarios.find((scenario) => scenario.id === 'visibility-only').assessment);
   visibility.userOverride = true;
   visibility.recommendedFormat = 'dashboard';
@@ -64,5 +66,6 @@ test('an explicit user override can proceed to Decision Brief while keeping down
 
   assert.equal(result.result.transition, 'PASS');
   assert.equal(result.result.worthinessSummary.userOverride, true);
+  assert.equal(result.result.intakeSummary.decisionStatus, 'confirmed');
   assert.equal(result.result.routingSummary.primaryCount, 5);
 });

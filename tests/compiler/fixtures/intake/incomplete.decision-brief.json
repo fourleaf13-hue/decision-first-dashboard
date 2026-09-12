@@ -1,0 +1,9 @@
+{
+  "decision": {
+    "status": "inferred",
+    "value": "Decide whether sales performance needs intervention"
+  },
+  "action": {
+    "status": "absent"
+  }
+}
