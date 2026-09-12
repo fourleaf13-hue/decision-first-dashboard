@@ -138,7 +138,7 @@ test('staged skill preflight passes and the staged package executes the canonica
   assert.equal(fs.existsSync(htmlPath), true, 'staged compiler must emit canonical HTML');
   assert.equal(fs.existsSync(svgPath), true, 'staged compiler must emit canonical SVG');
   assert.equal(fs.existsSync(manifestPath), true, 'staged compiler must emit output.manifest.json');
-  assert.match(fs.readFileSync(htmlPath, 'utf8'), /decision-first-renderer=canonical/);
+  assert.match(fs.readFileSync(htmlPath, 'utf8'), /name="decision-first-renderer" content="canonical"/);
 });
 
 test('CI publishes a Claude-ready artifact from main instead of the whole repository ZIP', () => {
