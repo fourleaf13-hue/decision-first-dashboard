@@ -59,7 +59,13 @@ jobs:
         run: node skills/decision-first-dashboard/scripts/compile-dashboard.js tests/compiler/fixtures/worthiness/dashboard.worthiness.json tests/compiler/fixtures/intake/confirmed.decision-brief.json tests/compiler/fixtures/routing/no-score.routing.json tests/compiler/fixtures/grounding/no-score.grounded.json tests/compiler/generated/routed-no-score
       - name: Stage Claude Upload Skill package
         run: npm run package:claude-skill
-      - uses: actions/upload-artifact@v4
+      - name: Preflight staged Claude Upload Skill
+        run: node dist/claude-skill/scripts/preflight.js
+      - name: Compile routed no-score fixture from staged skill package
+        run: node dist/claude-skill/scripts/compile-dashboard.js tests/compiler/fixtures/worthiness/dashboard.worthiness.json tests/compiler/fixtures/intake/confirmed.decision-brief.json tests/compiler/fixtures/routing/no-score.routing.json tests/compiler/fixtures/grounding/no-score.grounded.json tests/compiler/generated/staged-routed-no-score
+      - name: Publish Claude Upload Skill artifact from main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
         with:
           name: decision-first-dashboard-skill
           path: dist/claude-skill/
@@ -84,3 +90,6 @@ jobs:
             tests/compiler/generated/routed-no-score/output.no-score.svg
             tests/compiler/generated/routed-no-score/output.no-score.html
             tests/compiler/generated/routed-no-score/output.manifest.json
+            tests/compiler/generated/staged-routed-no-score/output.no-score.svg
+            tests/compiler/generated/staged-routed-no-score/output.no-score.html
+            tests/compiler/generated/staged-routed-no-score/output.manifest.json
