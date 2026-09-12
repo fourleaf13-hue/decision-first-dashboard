@@ -7,13 +7,25 @@ description: Use when redesigning KPI-heavy dashboards where users must scan mul
 
 ## Core principle
 
-Separate agent judgment from compiler judgment and deterministic rendering.
+Decision-First does not mean Minimal-Data. Preserve rich evidence, create strong hierarchy, and expose only justified meaning.
 
-**Source / context → Worthiness Assessment → worthiness gate → Decision Brief → Metric Routing Manifest → grounded evidence bundle → routing + grounding gates → deterministic renderer → SVG / HTML**
+**Source / context → Worthiness Assessment → worthiness gate → Decision Brief → intake gate → Metric Routing Manifest → grounded evidence bundle → routing + grounding gates → deterministic renderer → canonical HTML / SVG + output.manifest.json**
 
-The agent may assess whether a dashboard is warranted, clarify decision intent, extract and classify evidence, and propose routing. It may not invent source support, bypass worthiness/routing/grounding gates, or choose a free-form dashboard layout during ordinary compilation.
+The agent may assess whether a dashboard is warranted, clarify decision intent, extract and classify evidence, and propose routing. It may not invent source support, bypass worthiness/intake/routing/grounding gates, or choose a free-form dashboard layout during ordinary compilation.
 
 A dashboard earns first-view screen space only when the information can change a decision, trigger an action, surface an exception, explain a primary signal, or support deliberate drill-down.
+
+## Mandatory execution contract
+
+This contract applies whenever the skill is actually invoked for a dashboard redesign.
+
+1. **Do not render before intake passes.** A screenshot, dataset, title, KPI mix, or domain pattern may establish source facts but cannot by itself confirm business intent. If Decision or Action is not explicitly confirmed, stop and ask one question. Do not generate an image, HTML, SVG, React app, dashboard artifact, Key Insights, or action recommendations first.
+2. **The agent must not render UI.** The agent prepares structured inputs; `compile-dashboard.js` owns canonical production delivery.
+3. **No free-form fallback.** If the runtime cannot execute the production scripts, stop at the unresolved question or structured state. Do not substitute an agent-authored dashboard.
+4. **Canonical After means exact compiler output.** The primary After is the HTML bytes written by `compile-dashboard.js`. Do not treat that HTML as a reference and redraw it afterward.
+5. **Require provenance.** Canonical HTML/SVG must carry the compiler provenance markers and the run must emit `output.manifest.json`. A visually similar artifact without canonical provenance is not the official Decision-First output.
+
+Host-level skill discovery is outside the repository's control. A generic product request may still fail to invoke an installed skill in some environments; measure that separately with live product tests. Once this skill is invoked, the execution contract above is mandatory.
 
 ## Three layers
 
@@ -22,7 +34,7 @@ A dashboard earns first-view screen space only when the information can change a
 The agent may:
 
 - produce a structured Worthiness Assessment from explicit user/context evidence;
-- build an adaptive Decision Brief from user context and source structure;
+- build a structured adaptive Decision Brief;
 - extract literal source facts;
 - classify every extracted metric with the Metric Router;
 - produce a Metric Routing Manifest;
@@ -33,376 +45,300 @@ The agent must not render UI, fabricate score-model evidence, or decide its own 
 
 ### Layer 2 — Compiler contract
 
-Code decides whether worthiness, routing, and grounding can proceed.
-
 The production compiler validates, in order:
 
-1. the Worthiness Assessment against `schemas/worthiness-assessment.schema.json` plus its semantic consistency rules;
-2. the Metric Routing Manifest and its semantic rules;
-3. exact agreement between routed `primary_signal` metrics and the visible center metrics/components;
-4. exact agreement between no-score diagnostics routed as supporting and `decisionState.supportingSignals`;
-5. active-exception surfacing rules;
-6. the closed grounded-bundle contract;
-7. the closed `decision-state` contract;
-8. source file SHA-256;
-9. evidence reference integrity;
-10. exact JSON Pointer or text-span grounding;
-11. required claim coverage;
-12. composite score mathematics and score-band semantics.
+1. Worthiness Assessment against `schemas/worthiness-assessment.schema.json` plus semantic consistency rules;
+2. Decision Brief against `schemas/decision-brief.schema.json`;
+3. confirmed Decision + Action before routing, plus exact binding into the routing manifest;
+4. Metric Routing Manifest against `schemas/metric-routing.schema.json` and semantic rules;
+5. exact agreement between routed `primary_signal` metrics and visible center metrics/components;
+6. exact agreement between no-score diagnostics routed as supporting and `decisionState.supportingSignals`;
+7. active-exception surfacing rules;
+8. the closed grounded-bundle and decision-state contracts;
+9. source SHA-256, evidence integrity, exact JSON Pointer/text-span grounding, and required claim coverage;
+10. composite score mathematics and score-band semantics.
 
-Worthiness transitions are:
+Worthiness transitions:
 
-- `BUILD_DECISION_BRIEF`;
-- `ASK_WORTHINESS_QUESTION`;
-- `REDIRECT_NON_DASHBOARD`;
-- `FIX_WORTHINESS_ASSESSMENT`.
+- `BUILD_DECISION_BRIEF`
+- `ASK_WORTHINESS_QUESTION`
+- `REDIRECT_NON_DASHBOARD`
+- `FIX_WORTHINESS_ASSESSMENT`
 
-Downstream machine-readable transitions remain:
+Decision Brief intake transitions:
 
-- `PASS`;
-- `FIX_METRIC_ROUTING`;
-- `RETURN_TO_EVIDENCE_EXTRACTION`;
-- `FALLBACK_TO_NO_SCORE`;
-- `FIX_DECISION_STATE`.
+- `ALLOW_ROUTING`
+- `ASK_DECISION_BRIEF_QUESTION`
+- `FIX_DECISION_BRIEF`
+
+Downstream transitions:
+
+- `PASS`
+- `FIX_METRIC_ROUTING`
+- `RETURN_TO_EVIDENCE_EXTRACTION`
+- `FALLBACK_TO_NO_SCORE`
+- `FIX_DECISION_STATE`
 
 ### Layer 3 — Deterministic renderer
 
-`render.js` consumes only validated decision state and fills fixed SVG/HTML templates. It does not inspect the hidden routing inventory, source data, or invent business meaning.
+`render.js` consumes only validated decision state and fills deterministic SVG/HTML compositions. It does not inspect hidden routing inventory, source data, or invent business meaning.
 
-Keeping hidden routing inventory out of the renderer is intentional: `drilldown`, `scorecard_only`, and diagnostics routed `on_demand` stay preserved for traceability without becoming hidden DOM, eager chart work, or first-view clutter. Only diagnostics explicitly routed with `visibility: "supporting"` may enter the closed `supportingSignals` decision-state layer and render as subordinate context.
+`drilldown`, `scorecard_only`, and diagnostics routed `on_demand` remain preserved for traceability without becoming eager first-view clutter. Only diagnostics explicitly routed with `visibility: "supporting"` may enter the closed `supportingSignals` layer and render as subordinate context.
 
 ## Workflow
 
 ### 1. Run the Dashboard Worthiness Test
 
-Before starting the Decision Brief or committing to dashboard output, ask whether the request deserves to become a persistent dashboard at all. This is a lightweight preflight, not a separate questionnaire: reuse context already supplied, ask one question at a time only when needed, and count any worthiness questions toward the same **five-question total intake budget** used by the Decision Brief.
+Before starting the Decision Brief or committing to dashboard output, ask whether the request deserves to become a persistent dashboard at all. Reuse context already supplied, ask one question at a time only when needed, and count Worthiness questions toward the same **five-question total intake budget** used by the Decision Brief.
 
-A dashboard is justified when the workflow has a real recurring decision or recurring monitoring loop, a clear **accountability path**, and a meaningful response that changes when an important signal changes. An accountability path may be a single owner, an on-call team, a distributed responsible team, or a recurring shared decision forum such as a board or cross-functional review. A monitoring dashboard can qualify when a recurring exception changes attention, escalation, or intervention.
+A dashboard is justified when the workflow has a real recurring decision or recurring monitoring loop, a clear **accountability path**, and a meaningful response that changes when an important signal changes. An accountability path may be a single owner, an on-call team, a distributed responsible team, or a recurring **shared decision forum**.
 
 Use three tests:
 
-1. **Recurring Loop Test** — is there a recurring decision, review, or exception-monitoring loop rather than a one-off question?
-2. **Accountability Path Test** — is there an identifiable person, team, or shared forum accountable for responding to the result?
-3. **Response Change Test** — when a material signal changes, does an action, priority, escalation, intervention, or coordination change?
+1. **Recurring Loop Test** — recurring decision, review, or exception-monitoring loop rather than a one-off question.
+2. **Accountability Path Test** — identifiable person, team, or shared forum accountable for responding.
+3. **Response Change Test** — when a material signal changes, an action, priority, escalation, intervention, or coordination changes.
 
-**“Visibility” alone is not a decision and is not sufficient justification for a dashboard.** Wanting to feel informed, copy an old report, or fill a reporting slot does not automatically pass the test. Shared visibility can still be legitimate when it belongs to a recurring accountable forum and changes coordination or priorities.
+**Visibility alone is not a decision and is not sufficient justification for a dashboard.**
 
-The agent must express the judgment as a structured assessment matching:
+The compiler, not the agent, determines the transition. If the request fails the Worthiness Test, **do not build or render a dashboard** by default. Recommend the smallest fitting alternative such as a **one-off analysis**, **scheduled summary**, **alert**, **report**, or **chat/query** workflow.
 
-`schemas/worthiness-assessment.schema.json`
+If the user explicitly chooses a dashboard after seeing that trade-off, `userOverride: true` may enter the Decision Brief, but it does not bypass intake, Metric Router, grounding, or rendering contracts.
 
-The assessment records `purpose`, `decisionLoop`, `accountability`, `responseChange`, `recommendedFormat`, and optional `userOverride`. Status fields distinguish `confirmed`, `inferred`, and `absent` instead of letting uncertainty silently become fact.
-
-The compiler, not the agent, determines the transition:
-
-- confirmed recurring loop + confirmed accountability path + confirmed response change → `BUILD_DECISION_BRIEF`;
-- inferred or unclear worthiness → `ASK_WORTHINESS_QUESTION`;
-- visibility-only, one-off, or otherwise non-recurring requests → `REDIRECT_NON_DASHBOARD` with a concrete non-dashboard `recommendedFormat`;
-- malformed or contradictory assessments → `FIX_WORTHINESS_ASSESSMENT`.
-
-If the request fails the Worthiness Test, **do not build or render a dashboard by default**. Explain the mismatch briefly and recommend the smallest format that fits the actual job, such as a **one-off analysis**, **scheduled summary**, **alert**, **report**, or **chat/query** workflow. Do not continue into Metric Routing or deterministic rendering merely because the user originally asked for a dashboard.
-
-If the user explicitly chooses a dashboard after seeing that trade-off, record `userOverride: true` and `recommendedFormat: "dashboard"`. That explicit user override may enter the Decision Brief, but it does **not** bypass Metric Router, grounding, evidence, or rendering contracts. The agent may not set `userOverride` merely to avoid a redirect.
-
-Worthiness is design context, not source evidence. The machine gate verifies the assessment's schema and internal semantic consistency; it **does not prove the agent interpreted the user's natural-language intent correctly**. End-to-end model behavior therefore still requires a separate agent scenario/eval layer.
+Worthiness is design context, not source evidence. The machine gate verifies schema and semantic consistency; it does not prove the agent interpreted natural-language intent correctly.
 
 ### 2. Build an adaptive Decision Brief
 
-Before routing metrics or choosing a visual mode, establish the minimum decision context needed to design the dashboard. Tell the user briefly that better dashboard design requires a few questions. Ask **one question at a time**, ask **no more than five questions total across Worthiness + Decision Brief intake**, and **stop immediately once enough information** exists to route metrics and make a defensible design decision.
+Before routing metrics or choosing a visual mode, establish the minimum decision context needed to design the dashboard. Ask **one question at a time**, ask **no more than five questions** total across Worthiness + Decision Brief intake, and **stop immediately once enough information** exists.
 
-**Intent-confirmation gate:** a screenshot, uploaded dataset, dashboard title, visible KPI mix, domain pattern, or source structure can establish data facts and suggest candidate intent, but a **screenshot alone cannot satisfy the Decision Brief**. Unless the user has **explicitly stated both the Decision and the Action** in the request or prior conversation, ask **at least one question** and obtain user confirmation before Metric Router classification or rendering.
+**Intent-confirmation gate:** a **screenshot cannot satisfy the Decision Brief** by itself. Unless the user has **explicitly stated both the Decision and the Action** in the request or prior conversation, ask **at least one question** and obtain confirmation before Metric Router classification or rendering.
 
-The five intake dimensions are a question pool, not a fixed questionnaire:
+The intake dimensions are a question pool, not a fixed questionnaire:
 
-- **Decision** — what should the dashboard help the user determine?
+- **Decision** — what should the dashboard help determine?
 - **Action** — what decision or action changes when an important signal changes?
 - **Exception** — what condition deserves immediate attention?
 - **Diagnosis** — where should the user investigate next after a problem appears?
-- **Audience / cadence** — who uses the dashboard, how quickly must they understand it, and how often is it reviewed?
+- **Audience / cadence** — who uses it, how quickly, and how often?
 
-Use two notions of “known”:
+Use two notions of known:
 
-- **Observed source fact** — directly visible or mechanically extracted from source. Never ask the user to repeat source facts already present in the request, prior answers, or source structure.
-- **Business intent** — Decision, Action, exception policy, diagnosis priority, and audience/cadence. This is confirmed only when explicitly supplied by the user or confirmed by the user after the agent proposes an inferred candidate.
+- **Observed source fact** — directly visible or mechanically extracted. **Never ask the user to repeat source facts** already available.
+- **Business intent** — Decision, Action, exception policy, diagnosis priority, and audience/cadence. It is confirmed only when explicitly supplied or explicitly confirmed by the user.
 
-An **inferred candidate requires confirmation**. It may make the next question easier, but it does not count as a completed Decision Brief until the user responds. Do not use “inferable from the data” as a reason to skip confirmation of business intent.
+An **inferred candidate requires confirmation**. Do not use **“inferable from the data”** to **skip confirmation** of **business intent**.
 
-After every answer, run an information-sufficiency check. If the confirmed Decision, confirmed Action, and relevant Exception, Diagnosis, or Audience context provide enough information for routing, stop. Do not ask all five questions merely for completeness.
-
-The zero-question path is narrow: use it only when the user's request or already-established conversation context explicitly states both what the dashboard should help decide and what action/prioritization changes based on that decision, and the Worthiness Test can also be resolved from already-established context. Source data by itself never qualifies.
+After each answer, evaluate sufficiency. The zero-question path is narrow: use it only when the user's request or already-established context explicitly states both Decision and Action and Worthiness is already resolved. Source data alone never qualifies.
 
 If the user is unsure:
 
-1. reduce the open question to **2–4 concrete choices** grounded in known context;
-2. include an explicit “I'm not sure — help me decide” path;
-3. if uncertainty remains, **infer the most defensible answer from the data** and **ask for confirmation**;
-4. if the data cannot support a defensible inference, leave that dimension unresolved and proceed conservatively.
+1. offer **2–4 concrete choices** grounded in known context;
+2. include an “I'm not sure — help me decide” path;
+3. **infer the most defensible answer from the data** only as a candidate and **ask for confirmation**;
+4. otherwise leave the dimension unresolved.
 
-**Do not invent a threshold.** Use only source-backed targets, historical ranges, peer baselines, or explicit rules when they exist.
+**Do not invent a threshold.**
 
 Support both intake orders:
 
-- **data-first** — **profile the uploaded data before asking**. Identify fields, metrics, dimensions, time range, targets/benchmarks, and evidence gaps; then ask only for missing decision context.
-- **question-first** — clarify the decision context first, then **request only the data needed** to support that decision, its diagnosis path, relevant exceptions, and evidence mode.
+- **data-first** — **profile the uploaded data before asking**, then ask only for missing decision context;
+- **question-first** — clarify decision context first, then **request only the data needed**.
 
-The Decision Brief is internal design context. It may guide routing and information hierarchy, but it is not automatically source evidence.
+The Decision Brief is internal design context. It is not automatically source evidence and **no compiler/framework methodology labels in visible UI** are permitted.
+
+The structured brief must match `schemas/decision-brief.schema.json`. `scripts/intake.js` requires both Decision and Action to have `status: "confirmed"`. Otherwise the pipeline returns `ASK_DECISION_BRIEF_QUESTION` and produces no dashboard artifact.
 
 ### 3. Extract verified facts only
 
-Identify the primary user and decision from the Decision Brief, then capture only source-supported metrics, deltas, account states, events, targets, thresholds, and score rules.
-
-Never invent scores, targets, thresholds, customer states, events, workflows, actions, or causal claims. Direction is not the same as health.
+Capture only source-supported metrics, deltas, states, events, targets, thresholds, and score rules. Never invent scores, targets, thresholds, customer states, events, workflows, actions, or causal claims. Direction is not the same as health.
 
 ### 4. Route every extracted metric
 
-Use the **Metric Router** whenever the source exposes more metrics than a user can reasonably scan at first view. The canonical stress case is **70-KPI overload**: a source may contain roughly 70 valid KPIs, but validity does not make every KPI a first-view peer.
+Use the **Metric Router** when the source exposes more metrics than a user can reasonably scan at first view. The canonical stress case is **70-KPI overload**.
 
 > **Preserve everything without showing everything.**
 
-Preserve the full extracted metric inventory in a separate routing manifest. The manifest must match:
+The routing manifest must match `schemas/metric-routing.schema.json`. It contains the confirmed `decision`, confirmed `action`, `inventoryCount`, and one routing entry per extracted metric. `inventoryCount` must equal the inventory size.
 
-`schemas/metric-routing.schema.json`
+Route every metric to exactly one role:
 
-It contains confirmed `decision`, confirmed `action`, `inventoryCount`, and one routing entry per extracted metric. `inventoryCount` must equal the number of routing entries; duplicate or missing metric routes are invalid.
-
-Route each metric to exactly one role:
-
-- `primary_signal` — directly changes the main decision or next action;
+- `primary_signal` — directly changes the main decision/action;
 - `diagnostic` — explains a routed primary signal or exception;
-- `exception` — a breach, outlier, critical account/event, or hard-stop condition requiring attention;
-- `drilldown` — useful only after deliberate investigation begins;
-- `scorecard_only` — retained for completeness, audit, or secondary scorecard use, but not promoted to the decision-first view.
+- `exception` — breach, outlier, critical account/event, or hard-stop condition;
+- `drilldown` — useful after deliberate investigation starts;
+- `scorecard_only` — retained for completeness/audit but not promoted to the decision-first view.
 
-Apply the **Action Trigger Test** to every candidate metric:
+Apply the **Action Trigger Test**: if this metric changes materially, what decision or action changes?
 
-1. If this metric changes materially, does the user's decision or action change?
-2. If yes in the ordinary decision loop, route it to `primary_signal` and state the `decisionImpact`.
-3. If a threshold, safety, compliance, contractual, outage, or other critical condition is breached, route it to `exception`.
-4. If it mainly explains a primary signal or exception, route it to `diagnostic` and identify what it `explains`.
-5. If it matters only after investigation begins, route it to `drilldown`.
-6. If no decision, action, diagnosis, or exception handling changes, route it to `scorecard_only`.
-
-Do not promote several metrics to `primary_signal` merely because they are all relevant. If one metric mainly explains another primary signal, or is a **complementary slice** of the same distribution, route it as `diagnostic` unless a material change would independently alter the confirmed decision or action.
+Do not promote metrics merely because they are relevant. If one mainly explains another primary signal, or is a **complementary slice** of the same distribution, route it as diagnostic unless a material change **independently alters the confirmed decision or action**.
 
 Compiler-enforced routing rules:
 
-- `primary_signal` must have `changesDecision: true`, a non-empty `decisionImpact`, and `visibility: "first_view"`.
-- The current deterministic renderer accepts **3–6 primary signals**; more than six fails the first-view information budget instead of silently squeezing more KPI peers into the layout.
-- The routed `primary_signal` metric IDs must exactly equal `decisionState.signals[*].metric` in `no_score`, or `decisionState.model.components[*].metric` in `composite`.
-- `diagnostic` metrics must have `changesDecision: false`, must point via `explains` to a routed `primary_signal` or `exception`, and must stay `supporting` or `on_demand`.
-- In `no_score`, the metric IDs in `decisionState.supportingSignals` must exactly equal the diagnostics routed with `visibility: "supporting"`; a supporting diagnostic must explain a routed primary signal or active exception.
-- At most four diagnostics may use `visibility: "supporting"`; additional diagnostics must use `on_demand`. The renderer never truncates a larger set silently.
-- `supportingSignals` are subordinate diagnostic context only: they never replace a routed primary signal, never participate in radar eligibility, and cannot contain a metric already present in `signals`.
-- `drilldown` metrics must stay `on_demand`.
-- `scorecard_only` metrics must stay `scorecard` and cannot claim to change the current decision.
-- **Active exceptions cannot be hidden** because a stakeholder dislikes red or negative states. An active exception must use `visibility: "first_view"` and its `surfacePath` must resolve to an actually rendered `/exceptions/<n>` or `/events/<n>` item in the decision state.
-- Current first-view information budget is at most 11 decision items: 3–6 primary signals plus active exceptions. Supporting diagnostics have their separate four-item subordinate budget. Do not solve overload by shrinking type or adding more equal-weight cards.
-- Do not promote a metric because it is easy to visualize, numerically large, or already placed in a KPI card.
-- Do not leak role labels such as `primary_signal` or `scorecard_only` into product UI.
+- `primary_signal` requires `changesDecision: true`, non-empty `decisionImpact`, and `visibility: "first_view"`;
+- 3–6 primary signals are allowed in the current renderer;
+- routed primaries must exactly equal rendered center metrics/components;
+- diagnostics require `changesDecision: false`, an `explains` target, and `supporting` or `on_demand` visibility;
+- no-score `supportingSignals` **must exactly equal** diagnostics routed as supporting;
+- **at most four diagnostics** may use supporting visibility; **additional diagnostics must use `on_demand`**;
+- `drilldown` stays `on_demand`; `scorecard_only` stays `scorecard`;
+- **active exceptions cannot be hidden** and must resolve through `surfacePath` to a rendered exception/event;
+- current **first-view information budget** is at most 11 decision items: 3–6 primary signals plus active exceptions;
+- supporting diagnostics have a separate four-item subordinate budget.
 
-A supporting-context semantic mismatch is a routing failure and must return `FIX_METRIC_ROUTING`; do not silently drop or repair the metric in the renderer. If the routing is valid but a visible supporting signal lacks source evidence, grounding must return `RETURN_TO_EVIDENCE_EXTRACTION`.
-
-The routing manifest is a durable decision trace. It preserves what was considered, why it was promoted or demoted, and what would change the decision, so later analysis does not have to rediscover the same KPI-prioritization logic from scratch.
+A supporting semantic mismatch returns `FIX_METRIC_ROUTING`; missing evidence returns `RETURN_TO_EVIDENCE_EXTRACTION`.
 
 ### 5. Choose the evidence mode
 
-The compiler supports two mutually exclusive decision-state modes.
+Use `composite` only when the source already provides overall score/scale, normalized component scores, component weights, a weighted-average aggregation rule, and complete score bands.
 
-Use `composite` only when the source already provides all of the following:
+If any required composite fact cannot be mechanically grounded, return `FALLBACK_TO_NO_SCORE`. Never invent score math.
 
-- an overall score and score scale;
-- normalized component scores;
-- component weights;
-- a weighted-average aggregation rule;
-- complete score bands / thresholds that determine displayed status.
+For `no_score`, do not create a synthetic overall score or health band.
 
-Composite accepts only:
+**Radar eligibility is independent of overall-score eligibility.** A no-score radar requires **3–6 peer dimensions** describing the same object/condition, one shared source-backed numeric scale, and a **source-grounded `normalizedScore`** for every displayed dimension. **Fewer than three dimensions are not radar-eligible.**
 
-- `normalization: "source_provided"`;
-- `aggregation: "weighted_average"`;
-- source-grounded score, component, weight, band, exception, event, and trend facts.
-
-If any required composite scoring fact cannot be mechanically grounded, transition to `FALLBACK_TO_NO_SCORE`. Do not fill gaps with inferred formulas, guessed weights, or invented benchmarks.
-
-For `no_score`, do not create `Healthy`, `Marginal`, `At risk`, or a 0–100 overall score. Overall direction remains a deterministic renderer derivation from validated signal directions.
-
-**Radar eligibility is independent of overall-score eligibility.** A `no_score` dashboard may render a closed radar profile only when the source explicitly provides:
-
-- **3–6 peer dimensions** describing the same object or condition as one profile;
-- one shared, source-backed numeric scale in `radarScale.min` / `radarScale.max`;
-- a source-grounded `normalizedScore` for every displayed dimension.
-
-Three dimensions are sufficient and render as a triangle. **Fewer than three dimensions are not radar-eligible.** Four to six dimensions render with the corresponding number of vertices.
-
-Radar is a profile chart, not a generic multi-metric chart. Do not connect heterogeneous raw KPIs such as revenue dollars, customer counts, percentages, latency, ratios, or unrelated business outcomes merely because several numbers exist.
-
-A radar must pass two gates:
+A radar must pass:
 
 - **Profile Test** — 3–6 peer dimensions, same object, same grounded scale;
-- **Action Trigger Test** — every displayed radar dimension must also be a routed `primary_signal`, meaning a material change can alter the confirmed decision or action.
+- **Action Trigger Test** — every displayed radar dimension is also a routed primary signal.
 
-If the Profile Test passes but the Action Trigger Test fails, keep those dimensions in diagnostic/drilldown/scorecard layers instead of using a decorative radar as the dominant visual.
+Never connect heterogeneous raw KPIs merely because several numbers exist.
 
 ### 6. Build a grounded bundle
 
-The grounded bundle remains separate from the routing inventory and contains only facts used by the rendered decision state:
+The grounded bundle stays separate from the routing inventory and must match `schemas/grounded-bundle.schema.json`; `decisionState` must independently match `schemas/decision-state.schema.json`.
 
-```json
-{
-  "source": {
-    "kind": "json",
-    "path": "source.json",
-    "sha256": "..."
-  },
-  "decisionState": {},
-  "evidence": [],
-  "claims": []
-}
-```
+Supported grounding:
 
-The envelope must match `schemas/grounded-bundle.schema.json` and `decisionState` must independently match `schemas/decision-state.schema.json`.
+- JSON → `json_pointer` anchor;
+- text → exact `text_span` anchor.
 
-Supported source grounding:
-
-- JSON source → `json_pointer` anchor;
-- text source → exact `text_span` anchor with `literal` and `valueText`.
-
-The compiler verifies the source file hash before accepting source claims.
-
-Image-only coordinates are not strong composite grounding because this repository has no deterministic OCR/token extractor. For screenshot inputs, first produce a verifiable text/JSON sidecar.
+The compiler verifies source SHA-256. Screenshot workflows should first create a verifiable text/JSON sidecar for claims that need byte-level grounding.
 
 ### 7. Required grounding coverage
 
-For `composite`, ground all source-dependent scoring facts:
+Ground every source-dependent field that becomes visible. Composite additionally grounds the complete score model. No-score radar additionally grounds `radarScale.min/max` and each `normalizedScore`.
 
-- score label/value/min/max/band;
-- normalization and aggregation;
-- each component label/value/normalized score/weight;
-- each score-band label/min/max;
-- score-series values when present;
-- visible exception/event fields when present.
-
-For ordinary `no_score`, ground each visible primary signal label/value, optional source delta/direction, every visible `supportingSignals` label/value and optional source delta/direction, source series values, and visible exception/event fields.
-
-For a `no_score` radar, additionally ground:
-
-- `radarScale.min` and `radarScale.max`;
-- every signal `normalizedScore` used as a radar vertex.
-
-A missing supporting-signal claim returns to evidence extraction just like any other visible source claim. A missing radar-scale or normalized-score claim also returns to evidence extraction. Do not silently fall back to an ungrounded visual.
-
-Do not ground deterministic renderer synthesis or Metric Router role decisions as if they were source facts.
+Do not ground deterministic renderer synthesis or Metric Router roles as if they were source facts.
 
 ### 8. Compile through all gates
 
-Production execution is:
+Canonical production execution:
 
 ```bash
-node scripts/compile-dashboard.js <worthiness-assessment.json> <routing-manifest.json> <grounded-bundle.json> <output-dir>
+node scripts/compile-dashboard.js <worthiness-assessment.json> <decision-brief.json> <routing-manifest.json> <grounded-bundle.json> <output-dir>
 ```
 
-The production path runs the Worthiness gate first. `FIX_WORTHINESS_ASSESSMENT`, `ASK_WORTHINESS_QUESTION`, or `REDIRECT_NON_DASHBOARD` produces no SVG/HTML. Only `BUILD_DECISION_BRIEF` may continue to Metric Router validation. On routing failure the compiler returns `FIX_METRIC_ROUTING`; only after routing passes does it run the grounding compiler.
+Before that, the individual preflight evaluators may be run directly:
+
+```bash
+node scripts/worthiness.js <worthiness-assessment.json>
+node scripts/intake.js <decision-brief.json>
+```
+
+`FIX_WORTHINESS_ASSESSMENT`, `ASK_WORTHINESS_QUESTION`, `REDIRECT_NON_DASHBOARD`, `FIX_DECISION_BRIEF`, or `ASK_DECISION_BRIEF_QUESTION` produces no final SVG/HTML. Only `ALLOW_ROUTING` may enter Metric Router validation.
 
 On final `PASS`, the CLI writes:
 
-- `no_score` → `output.no-score.svg` and `output.no-score.html`;
-- `composite` → `output.composite.svg` and `output.composite.html`.
+- `no_score` → `output.no-score.html` + `output.no-score.svg`;
+- `composite` → `output.composite.html` + `output.composite.svg`;
+- both modes → `output.manifest.json`.
 
 ### Primary delivery contract
 
-The **primary After deliverable is HTML** whenever file generation is available. Present or link `output.no-score.html` or `output.composite.html` first so the redesigned dashboard is an actual browser-openable interface rather than only a design image.
+The **primary After deliverable is HTML** whenever file generation is available. Present or link the canonical `output.no-score.html` or `output.composite.html` first.
 
-SVG remains the deterministic **preview** and regression/support artifact for README comparisons, static review, and snapshot testing. A screenshot, PNG, SVG, mockup, or concept image alone does not complete an ordinary dashboard redesign when the HTML renderer is available. Do not regenerate a separate free-form image as the “real” After after deterministic HTML has been rendered.
+SVG is a deterministic preview/regression artifact. A screenshot, PNG, SVG, mockup, or concept image alone does not complete an ordinary redesign when the HTML renderer is available.
 
-`worthiness.js` is the lower-level Worthiness evaluator. `compile.js` remains the lower-level grounding-only compiler for tests and internal compatibility. `validate.js` and `render.js` remain lower-level Layer 2 / Layer 3 tools. Do not use these lower-level entry points as a substitute for `compile-dashboard.js` in ordinary Decision-First production workflows.
+Every canonical HTML includes `decision-first-renderer=canonical` provenance metadata; SVG contains `<metadata id="decision-first-provenance">`; `output.manifest.json` records the source, Worthiness, Decision Brief, routing, grounded bundle, decision-state, HTML, and SVG hashes.
+
+Do not regenerate a separate free-form image or app as the “real” After. If the runtime cannot execute the production compiler, do not fake a substitute.
+
+`compile.js`, `validate.js`, and `render.js` remain lower-level compatibility/testing tools. They are not substitutes for `compile-dashboard.js` in ordinary production workflows.
 
 ### 9. Follow failure transitions literally
 
-- `FIX_WORTHINESS_ASSESSMENT` → repair malformed or contradictory structured worthiness fields; do not guess a transition.
-- `ASK_WORTHINESS_QUESTION` → ask only the minimum missing question and keep the same five-question total intake budget.
-- `REDIRECT_NON_DASHBOARD` → stop dashboard compilation and use the validated `recommendedFormat` unless the user explicitly overrides after the trade-off is explained.
-- `BUILD_DECISION_BRIEF` → continue into the existing Decision Brief; this is not final render permission.
-- `FIX_METRIC_ROUTING` → repair routing roles, action-trigger logic, first-view budget, primary/visible mismatch, supporting-context mismatch, or exception surfacing; do not bypass the gate.
-- `FIX_DECISION_STATE` → repair contract/schema errors only; do not weaken validation.
-- `RETURN_TO_EVIDENCE_EXTRACTION` → re-read source and repair evidence/claims.
-- `FALLBACK_TO_NO_SCORE` → abandon unsupported composite scoring and rebuild a grounded no-score state.
-- `PASS` → render deterministically.
-
-Do not turn a failed worthiness, routing, or grounding check into an invitation to guess.
+- `FIX_WORTHINESS_ASSESSMENT` → repair the structured assessment;
+- `ASK_WORTHINESS_QUESTION` → ask the minimum missing Worthiness question;
+- `REDIRECT_NON_DASHBOARD` → stop dashboard compilation;
+- `BUILD_DECISION_BRIEF` → continue to Decision Brief, not final render;
+- `FIX_DECISION_BRIEF` → repair malformed intake state;
+- `ASK_DECISION_BRIEF_QUESTION` → ask one high-information question for unresolved Decision/Action;
+- `ALLOW_ROUTING` → continue to Metric Router;
+- `FIX_METRIC_ROUTING` → repair routing; do not bypass it;
+- `RETURN_TO_EVIDENCE_EXTRACTION` → repair evidence/claims;
+- `FALLBACK_TO_NO_SCORE` → abandon unsupported composite scoring;
+- `FIX_DECISION_STATE` → repair contract/schema errors;
+- `PASS` → deliver the exact canonical compiler outputs.
 
 ## Visual contract
 
-The renderer owns layout after routing and grounding have passed.
+The renderer owns layout only after all upstream gates have passed.
 
 For `no_score`:
 
-- when all 3–6 routed primary dimensions have grounded `normalizedScore` values on one grounded `radarScale`, render a true closed radar profile;
-- otherwise use the non-radar signal layout and never connect heterogeneous raw KPI values into a fake radar;
-- one lead primary signal is the dominant focal point and the remaining primaries stay in the decision tier;
-- validated `supportingSignals` render only as a compact, lower-weight diagnostic rail and collapse completely when absent;
-- a primary-only center layout uses the compact density path rather than preserving a giant empty stage;
-- compact left business context only when source-supported;
-- compact right exceptions/events only when present.
+- true radar only when all eligible primary dimensions have grounded normalized scores on one grounded scale;
+- otherwise use the non-radar signal layout without fake spokes;
+- one lead primary signal may be the dominant focal point;
+- validated `supportingSignals` render as lower-weight diagnostic context and collapse when absent;
+- primary-only center layouts use the compact density path;
+- support modules appear only when source-supported.
 
 For `composite`:
 
-- dominant center source-supported score and band;
-- 3–6 routed normalized weighted components form a true closed radar profile;
-- compact left score trend and score composition;
-- compact right exceptions/events.
+- source-supported score/band;
+- 3–6 normalized weighted components may form a true radar;
+- compact trend/composition and exception/event support only when grounded.
 
 For both modes:
 
-- no flat KPI wall;
-- no dominant full-width customer table;
-- no invented action controls;
-- product-native labels only;
+- no flat four-equal-KPI wall;
+- no dominant full-width table;
+- no invented action controls, targets, scores, weights, thresholds, trend facts, or insights;
+- product-native source-derived copy only;
 - no compiler/framework methodology labels in visible UI;
-- restrained color and generous whitespace;
-- **soft attention is the default** for ordinary deterioration and business exceptions;
-- a **hard alert** treatment requires **explicit source-grounded** alert severity, a breached source threshold, a hard-stop condition, or an explicit user-supplied alert policy;
-- routing something to `exception` requires visibility but does not by itself authorize a large red banner, alarm icon, exclamation badge, or alarm language such as `Action needed`, `Critical`, or `Warning`;
-- negative or critical states may not be cosmetically suppressed;
-- hidden diagnostic/drilldown/scorecard routes are not rendered eagerly.
+- **soft attention is the default**;
+- hard alert treatment requires source-grounded severity/threshold, hard-stop status, or explicit user alert policy;
+- negative/critical states may not be cosmetically suppressed.
 
 See `references/visual-pattern.md` and `references/visual-stack-routing.md`.
 
 ## Hard stops
 
-Safety, compliance, security, regulatory, contractual, or outage conditions override ordinary synthesis. Never average them into a reassuring status. Never hide them because a stakeholder wants the dashboard to look more positive.
+Safety, compliance, security, regulatory, contractual, or outage conditions override ordinary synthesis. Never average an active hard stop into a reassuring status.
+
+## Agent E2E regression
+
+The repository contains a recorded ambiguous-prompt regression based on a real Sales Dashboard screenshot and the user request:
+
+> 帮我 redesign 一下这个 dashboard，感觉信息很多但不好用。
+
+The passing first turn asks one question covering missing Decision/Action context and produces no artifact. A recorded native-artifact response that skips intake is rejected by `scripts/agent-eval.js`.
+
+This harness verifies a recorded first-turn contract. It is not a live model benchmark and cannot guarantee that a host product will automatically invoke the skill for every generic dashboard prompt.
 
 ## Final gate
 
 Before delivery, verify:
 
-- `schemas/worthiness-assessment.schema.json` is respected and the compiler, not the agent, owned the Worthiness transition;
-- inferred or unclear worthiness did not silently pass; it produced `ASK_WORTHINESS_QUESTION` unless the user explicitly resolved it;
-- the accountability path may be a single owner, responsible team, or shared forum; do not require one named individual when a recurring accountable forum exists;
-- `REDIRECT_NON_DASHBOARD` stopped rendering unless the user explicitly chose the dashboard trade-off and `userOverride: true` was recorded;
-- any worthiness questions counted toward the same five-question intake budget rather than creating a second questionnaire;
-- the Decision Brief contains enough confirmed decision context to route metrics, and intake stopped as soon as that context was sufficient;
-- source facts were not mistaken for business intent; if Decision and Action were not explicitly stated beforehand, at least one user-confirmation question was asked;
-- no more than five questions were asked, one at a time, with no redundant request for source information already known;
-- user uncertainty did not cause invented business intent, thresholds, targets, or source claims;
-- `schemas/metric-routing.schema.json` is respected;
-- `inventoryCount` equals the routed metric inventory and no metric is duplicated or omitted;
-- every `primary_signal` passes the Action Trigger Test and the visible center matches the primary set exactly;
-- diagnostics explain routed primary/exception items rather than competing as peer headlines;
-- no-score `supportingSignals` exactly match diagnostics routed with supporting visibility, stay within the four-item budget, and do not overlap primaries;
-- complementary distribution slices were not promoted to peer primaries unless they independently change the confirmed decision/action;
-- active exceptions cannot be hidden and every active exception has a valid rendered `surfacePath`;
-- ordinary exceptions use restrained soft-attention styling unless hard-alert intensity is explicitly grounded;
-- the first-view information budget is respected instead of shrinking typography or adding equal-weight KPI cards;
-- the grounded-bundle schema passes;
-- source SHA-256 matches actual source bytes;
-- every required visible/source scoring fact, including rendered supporting context, has a resolvable claim and evidence anchor;
-- every grounded value matches the referenced decision-state value under allowed deterministic normalization only;
-- `no_score` overall direction matches signal directions;
-- a `no_score` radar passes both the Profile Test and Action Trigger Test;
-- raw mixed-unit KPIs never masquerade as radar dimensions;
-- `composite` weights, weighted score, score scale, and score band pass semantic validation;
-- no unsupported score/status/target/action appears;
+- Worthiness schema passes and the compiler owns the transition;
+- unresolved Worthiness never silently passes;
+- accountability may be one owner, team, or shared forum;
+- redirects stop rendering unless the user explicitly overrides;
+- Decision Brief follows the one-question-at-a-time / five-question budget;
+- source facts were not mistaken for business intent;
+- Decision and Action are explicitly confirmed before routing;
+- `schemas/decision-brief.schema.json` passes and `intake.js` returns `ALLOW_ROUTING`;
+- routing Decision/Action exactly preserve confirmed intake wording;
+- `schemas/metric-routing.schema.json` passes and `inventoryCount` is complete;
+- every primary passes the Action Trigger Test;
+- diagnostics remain subordinate and complementary slices do not inflate primaries;
+- active exceptions surface correctly;
+- first-view budgets are respected;
+- grounding schema, source SHA-256, evidence references, and visible claim coverage pass;
+- no unsupported score/status/target/action/insight appears;
 - no framework or compiler labels leak into visible UI;
-- when file delivery is available, HTML is presented as the primary After deliverable and SVG is treated as preview/support output;
-- the center is the first focal point;
+- HTML is the primary After deliverable;
+- final HTML/SVG contain canonical provenance and `output.manifest.json` exists;
+- the delivered After is the exact compiler output, not a free-form redraw;
 - outputs contain no unresolved template tokens.
