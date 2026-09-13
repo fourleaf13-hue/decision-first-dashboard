@@ -9,7 +9,8 @@
     "exception": { "$ref": "#/definitions/slot" },
     "diagnosis": { "$ref": "#/definitions/slot" },
     "audience": { "$ref": "#/definitions/slot" },
-    "cadence": { "$ref": "#/definitions/slot" }
+    "cadence": { "$ref": "#/definitions/slot" },
+    "decisionLoop": { "$ref": "#/definitions/decisionLoop" }
   },
   "definitions": {
     "slot": {
@@ -19,6 +20,16 @@
       "properties": {
         "status": { "enum": ["confirmed", "inferred", "absent"] },
         "value": { "type": "string", "minLength": 1, "maxLength": 240 }
+      }
+    },
+    "decisionLoop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cadence"],
+      "properties": {
+        "cadence": {
+          "enum": ["hourly", "daily", "weekly", "monthly", "quarterly", "annual"]
+        }
       }
     }
   }
