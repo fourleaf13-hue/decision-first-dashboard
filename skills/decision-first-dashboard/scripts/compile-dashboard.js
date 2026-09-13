@@ -5,6 +5,7 @@ import { compileGroundedBundle } from './compile.js';
 import { validateMetricRouting } from './routing.js';
 import { evaluateWorthinessAssessment } from './worthiness.js';
 import { evaluateDecisionBrief } from './intake.js';
+import { evaluateScopeReferenceContext } from './scope-reference.js';
 import {
   buildCanonicalProvenance,
   finalizeOutputManifest,
@@ -125,6 +126,26 @@ export function compileDecisionDashboard(
     };
   }
 
+  const scopeReference = evaluateScopeReferenceContext(decisionBrief, routingManifest, bundle);
+  if (!scopeReference.valid) {
+    return {
+      result: {
+        valid: false,
+        stage: 'scope_reference',
+        transition: scopeReference.transition,
+        errors: scopeReference.errors,
+        worthinessSummary: worthiness.summary,
+        intakeSummary: intake.summary,
+        routingSummary: routing.summary,
+        scopeReferenceSummary: scopeReference.summary
+      },
+      svg: null,
+      html: null,
+      manifest: null,
+      outputMode: null
+    };
+  }
+
   const compiled = compileGroundedBundle(bundle, { baseDir });
   if (!compiled.result.valid || compiled.result.transition !== 'PASS') {
     return {
@@ -134,7 +155,8 @@ export function compileDecisionDashboard(
         ...compiled.result,
         worthinessSummary: worthiness.summary,
         intakeSummary: intake.summary,
-        routingSummary: routing.summary
+        routingSummary: routing.summary,
+        scopeReferenceSummary: scopeReference.summary
       }
     };
   }
@@ -159,7 +181,8 @@ export function compileDecisionDashboard(
       ...compiled.result,
       worthinessSummary: worthiness.summary,
       intakeSummary: intake.summary,
-      routingSummary: routing.summary
+      routingSummary: routing.summary,
+      scopeReferenceSummary: scopeReference.summary
     }
   };
 }

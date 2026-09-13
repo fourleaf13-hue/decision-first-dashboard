@@ -31,7 +31,87 @@
         },
         "explains": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
         "active": { "type": "boolean" },
-        "surfacePath": { "type": "string", "pattern": "^/(exceptions|events)/[0-9]+$" }
+        "surfacePath": { "type": "string", "pattern": "^/(exceptions|events)/[0-9]+$" },
+        "scope": { "$ref": "#/definitions/scope" },
+        "referenceContext": { "$ref": "#/definitions/referenceContext" }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["temporal", "population", "aggregation"],
+      "properties": {
+        "temporal": { "$ref": "#/definitions/temporalScope" },
+        "population": { "$ref": "#/definitions/populationScope" },
+        "aggregation": { "$ref": "#/definitions/aggregationScope" }
+      }
+    },
+    "temporalScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "isLatestPeriod"],
+      "properties": {
+        "kind": { "enum": ["point", "period", "cumulative"] },
+        "unit": { "enum": ["hour", "day", "week", "month", "quarter", "year"] },
+        "rangeStart": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "rangeEnd": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "isLatestPeriod": { "type": "boolean" }
+      }
+    },
+    "populationScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["all", "subset"] },
+        "value": { "type": "string", "minLength": 1, "maxLength": 240 }
+      }
+    },
+    "aggregationScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "enum": ["sum", "count", "share", "average", "rate", "ratio", "min", "max", "median", "latest"]
+        }
+      }
+    },
+    "referenceContext": {
+      "oneOf": [
+        { "$ref": "#/definitions/sourceStatedPartOfWhole" },
+        { "$ref": "#/definitions/compilerDerivedPartOfWhole" }
+      ]
+    },
+    "sourceStatedPartOfWhole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "provenance", "value", "evidenceRef"],
+      "properties": {
+        "type": { "const": "part_of_whole" },
+        "provenance": { "const": "source_stated" },
+        "value": { "type": "number", "minimum": 0, "maximum": 100 },
+        "evidenceRef": { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    },
+    "compilerDerivedPartOfWhole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "provenance", "numeratorMetricId", "denominatorMetricId", "calculation"],
+      "properties": {
+        "type": { "const": "part_of_whole" },
+        "provenance": { "const": "compiler_derived" },
+        "numeratorMetricId": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "denominatorMetricId": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "calculation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["operator", "precision"],
+          "properties": {
+            "operator": { "const": "ratio_percent" },
+            "precision": { "type": "integer", "minimum": 0, "maximum": 6 }
+          }
+        }
       }
     }
   }
