@@ -298,6 +298,8 @@ For both modes:
 - product-native source-derived copy only;
 - no compiler/framework methodology labels in visible UI;
 - **soft attention is the default**;
+- **decision prominence and alert severity are independent**: the most important conclusion should be prominent without becoming an incident-style banner in an ordinary executive review;
+- routine negative performance should use compact hierarchy, direct copy, and restrained semantic accents; large full-width alarm treatment is reserved for evidence-backed hard alerts;
 - hard alert treatment requires source-grounded severity/threshold, hard-stop status, or explicit user alert policy;
 - negative/critical states may not be cosmetically suppressed.
 
@@ -338,6 +340,7 @@ Before delivery, verify:
 - grounding schema, source SHA-256, evidence references, and visible claim coverage pass;
 - no unsupported score/status/target/action/insight appears;
 - no framework or compiler labels leak into visible UI;
+- decision prominence is calibrated independently from alert severity;
 - HTML is the primary After deliverable;
 - final HTML/SVG contain canonical provenance and `output.manifest.json` exists;
 - the delivered After is the exact compiler output, not a free-form redraw;
