@@ -27,3 +27,16 @@ test('a routed exception alone does not authorize alarm-heavy visual treatment',
   assert.match(visual, /exception.*does not.*authorize.*hard alert/is);
   assert.match(visual, /large red.*background|red banner|alarm icon/is);
 });
+
+test('executive decision prominence is calibrated independently from alert severity', () => {
+  assert.match(skill, /decision prominence.*alert severity.*independent/is);
+  assert.match(visual, /decision prominence.*alert severity.*independent/is);
+  assert.match(visual, /routine executive review.*compact.*summary/is);
+  assert.match(visual, /semantic red.*value|semantic red.*delta|red.*accent/is);
+});
+
+test('ordinary negative conclusions stay prominent without becoming incident-style banners', () => {
+  assert.match(skill, /prominent.*without.*incident.*banner/is);
+  assert.match(visual, /full-width.*banner.*hard alert|hard alert.*full-width.*banner/is);
+  assert.match(visual, /oversized.*icon|oversized.*badge/is);
+});

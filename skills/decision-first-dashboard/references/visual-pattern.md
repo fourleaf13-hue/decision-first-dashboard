@@ -145,9 +145,15 @@ Delta **color** communicates business favorability and must use the grounded sig
 
 **Soft attention is the default** for ordinary business deterioration and exceptions. Visibility and visual intensity are separate decisions.
 
+**Decision prominence and alert severity are independent axes.** A conclusion may be the most important thing on the page without being styled like an incident.
+
+For a **routine executive review, use a compact summary** surface: a clear headline, the decisive variance or status, restrained typography, and a neutral/white container by default. The lead conclusion should be first in the hierarchy without consuming an oversized share of the screen.
+
 - A routed `exception` must be surfaced, but the exception role **does not by itself authorize a hard alert** treatment.
 - Prefer compact exception cards, small semantic red/amber accents, source-backed status text, delta arrows, and profile contraction/imbalance for ordinary deterioration.
+- Use **semantic red on the affected value, delta, or a small accent** before coloring an entire container.
 - A **hard alert requires explicit source-grounded alert semantics**, such as a source-defined critical/warning state, a breached source threshold, a safety/compliance/security/regulatory/contractual/outage hard stop, or an explicit user-supplied alert policy.
+- Treat a **full-width red banner, oversized alarm icon, or oversized badge as hard-alert UI**. Do not use those patterns for an ordinary miss, decline, or business variance unless the source/user explicitly establishes hard-alert semantics.
 - Without that support, do not introduce a **large red background**, red banner, **alarm icon**, exclamation badge, or alarm language such as `Action needed`, `Critical`, `Warning`, or equivalent.
 - Do not confuse restrained presentation with suppression: active exceptions remain visible, but their visual intensity must match the evidence.
 
