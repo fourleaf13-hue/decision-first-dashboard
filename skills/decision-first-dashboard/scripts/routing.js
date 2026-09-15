@@ -73,6 +73,17 @@ export function validateMetricRouting(manifest, decisionState) {
     add(errors, 'INVENTORY_COUNT_MISMATCH', '/inventoryCount', 'every extracted metric must have exactly one routing entry');
   }
 
+  const compositionNodes = Array.isArray(manifest.compositionNodes) ? manifest.compositionNodes : [];
+  const semanticNodeIds = new Set((decisionState?.semanticNodes ?? []).map((node) => node?.id).filter(Boolean));
+  const compositionNodeIds = new Set();
+  for (const [index, node] of compositionNodes.entries()) {
+    if (compositionNodeIds.has(node.id)) add(errors, 'DUPLICATE_COMPOSITION_NODE', `/compositionNodes/${index}/id`, 'each semantic node may be selected only once');
+    compositionNodeIds.add(node.id);
+    if (semanticNodeIds.size > 0 && !semanticNodeIds.has(node.id)) {
+      add(errors, 'COMPOSITION_NODE_NOT_FOUND', `/compositionNodes/${index}/id`, 'composition node must resolve to a semantic node in the decision state');
+    }
+  }
+
   const byMetric = new Map();
   for (const [index, item] of metrics.entries()) {
     const base = `/metrics/${index}`;

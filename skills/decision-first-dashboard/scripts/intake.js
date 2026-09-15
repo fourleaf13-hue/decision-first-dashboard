@@ -31,6 +31,7 @@ function summaryOf(brief) {
   for (const slotName of ['decision', 'action', 'exception', 'diagnosis', 'audience', 'cadence']) {
     if (brief?.[slotName]) summary[`${slotName}Status`] = brief[slotName].status;
   }
+  if (Array.isArray(brief?.contextRequirements)) summary.contextRequirements = brief.contextRequirements;
   return summary;
 }
 

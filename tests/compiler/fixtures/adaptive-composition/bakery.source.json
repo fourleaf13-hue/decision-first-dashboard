@@ -1,0 +1,13 @@
+{
+  "signals": [
+    { "label": "Total orders", "value": "218" },
+    { "label": "Products", "value": "36" },
+    { "label": "Sugar cookie orders", "value": "77%" }
+  ],
+  "semanticNodes": [
+    { "title": "Orders across years", "items": [{ "label": "2022", "value": 5 }, { "label": "2023", "value": 19 }, { "label": "2024", "value": 79 }, { "label": "2025", "value": 72 }, { "label": "2026", "value": 43 }] },
+    { "title": "Seasonal order volume", "items": [{ "label": "Jan", "value": 6 }, { "label": "Feb", "value": 18 }, { "label": "Mar", "value": 23 }, { "label": "Apr", "value": 11 }, { "label": "May", "value": 20 }, { "label": "Jun", "value": 19 }, { "label": "Jul", "value": 14 }, { "label": "Aug", "value": 15 }, { "label": "Sep", "value": 10 }, { "label": "Oct", "value": 10 }, { "label": "Nov", "value": 29 }, { "label": "Dec", "value": 43 }] },
+    { "title": "Sugar Cookie demand drivers", "items": [{ "label": "Holiday / Seasonal", "value": 37 }, { "label": "No Theme", "value": 34 }, { "label": "Miscellaneous", "value": 28 }, { "label": "Sports & Pop Culture", "value": 21 }] },
+    { "title": "Highest and lowest ROI products", "items": [{ "label": "Sugar Cookies", "value": "1109%", "detail": "$6.75 cost / $81.62 price" }, { "label": "Salted Caramel Chocolate", "value": "104%", "detail": "$7.35 cost / $15.00 price" }] }
+  ]
+}

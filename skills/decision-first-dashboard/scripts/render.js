@@ -7,6 +7,7 @@ import {
   renderSvg as renderSvgCore
 } from './render-core.js';
 import { renderNonRadarHtml, renderNonRadarSvg } from './render-non-radar.js';
+import { renderSemanticHtml, renderSemanticSvg } from './render-semantic.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 
@@ -134,15 +135,19 @@ function tuneHtmlRadar(markup, dimensions) {
   return tuned;
 }
 
-export function renderSvg(data) {
-  const coreMarkup = renderSvgCore(data);
+export function renderSvg(data, options = {}) {
+  const { composition } = options;
+  if (Array.isArray(data?.semanticNodes)) return renderSemanticSvg(data, composition, options);
+  const coreMarkup = renderSvgCore(data, options);
   if (isPlainNoScore(data)) return renderNonRadarSvg(data);
   const dimensions = radarDimensions(data);
   return dimensions?.length ? tuneSvgRadar(coreMarkup, dimensions) : coreMarkup;
 }
 
-export function renderHtml(data) {
-  const coreMarkup = renderHtmlCore(data);
+export function renderHtml(data, options = {}) {
+  const { composition } = options;
+  if (Array.isArray(data?.semanticNodes)) return renderSemanticHtml(data, composition, options);
+  const coreMarkup = renderHtmlCore(data, options);
   if (isPlainNoScore(data)) return renderNonRadarHtml(data);
   const dimensions = radarDimensions(data);
   return dimensions?.length ? tuneHtmlRadar(coreMarkup, dimensions) : coreMarkup;

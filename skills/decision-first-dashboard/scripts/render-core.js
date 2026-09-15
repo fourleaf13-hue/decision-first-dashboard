@@ -594,16 +594,38 @@ function renderNoScoreHtml(data) {
   });
 }
 
-function renderCompositeSvg(data) {
+function claimEvidenceRefs(claim) {
+  return Array.isArray(claim?.evidenceRefs) ? claim.evidenceRefs.join(' ') : '';
+}
+
+function claimEvidenceAttribute(claim) {
+  const refs = claimEvidenceRefs(claim);
+  return refs ? ` data-claim-evidence-refs="${escapeMarkup(refs)}"` : '';
+}
+
+function typedScoreBandSvg(value, claim) {
+  return `<tspan data-claim-id="claim_score_band" data-claim-scope="overall" data-claim-type="score_band"${claimEvidenceAttribute(claim)}>${escapeMarkup(value)}</tspan>`;
+}
+
+function typedScoreBandHtml(value, claim) {
+  return `<span data-claim-id="claim_score_band" data-claim-scope="overall" data-claim-type="score_band"${claimEvidenceAttribute(claim)}>${escapeMarkup(value)}</span>`;
+}
+
+function scoreBandClaim(options) {
+  return options?.claims?.find((claim) => claim?.id === 'claim_score_band' && claim?.scope === 'overall');
+}
+
+function renderCompositeSvg(data, options = {}) {
   const template = fs.readFileSync(compositeSvgTemplatePath, 'utf8');
   const scoreSeries = data.context?.provenance === 'source' ? data.context.scoreSeries : null;
   const cluster = svgComponentCluster(data.model.components, data.score.min, data.score.max);
+  const claim = scoreBandClaim(options);
 
   return fillTemplate(template, {
     SCORE_LABEL: escapeMarkup(data.score.label),
     SCORE_VALUE: escapeMarkup(formatScore(data.score.value)),
     SCORE_MAX: escapeMarkup(formatScore(data.score.max)),
-    SCORE_BAND: escapeMarkup(data.score.band),
+    SCORE_BAND: typedScoreBandSvg(data.score.band, claim),
     SVG_SCORE_TREND: svgScoreVisual(scoreSeries),
     SVG_COMPOSITION_ROWS: svgCompositionRows(data.model.components),
     SVG_COMPONENT_RADAR: cluster.visual,
@@ -613,18 +635,19 @@ function renderCompositeSvg(data) {
   });
 }
 
-function renderCompositeHtml(data) {
+function renderCompositeHtml(data, options = {}) {
   const template = fs.readFileSync(compositeHtmlTemplatePath, 'utf8');
   const css = fs.readFileSync(cssTemplatePath, 'utf8');
   const scoreSeries = data.context?.provenance === 'source' ? data.context.scoreSeries : null;
   const cluster = htmlComponentCluster(data.model.components, data.score.min, data.score.max);
+  const claim = scoreBandClaim(options);
 
   return fillTemplate(template, {
     CSS: css,
     SCORE_LABEL: escapeMarkup(data.score.label),
     SCORE_VALUE: escapeMarkup(formatScore(data.score.value)),
     SCORE_MAX: escapeMarkup(formatScore(data.score.max)),
-    SCORE_BAND: escapeMarkup(data.score.band),
+    SCORE_BAND: typedScoreBandHtml(data.score.band, claim),
     HTML_SCORE_TREND: htmlScoreVisual(scoreSeries),
     HTML_COMPOSITION_ROWS: htmlCompositionRows(data.model.components),
     HTML_COMPONENT_RADAR: cluster.visual,
@@ -634,14 +657,14 @@ function renderCompositeHtml(data) {
   });
 }
 
-export function renderSvg(data) {
+export function renderSvg(data, options = {}) {
   assertValid(data);
-  return data.mode === 'composite' ? renderCompositeSvg(data) : renderNoScoreSvg(data);
+  return data.mode === 'composite' ? renderCompositeSvg(data, options) : renderNoScoreSvg(data);
 }
 
-export function renderHtml(data) {
+export function renderHtml(data, options = {}) {
   assertValid(data);
-  return data.mode === 'composite' ? renderCompositeHtml(data) : renderNoScoreHtml(data);
+  return data.mode === 'composite' ? renderCompositeHtml(data, options) : renderNoScoreHtml(data);
 }
 
 if (process.argv[1] === currentFile) {
