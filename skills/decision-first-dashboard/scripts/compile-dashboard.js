@@ -3,7 +3,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileGroundedBundle } from './compile.js';
 import { validateMetricRouting } from './routing.js';
-import { composeAdaptiveComposition, coverageFor, verifyDeliveredArtifact } from './composition.js';
+import {
+  buildDeliveredClaims,
+  composeAdaptiveComposition,
+  coverageFor,
+  semanticItemsForPresentation,
+  semanticStructureFor,
+  verifyDeliveredArtifact
+} from './composition.js';
 import { evaluateWorthinessAssessment } from './worthiness.js';
 import { evaluateDecisionBrief } from './intake.js';
 import {
@@ -126,14 +133,20 @@ export function compileDecisionDashboard(
     };
   }
 
+  const compositionModifiers = {
+    audience: decisionBrief.audience?.value ?? null,
+    cadence: decisionBrief.cadence?.value ?? null,
+    density: routingManifest.compositionModifiers?.density ?? 'full',
+    activeModifierIds: [
+      ...(routingManifest.compositionModifiers?.activeModifierIds ?? []),
+      ...(routingManifest.compositionModifiers?.density === 'compact' ? ['density_compact'] : [])
+    ]
+  };
   const composition = composeAdaptiveComposition({
     contextRequirements: decisionBrief.contextRequirements ?? [],
     nodes: routingManifest.compositionNodes ?? [],
-    modifiers: {
-      audience: decisionBrief.audience?.value ?? null,
-      cadence: decisionBrief.cadence?.value ?? null,
-      density: routingManifest.compositionModifiers?.density ?? 'full'
-    }
+    decisionLog: routingManifest.decisionLog ?? [],
+    modifiers: compositionModifiers
   });
   if (!composition.valid) {
     return {
@@ -154,7 +167,12 @@ export function compileDecisionDashboard(
     };
   }
 
-  const compiled = compileGroundedBundle(bundle, { baseDir, composition: composition.composition });
+  const deliveredClaims = buildDeliveredClaims(bundle);
+  const compiled = compileGroundedBundle(bundle, {
+    baseDir,
+    composition: composition.composition,
+    claims: deliveredClaims
+  });
   if (!compiled.result.valid || compiled.result.transition !== 'PASS') {
     return {
       ...compiled,
@@ -177,18 +195,31 @@ export function compileDecisionDashboard(
   });
   const html = injectHtmlProvenance(compiled.html, provenance);
   const svg = injectSvgProvenance(compiled.svg, provenance);
+  const sourceNodes = new Map((bundle.decisionState.semanticNodes ?? []).map((node) => [node.id, node]));
   const deliveredManifest = {
-    nodes: composition.composition.nodes.map((node) => ({
-      id: node.id,
-      type: node.type,
-      presentation: node.presentation,
-      coverage: coverageFor(node)
-    })),
-    claims: [],
+    nodes: composition.composition.nodes.map((node) => {
+      const sourceNode = sourceNodes.get(node.id);
+      const renderedItems = semanticItemsForPresentation(sourceNode, node);
+      return {
+        id: node.id,
+        type: node.type,
+        presentation: node.presentation,
+        coverage: coverageFor(node),
+        ...(sourceNode ? { expectedItemCount: renderedItems.length } : {}),
+        ...(semanticStructureFor(node) ? { structure: semanticStructureFor(node) } : {})
+      };
+    }),
+    claims: deliveredClaims,
+    evidence: bundle.evidence,
     coverage: composition.coverageManifest,
-    decisionLog: composition.composition.decisionLog
+    decisionLog: composition.composition.decisionLog,
+    modifiers: composition.composition.modifiers
   };
-  const delivery = verifyDeliveredArtifact({ html, svg, manifest: deliveredManifest });
+  const manifestPayload = {
+    ...finalizeOutputManifest(provenance, html, svg),
+    delivery: deliveredManifest
+  };
+  const delivery = verifyDeliveredArtifact({ html, svg, manifest: manifestPayload });
   if (!delivery.valid) {
     return {
       result: {
@@ -207,13 +238,7 @@ export function compileDecisionDashboard(
       outputMode: null
     };
   }
-  const manifest = {
-    ...finalizeOutputManifest(provenance, html, svg),
-    delivery: {
-      ...deliveredManifest,
-      verificationStamp: delivery.verificationStamp
-    }
-  };
+  const manifest = { ...manifestPayload, verification: delivery.verification };
 
   return {
     ...compiled,

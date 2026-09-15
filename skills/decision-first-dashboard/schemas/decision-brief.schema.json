@@ -29,8 +29,9 @@
     "contextRequirement": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "subject", "minimumCoverage", "status"],
+      "required": ["id", "type", "subject", "minimumCoverage", "status"],
       "properties": {
+        "id": { "type": "string", "pattern": "^ctx_[A-Za-z0-9_~.-]{1,64}$" },
         "type": {
           "enum": [
             "relative_comparison",

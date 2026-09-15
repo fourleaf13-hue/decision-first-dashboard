@@ -30,6 +30,11 @@
           "maxItems": 24,
           "items": { "$ref": "#/definitions/semanticNode" }
         },
+        "visibleClaims": {
+          "type": "array",
+          "maxItems": 24,
+          "items": { "$ref": "#/definitions/visibleClaim" }
+        },
         "exceptions": {
           "type": "array",
           "maxItems": 5,
@@ -60,6 +65,11 @@
           "type": "array",
           "maxItems": 5,
           "items": { "$ref": "#/definitions/event" }
+        },
+        "visibleClaims": {
+          "type": "array",
+          "maxItems": 24,
+          "items": { "$ref": "#/definitions/visibleClaim" }
         }
       }
     },
@@ -142,7 +152,25 @@
         "label": { "type": "string", "minLength": 1, "maxLength": 80 },
         "value": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 80 }, { "type": "number" }] },
         "detail": { "type": "string", "maxLength": 120 },
+        "role": { "enum": ["actual", "target", "gap", "point", "member", "contributor", "rank", "detail", "dimension"] },
         "provenance": { "const": "source" }
+      }
+    },
+    "visibleClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "claimType", "scope", "text", "evidenceRefs"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^claim_[a-z0-9_]{1,64}$" },
+        "claimType": { "enum": ["overall_direction", "overall_verdict", "score_band", "metric_summary", "comparison", "exception_summary"] },
+        "scope": { "enum": ["overall", "node", "metric"] },
+        "text": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "evidenceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": { "type": "string", "pattern": "^ev_[A-Za-z0-9_~.-]{1,120}$" }
+        }
       }
     },
     "score": {

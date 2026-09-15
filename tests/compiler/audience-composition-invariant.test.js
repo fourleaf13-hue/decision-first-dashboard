@@ -8,8 +8,8 @@ test('one source keeps its semantic nodes while audience/cadence modifiers may s
     { id: 'gap_attribution', type: 'Breakdown', presentation: 'full_breakdown' }
   ];
   const requirements = [
-    { type: 'ranking_span', subject: 'top_accounts', minimumCoverage: 'both_ends' },
-    { type: 'gap_attribution', subject: 'gap_attribution', minimumCoverage: 'full_breakdown' }
+    { id: 'ctx_top_accounts', type: 'ranking_span', subject: 'top_accounts', minimumCoverage: 'both_ends' },
+    { id: 'ctx_gap_attribution', type: 'gap_attribution', subject: 'gap_attribution', minimumCoverage: 'full_breakdown' }
   ];
 
   const operatingReview = composeAdaptiveComposition({

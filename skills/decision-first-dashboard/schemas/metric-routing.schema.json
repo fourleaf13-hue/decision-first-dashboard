@@ -22,11 +22,33 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "density": { "enum": ["full", "compact"] }
+        "density": { "enum": ["full", "compact"] },
+        "activeModifierIds": {
+          "type": "array",
+          "maxItems": 12,
+          "items": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" }
+        }
       }
+    },
+    "decisionLog": {
+      "type": "array",
+      "maxItems": 48,
+      "items": { "$ref": "#/definitions/decisionLogEntry" }
     }
   },
   "definitions": {
+    "decisionLogEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node", "decision", "reasonCode"],
+      "properties": {
+        "node": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "decision": { "enum": ["promote", "retain_full", "collapse_to_drilldown", "drop"] },
+        "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,80}$" },
+        "requirementRef": { "type": "string", "pattern": "^ctx_[A-Za-z0-9_~.-]{1,64}$" },
+        "modifierRef": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" }
+      }
+    },
     "metricRoute": {
       "type": "object",
       "additionalProperties": false,
@@ -64,8 +86,68 @@
             "Drilldown"
           ]
         },
-        "presentation": { "type": "string", "minLength": 1, "maxLength": 40 },
-        "compactPresentation": { "type": "string", "minLength": 1, "maxLength": 40 }
+        "presentation": {
+          "enum": [
+            "full_chart",
+            "sparkline",
+            "summary",
+            "peak_summary",
+            "full_breakdown",
+            "both_ends",
+            "full_ranking",
+            "top_summary",
+            "full_list",
+            "compact_list",
+            "reachable_detail",
+            "radar",
+            "comparison"
+          ]
+        },
+        "compactPresentation": {
+          "enum": [
+            "full_chart",
+            "sparkline",
+            "summary",
+            "peak_summary",
+            "full_breakdown",
+            "both_ends",
+            "full_ranking",
+            "top_summary",
+            "full_list",
+            "compact_list",
+            "reachable_detail",
+            "radar",
+            "comparison"
+          ]
+        },
+        "dimensions": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 6,
+          "items": { "$ref": "#/definitions/profileDimension" }
+        },
+        "profile": { "$ref": "#/definitions/profileContract" }
+      }
+    },
+    "profileDimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric", "unit", "value", "normalizedScore"],
+      "properties": {
+        "metric": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "unit": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "value": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 80 }, { "type": "number" }] },
+        "normalizedScore": { "type": "number" }
+      }
+    },
+    "profileContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["purpose", "sharedScale", "comparable"],
+      "properties": {
+        "purpose": { "enum": ["profile", "comparison"] },
+        "sharedScale": { "type": "boolean" },
+        "comparable": { "type": "boolean" }
       }
     }
   }

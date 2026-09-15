@@ -13,7 +13,7 @@ function brief() {
     decision: { status: 'confirmed', value: decision },
     action: { status: 'confirmed', value: action },
     contextRequirements: [
-      { type: 'distribution_shape', subject: 'monthly_orders', minimumCoverage: 'full_distribution', status: 'inferred' }
+      { id: 'ctx_monthly_distribution', type: 'distribution_shape', subject: 'monthly_orders', minimumCoverage: 'full_distribution', status: 'inferred' }
     ]
   };
 }

@@ -172,6 +172,9 @@ function visibleCopyFields(data) {
         add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/detail`, item?.detail);
       }
     }
+    for (const [claimIndex, claim] of asArray(data.visibleClaims).entries()) {
+      add(`/visibleClaims/${claimIndex}/text`, claim?.text);
+    }
   }
 
   if (data?.mode === 'composite') {
@@ -183,6 +186,9 @@ function visibleCopyFields(data) {
     }
     for (const [index, band] of asArray(data.model?.bands).entries()) {
       add(`/model/bands/${index}/label`, band?.label);
+    }
+    for (const [claimIndex, claim] of asArray(data.visibleClaims).entries()) {
+      add(`/visibleClaims/${claimIndex}/text`, claim?.text);
     }
   }
 

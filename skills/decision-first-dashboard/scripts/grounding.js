@@ -158,6 +158,9 @@ function requiredNoScorePaths(data) {
       if (Object.hasOwn(item, 'detail')) paths.push(`/semanticNodes/${nodeIndex}/items/${itemIndex}/detail`);
     });
   });
+  data.visibleClaims?.forEach((claim, claimIndex) => {
+    paths.push(`/visibleClaims/${claimIndex}/text`);
+  });
   data.exceptions?.forEach((item, index) => paths.push(...visibleObjectPaths(`/exceptions/${index}`, item, ['name', 'plan', 'mrr', 'status'])));
   data.events?.forEach((item, index) => paths.push(...visibleObjectPaths(`/events/${index}`, item, ['subject', 'event', 'detail', 'time'])));
   return paths;
@@ -432,6 +435,18 @@ export function validateGroundedBundle(bundle, { baseDir = process.cwd() } = {})
         'every evidence record must be referenced by exactly one claim',
         evidence.id
       );
+    }
+  }
+
+  for (const [index, claim] of (decisionState.visibleClaims ?? []).entries()) {
+    for (const evidenceRef of claim.evidenceRefs ?? []) {
+      if (!evidenceById.has(evidenceRef)) {
+        pushError(errors, 'EVIDENCE_REF_NOT_FOUND', `/decisionState/visibleClaims/${index}/evidenceRefs`, 'visible claim references an evidence id that does not exist', evidenceRef);
+      }
+    }
+    const textClaim = bundle.claims.find((groundingClaim) => groundingClaim.decisionPath === `/visibleClaims/${index}/text`);
+    if (textClaim && !claim.evidenceRefs.includes(textClaim.evidenceRef)) {
+      pushError(errors, 'VISIBLE_CLAIM_EVIDENCE_MISMATCH', `/decisionState/visibleClaims/${index}/evidenceRefs`, 'visible claim evidenceRefs must include the grounding evidence for its visible text', textClaim.evidenceRef);
     }
   }
 

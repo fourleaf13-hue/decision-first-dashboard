@@ -14,10 +14,10 @@ const bakeryBrief = {
   audience: { status: 'confirmed', value: 'bakery owner / operations manager' },
   cadence: { status: 'confirmed', value: 'monthly operating review' },
   contextRequirements: [
-    { type: 'relative_comparison', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
-    { type: 'distribution_shape', subject: 'monthly_orders', minimumCoverage: 'full_distribution', status: 'inferred' },
-    { type: 'ranking_span', subject: 'product_roi', minimumCoverage: 'both_ends', status: 'inferred' },
-    { type: 'temporal_reference', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' }
+    { id: 'ctx_annual_relative', type: 'relative_comparison', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
+    { id: 'ctx_monthly_distribution', type: 'distribution_shape', subject: 'monthly_orders', minimumCoverage: 'full_distribution', status: 'inferred' },
+    { id: 'ctx_product_ranking', type: 'ranking_span', subject: 'product_roi', minimumCoverage: 'both_ends', status: 'inferred' },
+    { id: 'ctx_annual_temporal', type: 'temporal_reference', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' }
   ]
 };
 

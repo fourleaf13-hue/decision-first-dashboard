@@ -6,6 +6,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { renderHtml, renderSvg } from '../../skills/decision-first-dashboard/scripts/render.js';
+import { buildDeliveredClaims } from '../../skills/decision-first-dashboard/scripts/composition.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const compiler = path.join(repoRoot, 'skills/decision-first-dashboard/scripts/compile.js');
@@ -25,8 +26,9 @@ test('compile CLI renders only after grounded composite passes', () => {
   const bundle = JSON.parse(fs.readFileSync(validComposite, 'utf8'));
   const { outputDir, result } = runCompiler(validComposite);
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(fs.readFileSync(path.join(outputDir, 'output.composite.svg'), 'utf8'), renderSvg(bundle.decisionState));
-  assert.equal(fs.readFileSync(path.join(outputDir, 'output.composite.html'), 'utf8'), renderHtml(bundle.decisionState));
+  const claims = buildDeliveredClaims(bundle);
+  assert.equal(fs.readFileSync(path.join(outputDir, 'output.composite.svg'), 'utf8'), renderSvg(bundle.decisionState, { claims }));
+  assert.equal(fs.readFileSync(path.join(outputDir, 'output.composite.html'), 'utf8'), renderHtml(bundle.decisionState, { claims }));
 });
 
 test('compile CLI refuses forged grounding and writes no dashboard output', () => {
