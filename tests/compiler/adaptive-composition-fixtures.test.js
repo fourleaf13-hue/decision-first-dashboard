@@ -1,0 +1,119 @@
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
+import { compileDecisionDashboard } from '../../skills/decision-first-dashboard/scripts/compile-dashboard.js';
+
+const fixtureDir = fileURLToPath(new URL('./fixtures/adaptive-composition/', import.meta.url));
+const worthiness = JSON.parse(fs.readFileSync(fileURLToPath(new URL('./fixtures/worthiness/dashboard.worthiness.json', import.meta.url)), 'utf8'));
+
+function pointer(parts) {
+  return `/${parts.join('/')}`;
+}
+
+function makeGroundedFixture(fileName, nodeSelections) {
+  const bytes = fs.readFileSync(path.join(fixtureDir, fileName));
+  const source = JSON.parse(bytes.toString('utf8'));
+  const nodeTypes = new Map(nodeSelections.map((node) => [node.id, node.type]));
+  const decisionState = {
+    mode: 'no_score',
+    signals: source.signals.map((signal, index) => ({ metric: `signal_${index + 1}`, ...signal, provenance: 'source' })),
+    semanticNodes: source.semanticNodes.map((node, index) => ({
+      id: nodeSelections[index].id,
+      type: nodeTypes.get(nodeSelections[index].id),
+      title: node.title,
+      ...(node.subtitle ? { subtitle: node.subtitle } : {}),
+      items: node.items.map((item) => ({ ...item, provenance: 'source' }))
+    }))
+  };
+  const evidence = [];
+  const claims = [];
+  const add = (decisionPath, sourcePath) => {
+    const id = `ev_${evidence.length + 1}`;
+    evidence.push({ id, anchor: { type: 'json_pointer', pointer: sourcePath } });
+    claims.push({ decisionPath, evidenceRef: id });
+  };
+  decisionState.signals.forEach((signal, index) => {
+    add(`/signals/${index}/label`, `/signals/${index}/label`);
+    add(`/signals/${index}/value`, `/signals/${index}/value`);
+  });
+  decisionState.semanticNodes.forEach((node, nodeIndex) => {
+    add(`/semanticNodes/${nodeIndex}/title`, `/semanticNodes/${nodeIndex}/title`);
+    if (node.subtitle) add(`/semanticNodes/${nodeIndex}/subtitle`, `/semanticNodes/${nodeIndex}/subtitle`);
+    node.items.forEach((item, itemIndex) => {
+      add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/label`, `/semanticNodes/${nodeIndex}/items/${itemIndex}/label`);
+      add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/value`, `/semanticNodes/${nodeIndex}/items/${itemIndex}/value`);
+      if (item.detail) add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/detail`, `/semanticNodes/${nodeIndex}/items/${itemIndex}/detail`);
+    });
+  });
+  const brief = {
+    decision: { status: 'confirmed', value: 'Choose the next operating focus' },
+    action: { status: 'confirmed', value: 'Review the evidence before allocating the next action' }
+  };
+  const routing = {
+    decision: brief.decision.value,
+    action: brief.action.value,
+    inventoryCount: decisionState.signals.length,
+    metrics: decisionState.signals.map((signal) => ({ metric: signal.metric, role: 'primary_signal', changesDecision: true, decisionImpact: `${signal.label} informs the operating focus`, visibility: 'first_view' })),
+    compositionNodes: nodeSelections
+  };
+  return {
+    brief,
+    routing,
+    bundle: {
+      source: { kind: 'json', path: fileName, sha256: crypto.createHash('sha256').update(bytes).digest('hex') },
+      decisionState,
+      evidence,
+      claims
+    }
+  };
+}
+
+test('Bakery regression preserves seasonality, demand drivers, and both ends of ROI through the delivered artifact', () => {
+  const nodes = [
+    { id: 'annual_orders', type: 'Trend', presentation: 'full_chart' },
+    { id: 'monthly_orders', type: 'Distribution', presentation: 'full_chart' },
+    { id: 'demand_drivers', type: 'Ranking', presentation: 'full_ranking' },
+    { id: 'product_roi', type: 'Ranking', presentation: 'both_ends' }
+  ];
+  const fixture = makeGroundedFixture('bakery.source.json', nodes);
+  fixture.brief.contextRequirements = [
+    { type: 'relative_comparison', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
+    { type: 'temporal_reference', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
+    { type: 'distribution_shape', subject: 'monthly_orders', minimumCoverage: 'full_distribution', status: 'inferred' },
+    { type: 'ranking_span', subject: 'product_roi', minimumCoverage: 'both_ends', status: 'inferred' }
+  ];
+
+  const compiled = compileDecisionDashboard(worthiness, fixture.brief, fixture.routing, fixture.bundle, { baseDir: fixtureDir });
+  assert.equal(compiled.result.valid, true, JSON.stringify(compiled.result.errors));
+  assert.match(compiled.html, /Seasonal order volume/);
+  assert.match(compiled.svg, /data-semantic-node="monthly_orders"[^>]*data-presentation="full_chart"[^>]*data-coverage="distribution_shape"/);
+  assert.match(compiled.html, /Sugar Cookies/);
+  assert.match(compiled.html, /Salted Caramel Chocolate/);
+  assert.doesNotMatch(compiled.html, /DETERIORATING|IMPROVING|MIXED/);
+  assert.equal(compiled.manifest.delivery.coverage.missing.length, 0);
+  assert.equal(compiled.manifest.delivery.verificationStamp.status, 'passed');
+});
+
+test('CEO Sales uses the same grammar and renderer while selecting only the required target-gap nodes', () => {
+  const nodes = [
+    { id: 'revenue_target', type: 'Relationship', presentation: 'full_chart' },
+    { id: 'gap_attribution', type: 'Breakdown', presentation: 'full_breakdown' },
+    { id: 'top_accounts', type: 'Ranking', presentation: 'both_ends' }
+  ];
+  const fixture = makeGroundedFixture('ceo-sales.source.json', nodes);
+  fixture.brief.contextRequirements = [
+    { type: 'target_reference', subject: 'revenue_target', minimumCoverage: 'target_and_gap', status: 'inferred' },
+    { type: 'gap_attribution', subject: 'gap_attribution', minimumCoverage: 'full_breakdown', status: 'inferred' },
+    { type: 'contributor_comparison', subject: 'top_accounts', minimumCoverage: 'contributors', status: 'inferred' }
+  ];
+
+  const compiled = compileDecisionDashboard(worthiness, fixture.brief, fixture.routing, fixture.bundle, { baseDir: fixtureDir });
+  assert.equal(compiled.result.valid, true, JSON.stringify(compiled.result.errors));
+  assert.match(compiled.html, /Revenue against annual target/);
+  assert.match(compiled.svg, /data-semantic-node="gap_attribution"[^>]*data-presentation="full_breakdown"[^>]*data-coverage="decomposition gap_attribution"/);
+  assert.equal(compiled.manifest.delivery.nodes.length, 3);
+  assert.equal(compiled.manifest.delivery.verificationStamp.status, 'passed');
+});

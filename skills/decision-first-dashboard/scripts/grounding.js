@@ -149,6 +149,15 @@ function requiredNoScorePaths(data) {
     }
   });
   data.context?.revenueSeries?.forEach((_, index) => paths.push(`/context/revenueSeries/${index}`));
+  data.semanticNodes?.forEach((node, nodeIndex) => {
+    paths.push(`/semanticNodes/${nodeIndex}/title`);
+    if (Object.hasOwn(node, 'subtitle')) paths.push(`/semanticNodes/${nodeIndex}/subtitle`);
+    node.items.forEach((item, itemIndex) => {
+      paths.push(`/semanticNodes/${nodeIndex}/items/${itemIndex}/label`);
+      paths.push(`/semanticNodes/${nodeIndex}/items/${itemIndex}/value`);
+      if (Object.hasOwn(item, 'detail')) paths.push(`/semanticNodes/${nodeIndex}/items/${itemIndex}/detail`);
+    });
+  });
   data.exceptions?.forEach((item, index) => paths.push(...visibleObjectPaths(`/exceptions/${index}`, item, ['name', 'plan', 'mrr', 'status'])));
   data.events?.forEach((item, index) => paths.push(...visibleObjectPaths(`/events/${index}`, item, ['subject', 'event', 'detail', 'time'])));
   return paths;

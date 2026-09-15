@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileGroundedBundle } from './compile.js';
 import { validateMetricRouting } from './routing.js';
+import { composeAdaptiveComposition, coverageFor, verifyDeliveredArtifact } from './composition.js';
 import { evaluateWorthinessAssessment } from './worthiness.js';
 import { evaluateDecisionBrief } from './intake.js';
 import {
@@ -125,7 +126,35 @@ export function compileDecisionDashboard(
     };
   }
 
-  const compiled = compileGroundedBundle(bundle, { baseDir });
+  const composition = composeAdaptiveComposition({
+    contextRequirements: decisionBrief.contextRequirements ?? [],
+    nodes: routingManifest.compositionNodes ?? [],
+    modifiers: {
+      audience: decisionBrief.audience?.value ?? null,
+      cadence: decisionBrief.cadence?.value ?? null,
+      density: routingManifest.compositionModifiers?.density ?? 'full'
+    }
+  });
+  if (!composition.valid) {
+    return {
+      result: {
+        valid: false,
+        stage: 'composition',
+        transition: 'CONTEXT_PRESERVATION_FAILED',
+        errors: composition.errors,
+        worthinessSummary: worthiness.summary,
+        intakeSummary: intake.summary,
+        routingSummary: routing.summary,
+        coverageManifest: composition.coverageManifest
+      },
+      svg: null,
+      html: null,
+      manifest: null,
+      outputMode: null
+    };
+  }
+
+  const compiled = compileGroundedBundle(bundle, { baseDir, composition: composition.composition });
   if (!compiled.result.valid || compiled.result.transition !== 'PASS') {
     return {
       ...compiled,
@@ -148,7 +177,43 @@ export function compileDecisionDashboard(
   });
   const html = injectHtmlProvenance(compiled.html, provenance);
   const svg = injectSvgProvenance(compiled.svg, provenance);
-  const manifest = finalizeOutputManifest(provenance, html, svg);
+  const deliveredManifest = {
+    nodes: composition.composition.nodes.map((node) => ({
+      id: node.id,
+      type: node.type,
+      presentation: node.presentation,
+      coverage: coverageFor(node)
+    })),
+    claims: [],
+    coverage: composition.coverageManifest,
+    decisionLog: composition.composition.decisionLog
+  };
+  const delivery = verifyDeliveredArtifact({ html, svg, manifest: deliveredManifest });
+  if (!delivery.valid) {
+    return {
+      result: {
+        valid: false,
+        stage: 'delivery',
+        transition: 'DELIVERY_CONTRACT_FAILED',
+        errors: delivery.errors,
+        worthinessSummary: worthiness.summary,
+        intakeSummary: intake.summary,
+        routingSummary: routing.summary,
+        coverageManifest: composition.coverageManifest
+      },
+      svg: null,
+      html: null,
+      manifest: null,
+      outputMode: null
+    };
+  }
+  const manifest = {
+    ...finalizeOutputManifest(provenance, html, svg),
+    delivery: {
+      ...deliveredManifest,
+      verificationStamp: delivery.verificationStamp
+    }
+  };
 
   return {
     ...compiled,

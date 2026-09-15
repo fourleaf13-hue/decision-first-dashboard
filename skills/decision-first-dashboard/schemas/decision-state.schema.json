@@ -24,6 +24,12 @@
         },
         "radarScale": { "$ref": "#/definitions/radarScale" },
         "context": { "$ref": "#/definitions/noScoreContext" },
+        "semanticNodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 24,
+          "items": { "$ref": "#/definitions/semanticNode" }
+        },
         "exceptions": {
           "type": "array",
           "maxItems": 5,
@@ -106,6 +112,36 @@
           "maxItems": 24,
           "items": { "type": "number", "minimum": 0 }
         },
+        "provenance": { "const": "source" }
+      }
+    },
+    "semanticNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "title", "items"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "type": {
+          "enum": ["MetricCluster", "Trend", "Distribution", "Breakdown", "Ranking", "Relationship", "ExceptionList", "Drilldown"]
+        },
+        "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "subtitle": { "type": "string", "maxLength": 160 },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 24,
+          "items": { "$ref": "#/definitions/semanticItem" }
+        }
+      }
+    },
+    "semanticItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "value", "provenance"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "value": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 80 }, { "type": "number" }] },
+        "detail": { "type": "string", "maxLength": 120 },
         "provenance": { "const": "source" }
       }
     },

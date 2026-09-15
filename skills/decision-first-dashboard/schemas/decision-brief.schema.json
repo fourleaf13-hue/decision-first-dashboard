@@ -9,7 +9,12 @@
     "exception": { "$ref": "#/definitions/slot" },
     "diagnosis": { "$ref": "#/definitions/slot" },
     "audience": { "$ref": "#/definitions/slot" },
-    "cadence": { "$ref": "#/definitions/slot" }
+    "cadence": { "$ref": "#/definitions/slot" },
+    "contextRequirements": {
+      "type": "array",
+      "maxItems": 12,
+      "items": { "$ref": "#/definitions/contextRequirement" }
+    }
   },
   "definitions": {
     "slot": {
@@ -19,6 +24,37 @@
       "properties": {
         "status": { "enum": ["confirmed", "inferred", "absent"] },
         "value": { "type": "string", "minLength": 1, "maxLength": 240 }
+      }
+    },
+    "contextRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "subject", "minimumCoverage", "status"],
+      "properties": {
+        "type": {
+          "enum": [
+            "relative_comparison",
+            "distribution_shape",
+            "ranking_span",
+            "temporal_reference",
+            "target_reference",
+            "gap_attribution",
+            "contributor_comparison",
+            "decomposition"
+          ]
+        },
+        "subject": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "minimumCoverage": {
+          "enum": [
+            "current_plus_reference",
+            "full_distribution",
+            "both_ends",
+            "target_and_gap",
+            "contributors",
+            "full_breakdown"
+          ]
+        },
+        "status": { "enum": ["confirmed", "inferred", "source"] }
       }
     }
   }

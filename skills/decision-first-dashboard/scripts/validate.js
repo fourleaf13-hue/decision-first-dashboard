@@ -163,6 +163,15 @@ function visibleCopyFields(data) {
       add(`/signals/${index}/value`, signal?.value);
       add(`/signals/${index}/delta`, signal?.delta);
     }
+    for (const [nodeIndex, node] of asArray(data.semanticNodes).entries()) {
+      add(`/semanticNodes/${nodeIndex}/title`, node?.title);
+      add(`/semanticNodes/${nodeIndex}/subtitle`, node?.subtitle);
+      for (const [itemIndex, item] of asArray(node?.items).entries()) {
+        add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/label`, item?.label);
+        add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/value`, item?.value);
+        add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/detail`, item?.detail);
+      }
+    }
   }
 
   if (data?.mode === 'composite') {

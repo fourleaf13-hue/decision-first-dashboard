@@ -6,15 +6,15 @@ import { renderHtml, renderSvg } from './render.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 
-export function compileGroundedBundle(bundle, { baseDir = process.cwd() } = {}) {
+export function compileGroundedBundle(bundle, { baseDir = process.cwd(), composition = undefined } = {}) {
   const result = validateGroundedBundle(bundle, { baseDir });
   if (!result.valid) return { result, svg: null, html: null, outputMode: null };
 
   const data = bundle.decisionState;
   return {
     result,
-    svg: renderSvg(data),
-    html: renderHtml(data),
+    svg: renderSvg(data, { composition }),
+    html: renderHtml(data, { composition }),
     outputMode: data.mode === 'composite' ? 'composite' : 'no-score'
   };
 }

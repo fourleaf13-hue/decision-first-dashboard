@@ -12,6 +12,18 @@
       "minItems": 1,
       "maxItems": 200,
       "items": { "$ref": "#/definitions/metricRoute" }
+    },
+    "compositionNodes": {
+      "type": "array",
+      "maxItems": 24,
+      "items": { "$ref": "#/definitions/compositionNode" }
+    },
+    "compositionModifiers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "density": { "enum": ["full", "compact"] }
+      }
     }
   },
   "definitions": {
@@ -32,6 +44,28 @@
         "explains": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
         "active": { "type": "boolean" },
         "surfacePath": { "type": "string", "pattern": "^/(exceptions|events)/[0-9]+$" }
+      }
+    },
+    "compositionNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "type": {
+          "enum": [
+            "MetricCluster",
+            "Trend",
+            "Distribution",
+            "Breakdown",
+            "Ranking",
+            "Relationship",
+            "ExceptionList",
+            "Drilldown"
+          ]
+        },
+        "presentation": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "compactPresentation": { "type": "string", "minLength": 1, "maxLength": 40 }
       }
     }
   }

@@ -15,6 +15,18 @@ The agent may assess whether a dashboard is warranted, clarify decision intent, 
 
 A dashboard earns first-view screen space only when the information can change a decision, trigger an action, surface an exception, explain a primary signal, or support deliberate drill-down.
 
+## Adaptive composition grammar
+
+Do not add bakery, sales, SaaS, executive, or monitoring renderer branches. There is one composition engine and one renderer entrypoint. Evolve the existing pipeline as `Decision Brief → Semantic Nodes → Node Presentation → Composition Modifiers → Coverage Manifest → Context Preservation Gate → deterministic renderer → delivered-artifact verifier`.
+
+Semantic nodes may be `MetricCluster`, `Trend`, `Distribution`, `Breakdown`, `Ranking`, `Relationship`, `ExceptionList`, or `Drilldown`. Audience and cadence modify priority, density, prominence, expansion, drilldown depth, and first-view budget; they are not renderer types and cannot discard context required by the confirmed decision.
+
+Use structured `contextRequirements` on the existing Decision Brief when the decision and source structure require retained comparison, distribution, ranking, target, attribution, or decomposition context. Infer unambiguous requirements, but ask only when an ambiguity would change the decision. Each selected presentation declares the coverage it preserves. The compiler must compare its coverage manifest with `contextRequirements` and stop with `CONTEXT_PRESERVATION_FAILED` when coverage is missing. Keep the full structure, use an explicit reachable drilldown, or fail closed; never silently replace it with a peak summary. The same source must keep its semantic nodes across audience/cadence changes; modifiers may alter priority, density, prominence, expansion, drilldown, or a node-owned presentation only when that variant preserves every required context.
+
+Radar is only a `MetricCluster` presentation. It requires at least three comparable dimensions in one evaluation system, a shared meaningful scale or source-backed normalization, and a real profile/balance decision. Mixed counts, shares, ROI, and deltas fail the Profile Test and use comparison presentation. A local signal direction is not a visible overall business verdict in no-score mode. Every visible overall verdict must be a typed claim with `claimType`, `scope`, and source `evidenceRefs`, plus resolvable artifact markers; a verdict without evidence refs cannot render. Never synthesize `IMPROVING`, `DETERIORATING`, or `MIXED` without a source-backed score, target, health model, or explicitly confirmed user verdict.
+
+The delivered gate reads the final HTML/SVG and a delivered manifest, not merely composition intent. Every delivered node must expose machine-readable `data-semantic-node`, `data-presentation`, and `data-coverage` markers that cross-check the manifest. A manifest that says a node was delivered when the artifact does not show its marker fails. The verifier alone issues a `verificationStamp` after success; it binds `artifactHash` and `manifestHash`, and a renderer- or composer-supplied stamp fails. Composition decisions use a stable `reasonCode` plus a parseable `requirementRef` or `modifierRef`; unknown or unattributed promote/retain/collapse/drop decisions fail.
+
 ## Mandatory execution contract
 
 This contract applies whenever the skill is actually invoked for a dashboard redesign.
@@ -56,7 +68,9 @@ The production compiler validates, in order:
 7. active-exception surfacing rules;
 8. the closed grounded-bundle and decision-state contracts;
 9. source SHA-256, evidence integrity, exact JSON Pointer/text-span grounding, and required claim coverage;
-10. composite score mathematics and score-band semantics.
+10. composite score mathematics and score-band semantics;
+11. semantic-node composition coverage and a machine-readable decision log;
+12. delivered HTML/SVG markers, delivered manifest, and verifier-issued hash-bound stamp.
 
 Worthiness transitions:
 
@@ -81,7 +95,7 @@ Downstream transitions:
 
 ### Layer 3 — Deterministic renderer
 
-`render.js` consumes only validated decision state and fills deterministic SVG/HTML compositions. It does not inspect hidden routing inventory, source data, or invent business meaning.
+`render.js` consumes only validated decision state plus the selected semantic-node composition and fills deterministic SVG/HTML compositions. It does not inspect hidden routing inventory, source data, or invent business meaning. Node presentation variants belong to their semantic node; no use-case, audience, or fixture-specific template registry is allowed.
 
 `drilldown`, `scorecard_only`, and diagnostics routed `on_demand` remain preserved for traceability without becoming eager first-view clutter. Only diagnostics explicitly routed with `visibility: "supporting"` may enter the closed `supportingSignals` layer and render as subordinate context.
 
