@@ -282,6 +282,12 @@ Every canonical HTML includes `decision-first-renderer=canonical` provenance met
 
 Do not regenerate a separate free-form image or app as the “real” After. If the runtime cannot execute the production compiler, do not fake a substitute.
 
+**Agent invocation compliance — behaviorally guarded, not runtime-enforced.**
+Repository tests and this Skill contract improve invocation discipline, but they
+cannot attest that an unconstrained host actually used the canonical compiler.
+Runtime acceptance therefore must pass the independent provenance gate below
+before its artifact is treated as a valid acceptance result.
+
 ### Contract, behavior, and delivery verification
 
 **Schema green ≠ routing green ≠ canonical output green.** A schema-valid object only proves that its shape is acceptable. It does not prove that routing made the correct decision, that composition preserved the required context, or that the final artifact actually delivered the selected result. Verification therefore proceeds in order: **contract → behavior → canonical HTML/SVG**. The final gate must inspect the delivered artifact and its manifest, including machine-readable semantic markers; an intended composition that is absent from the HTML/SVG is a delivery failure.
