@@ -558,14 +558,29 @@ function parseCliArgs(argv) {
   const optionArgs = runIndex >= 0 ? argv.slice(0, runIndex) : argv;
   if (runIndex >= 0) {
     options.runCommand = argv[runIndex + 1] ?? null;
+    if (!options.runCommand) throw new Error('--run requires a command');
     options.runArgs = argv.slice(runIndex + 2);
   }
+  const valueFor = (index, flag) => {
+    const value = optionArgs[index + 1];
+    if (value === undefined) throw new Error(`${flag} requires a value`);
+    return value;
+  };
   for (let index = 0; index < optionArgs.length; index += 1) {
     const arg = optionArgs[index];
-    if (arg === '--repo-root') options.repoRoot = optionArgs[++index];
-    else if (arg === '--runtime-skill-path') options.runtimeSkillPath = optionArgs[++index];
-    else if (arg === '--expected-repo-head') options.expectedRepoHead = optionArgs[++index];
-    else if (arg === '--exclude') options.exclude = optionArgs[++index].split(',').filter(Boolean);
+    if (arg === '--repo-root') {
+      options.repoRoot = valueFor(index, arg);
+      index += 1;
+    } else if (arg === '--runtime-skill-path') {
+      options.runtimeSkillPath = valueFor(index, arg);
+      index += 1;
+    } else if (arg === '--expected-repo-head') {
+      options.expectedRepoHead = valueFor(index, arg);
+      index += 1;
+    } else if (arg === '--exclude') {
+      options.exclude = valueFor(index, arg).split(',').filter(Boolean);
+      index += 1;
+    }
     else throw new Error(`Unknown argument: ${arg}`);
   }
   return options;

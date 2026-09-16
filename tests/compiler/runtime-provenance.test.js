@@ -362,6 +362,24 @@ test('CLI input failures still emit the complete provenance report schema', () =
   assert.equal(report.acceptanceValid, false);
 });
 
+test('CLI rejects a dangling option value with the complete provenance report schema', () => {
+  const preflightPath = path.join(testDir, '../../skills/decision-first-dashboard/scripts/runtime-provenance-preflight.js');
+  const run = spawnSync(process.execPath, [
+    preflightPath,
+    '--repo-root', path.resolve(testDir, '../..'),
+    '--runtime-skill-path', path.resolve(testDir, '../../skills/decision-first-dashboard'),
+    '--expected-repo-head'
+  ], {
+    cwd: testDir,
+    encoding: 'utf8'
+  });
+  assert.equal(run.status, 1);
+  const report = JSON.parse(run.stdout.trim());
+  for (const field of requiredReportFields) assert.equal(Object.hasOwn(report, field), true, `missing report field: ${field}`);
+  assert.equal(report.firstFailingCheck, 'CLI_INPUT_INVALID');
+  assert.equal(report.expectedRepoHead, null);
+});
+
 test('Windows reparse-type ambiguity fails closed instead of guessing symlink', (context) => {
   if (process.platform !== 'win32') {
     context.skip('Windows-specific reparse-point fallback');
