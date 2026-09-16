@@ -189,6 +189,19 @@ function pathEquals(left, right, platform = process.platform) {
   return left === right;
 }
 
+function isMainModule(moduleFile, platform = process.platform) {
+  if (!process.argv[1]) return false;
+  try {
+    return pathEquals(
+      resolvePhysicalTarget(process.argv[1]),
+      resolvePhysicalTarget(moduleFile),
+      platform
+    );
+  } catch {
+    return path.resolve(process.argv[1]) === path.resolve(moduleFile);
+  }
+}
+
 function baseReport({
   repoHead,
   expectedRepoHead,
@@ -534,7 +547,7 @@ function parseCliArgs(argv) {
   return options;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(currentFile)) {
+if (isMainModule(currentFile)) {
   try {
     const options = parseCliArgs(process.argv.slice(2));
     let runAcceptance;

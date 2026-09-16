@@ -29,6 +29,19 @@ function samePhysicalPath(left, right, platform = process.platform) {
   return left === right;
 }
 
+function isMainModule(moduleFile, platform = process.platform) {
+  if (!process.argv[1]) return false;
+  try {
+    return samePhysicalPath(
+      resolvePhysicalTarget(process.argv[1]),
+      resolvePhysicalTarget(moduleFile),
+      platform
+    );
+  } catch {
+    return path.resolve(process.argv[1]) === path.resolve(moduleFile);
+  }
+}
+
 function windowsLinkType(targetPath, platform) {
   if (platform !== 'win32') return null;
   try {
@@ -274,7 +287,7 @@ function parseArgs(argv) {
 
 const currentFile = fileURLToPath(import.meta.url);
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(currentFile)) {
+if (isMainModule(currentFile)) {
   try {
     const args = parseArgs(process.argv.slice(2));
     const result = ensureRuntimeSkillBinding(args);

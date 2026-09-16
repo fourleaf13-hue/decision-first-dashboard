@@ -54,6 +54,15 @@ function createFixture({ missing = [], missingInvariant = false } = {}) {
       fs.writeFileSync(absolutePath, contents);
     }
   }
+  for (const relativePath of [
+    'scripts/runtime-provenance-preflight.js',
+    'scripts/bind-runtime-skill.js'
+  ]) {
+    fs.copyFileSync(
+      path.join(testDir, '../../skills/decision-first-dashboard', relativePath),
+      path.join(repoSkillPath, relativePath)
+    );
+  }
 
   return { tempRoot, repoRoot, repoSkillPath, runtimeSkillPath };
 }
@@ -343,6 +352,17 @@ test('CLI emits one machine-readable pass report for a clean git checkout', () =
   assert.equal(report.contentStablePost, true);
   assert.equal(report.repoCleanPre, true);
   assert.equal(report.repoCleanPost, true);
+
+  const runtimeEntrypointRun = spawnSync(process.execPath, [
+    path.join(fixture.runtimeSkillPath, 'scripts', 'runtime-provenance-preflight.js'),
+    '--repo-root', fixture.repoRoot,
+    '--runtime-skill-path', fixture.runtimeSkillPath,
+    '--expected-repo-head', head,
+    '--run', process.execPath, '-e', 'process.exit(0)'
+  ], { cwd: fixture.repoRoot, encoding: 'utf8' });
+  assert.equal(runtimeEntrypointRun.status, 0, runtimeEntrypointRun.stderr || runtimeEntrypointRun.stdout);
+  const runtimeEntrypointReport = JSON.parse(runtimeEntrypointRun.stdout.trim());
+  assert.equal(runtimeEntrypointReport.result, 'RUNTIME_PROVENANCE_PASS');
 });
 
 test('runtime provenance gate remains independent and documented', () => {
