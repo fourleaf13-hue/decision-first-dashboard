@@ -3,20 +3,40 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateGroundedBundle } from './grounding.js';
 import { renderHtml, renderSvg } from './render.js';
+import { buildDeliveredClaims } from './composition.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 
-export function compileGroundedBundle(bundle, { baseDir = process.cwd() } = {}) {
+export function compileGroundedBundle(bundle, { baseDir = process.cwd(), composition = undefined, claims = undefined } = {}) {
   const result = validateGroundedBundle(bundle, { baseDir });
   if (!result.valid) return { result, svg: null, html: null, outputMode: null };
 
   const data = bundle.decisionState;
-  return {
-    result,
-    svg: renderSvg(data),
-    html: renderHtml(data),
-    outputMode: data.mode === 'composite' ? 'composite' : 'no-score'
-  };
+  const deliveredClaims = claims ?? buildDeliveredClaims(bundle);
+  try {
+    return {
+      result,
+      svg: renderSvg(data, { composition, claims: deliveredClaims }),
+      html: renderHtml(data, { composition, claims: deliveredClaims }),
+      outputMode: data.mode === 'composite' ? 'composite' : 'no-score'
+    };
+  } catch (error) {
+    return {
+      result: {
+        valid: false,
+        stage: 'delivery',
+        transition: 'DELIVERY_CONTRACT_FAILED',
+        errors: [{
+          code: 'RENDERER_CONTRACT_FAILED',
+          path: '',
+          message: error instanceof Error ? error.message : String(error)
+        }]
+      },
+      svg: null,
+      html: null,
+      outputMode: null
+    };
+  }
 }
 
 if (process.argv[1] === currentFile) {
