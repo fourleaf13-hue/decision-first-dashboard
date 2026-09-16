@@ -19,6 +19,8 @@ const requiredRuntimeFiles = [
   'scripts/routing.js',
   'scripts/grounding.js',
   'scripts/compile-dashboard.js',
+  'scripts/runtime-provenance-preflight.js',
+  'scripts/bind-runtime-skill.js',
   'scripts/render.js',
   'schemas/worthiness-assessment.schema.json',
   'schemas/decision-brief.schema.json',

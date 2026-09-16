@@ -290,6 +290,35 @@ Do not regenerate a separate free-form image or app as the “real” After. If 
 
 `compile-dashboard.js` is the production canonical entrypoint and always invokes the compiler with the required semantic-delivery contract. Missing or empty semantic nodes or composition fail at delivery; they cannot fall through to the legacy renderer. Direct `compile.js` and lower-level `compileGroundedBundle` calls may retain compatibility behavior when `requireSemantic` is not requested.
 
+### Runtime Skill provenance gate
+
+Before using a runtime-installed Skill for acceptance, prove the loaded package
+identity with the independent `scripts/runtime-provenance-preflight.js` gate.
+On Windows, bind `%USERPROFILE%\.agents\skills\decision-first-dashboard` to
+the repository's `skills\decision-first-dashboard` directory with
+`scripts/bind-runtime-skill.js`. Directory junctions are preferred, directory
+symlinks are the fallback, and resolved physical targets must equal the
+repository Skill directory. A copied directory can pass exact content equality
+but must report `stalenessRisk: true`; it is not a zero-staleness-risk runtime.
+
+The bracket command is:
+
+```powershell
+npm run preflight:runtime-provenance -- --repo-root "$PWD" --runtime-skill-path "$env:USERPROFILE\.agents\skills\decision-first-dashboard" --expected-repo-head "<expected-40-char-commit>" --run node <acceptance-script.js>
+```
+
+The gate checks the expected commit, binding and physical identity, complete
+pre/post package tree hashes, clean pre/post status for
+`skills/decision-first-dashboard/`, required files, and these exact runtime
+invariants: `SKILL.md` contains `Agent invocation compliance — behaviorally
+guarded, not runtime-enforced`; `scripts/compile-dashboard.js` contains
+`requireSemantic: true`; `scripts/composition.js` and
+`scripts/render-semantic.js` exist. Its machine-readable result must be
+`RUNTIME_PROVENANCE_PASS` with `acceptanceValid: true` before a fresh Bakery
+acceptance session may begin. Keep acceptance logs, caches, and temporary files
+outside the Skill package; the default hash exclude list is empty and does not
+silently hide runtime-generated files.
+
 ### 9. Follow failure transitions literally
 
 - `FIX_WORTHINESS_ASSESSMENT` → repair the structured assessment;
