@@ -267,4 +267,3 @@ exclude list, actual binding/path/physical target, all four pre/post hashes,
 clean pre/post values, staleness risk, first failing check if any, package
 readiness, and CI result. Do not claim Bakery acceptance validity until the
 provenance gate has passed.
-
