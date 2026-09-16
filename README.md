@@ -137,6 +137,45 @@ An ambiguous prompt such as “redesign this dashboard” is **not render permis
 
 The canonical compiler also writes `output.manifest.json` and stamps the HTML/SVG with machine-verifiable provenance. A second agent-authored HTML, image, SVG, React app, or native artifact is not the canonical After merely because it looks better.
 
+### Runtime Skill provenance gate
+
+Before an acceptance run, validate that the runtime is reading the intended
+Skill package rather than a stale copied install. On Windows, the supported
+runtime path is `%USERPROFILE%\.agents\skills\decision-first-dashboard`; bind it
+to this repository's `skills\decision-first-dashboard` directory with the
+standalone installer:
+
+```powershell
+npm run bind:runtime-skill -- --repo-skill-path "$PWD\skills\decision-first-dashboard" --runtime-skill-path "$env:USERPROFILE\.agents\skills\decision-first-dashboard"
+```
+
+The installer prefers a directory junction and falls back to a directory
+symlink. An existing wrong link fails without overwrite. An ordinary copied
+directory is never deleted silently; pass an explicit recoverable
+`--backup-existing <path>` only when moving that stale copy is intended.
+
+Run a fresh acceptance through the formal acceptance entrypoint. It invokes the
+independent provenance gate before the acceptance command, passes
+`--reject-staleness-risk`, and never starts the acceptance command when
+provenance fails:
+
+```powershell
+npm run run:acceptance -- --repo-root "$PWD" --runtime-skill-path "$env:USERPROFILE\.agents\skills\decision-first-dashboard" --expected-repo-head "<expected-40-char-commit>" --run node <acceptance-script.js>
+```
+
+The JSON report from the formal entrypoint includes the repository/runtime binding, physical-target check,
+pre/post tree hashes, content equality/stability, package invariants, clean
+repository status, `stalenessRisk`, `firstFailingCheck`, repair diagnostics,
+and `acceptanceValid`. The hash covers the complete Skill package with an
+explicit empty-by-default exclude list, using sorted original-case POSIX paths
+and `relativePath + NUL + fileBytes`; logs, caches, and temp files must remain
+outside the package. A copied package may be content-identical and still has
+`stalenessRisk: true`; formal acceptance rejects that binding before execution.
+The lower-level `preflight:runtime-provenance` command remains available for
+diagnostics and unit testing, but is not a substitute for the formal entrypoint.
+Do not start a fresh Bakery acceptance until the report ends with
+`result: RUNTIME_PROVENANCE_PASS`.
+
 Attention is intentionally restrained by default. Ordinary deterioration and routed exceptions stay visible through values, deltas, profile shape, and compact exception surfaces; large red warning banners, alarm icons, and `Action needed` / `Critical` / `Warning` language require explicit source-grounded alert semantics or an explicit user-supplied alert policy.
 
 <details>

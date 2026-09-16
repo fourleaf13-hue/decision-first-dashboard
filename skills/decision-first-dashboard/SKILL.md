@@ -282,6 +282,12 @@ Every canonical HTML includes `decision-first-renderer=canonical` provenance met
 
 Do not regenerate a separate free-form image or app as the “real” After. If the runtime cannot execute the production compiler, do not fake a substitute.
 
+**Agent invocation compliance — behaviorally guarded, not runtime-enforced.**
+Repository tests and this Skill contract improve invocation discipline, but they
+cannot attest that an unconstrained host actually used the canonical compiler.
+Runtime acceptance therefore must pass the independent provenance gate below
+before its artifact is treated as a valid acceptance result.
+
 ### Contract, behavior, and delivery verification
 
 **Schema green ≠ routing green ≠ canonical output green.** A schema-valid object only proves that its shape is acceptable. It does not prove that routing made the correct decision, that composition preserved the required context, or that the final artifact actually delivered the selected result. Verification therefore proceeds in order: **contract → behavior → canonical HTML/SVG**. The final gate must inspect the delivered artifact and its manifest, including machine-readable semantic markers; an intended composition that is absent from the HTML/SVG is a delivery failure.
@@ -289,6 +295,40 @@ Do not regenerate a separate free-form image or app as the “real” After. If 
 `compile.js`, `validate.js`, and `render.js` remain lower-level compatibility/testing tools. They are not substitutes for `compile-dashboard.js` in ordinary production workflows.
 
 `compile-dashboard.js` is the production canonical entrypoint and always invokes the compiler with the required semantic-delivery contract. Missing or empty semantic nodes or composition fail at delivery; they cannot fall through to the legacy renderer. Direct `compile.js` and lower-level `compileGroundedBundle` calls may retain compatibility behavior when `requireSemantic` is not requested.
+
+### Runtime Skill provenance gate
+
+Before using a runtime-installed Skill for acceptance, prove the loaded package
+identity with the independent `scripts/runtime-provenance-preflight.js` gate.
+On Windows, bind `%USERPROFILE%\.agents\skills\decision-first-dashboard` to
+the repository's `skills\decision-first-dashboard` directory with
+`scripts/bind-runtime-skill.js`. Directory junctions are preferred, directory
+symlinks are the fallback, and resolved physical targets must equal the
+repository Skill directory. A copied directory can pass exact content equality
+but must report `stalenessRisk: true`; it is not a zero-staleness-risk runtime.
+
+The formal acceptance entrypoint is:
+
+```powershell
+npm run run:acceptance -- --repo-root "$PWD" --runtime-skill-path "$env:USERPROFILE\.agents\skills\decision-first-dashboard" --expected-repo-head "<expected-40-char-commit>" --run node <acceptance-script.js>
+```
+
+`run-acceptance.js` invokes the canonical `runtime-provenance-preflight.js`
+before the acceptance command and passes `--reject-staleness-risk`. A non-zero
+provenance result terminates the formal acceptance; no business result or
+canonical artifact may be produced. The JSON gate report includes the expected commit, binding and physical identity, complete
+pre/post package tree hashes, clean pre/post status for
+`skills/decision-first-dashboard/`, required files, and these exact runtime
+invariants: `SKILL.md` contains `Agent invocation compliance — behaviorally
+guarded, not runtime-enforced`; `scripts/compile-dashboard.js` contains
+`requireSemantic: true`; `scripts/composition.js` and
+`scripts/render-semantic.js` exist. Its machine-readable result must be
+`RUNTIME_PROVENANCE_PASS` with `acceptanceValid: true` before a fresh Bakery
+acceptance session may begin. Keep acceptance logs, caches, and temporary files
+outside the Skill package; the default hash exclude list is empty and does not
+silently hide runtime-generated files. The lower-level
+`preflight:runtime-provenance` command remains diagnostic-only; an exact copied
+package reports `stalenessRisk: true` and is rejected by formal acceptance.
 
 ### 9. Follow failure transitions literally
 
