@@ -200,6 +200,15 @@ function visibleCopyFields(data) {
     for (const [claimIndex, claim] of asArray(data.visibleClaims).entries()) {
       add(`/visibleClaims/${claimIndex}/text`, claim?.text);
     }
+    for (const [nodeIndex, node] of asArray(data.semanticNodes).entries()) {
+      add(`/semanticNodes/${nodeIndex}/title`, node?.title);
+      add(`/semanticNodes/${nodeIndex}/subtitle`, node?.subtitle);
+      for (const [itemIndex, item] of asArray(node?.items).entries()) {
+        add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/label`, item?.label);
+        add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/value`, item?.value);
+        add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/detail`, item?.detail);
+      }
+    }
   }
 
   for (const [index, item] of asArray(data?.exceptions).entries()) {

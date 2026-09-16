@@ -174,7 +174,7 @@ function tuneHtmlRadar(markup, dimensions) {
 export function renderSvg(data, options = {}) {
   const { composition } = options;
   if (options.requireSemantic) assertSemanticDeliveryContract(data, composition);
-  if (Array.isArray(data?.semanticNodes)) return renderSemanticSvg(data, composition, options);
+  if (Array.isArray(data?.semanticNodes) && composition) return renderSemanticSvg(data, composition, options);
   const prepared = prepareRenderData(data);
   const coreMarkup = renderSvgCore(prepared, options);
   if (isPlainNoScore(prepared)) return renderNonRadarSvg(prepared);
@@ -185,7 +185,7 @@ export function renderSvg(data, options = {}) {
 export function renderHtml(data, options = {}) {
   const { composition } = options;
   if (options.requireSemantic) assertSemanticDeliveryContract(data, composition);
-  if (Array.isArray(data?.semanticNodes)) return renderSemanticHtml(data, composition, options);
+  if (Array.isArray(data?.semanticNodes) && composition) return renderSemanticHtml(data, composition, options);
   const prepared = prepareRenderData(data);
   const coreMarkup = renderHtmlCore(prepared, options);
   if (isPlainNoScore(prepared)) return renderNonRadarHtml(prepared);

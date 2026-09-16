@@ -25,11 +25,8 @@ export function compileGroundedBundle(
   bundle,
   { baseDir = process.cwd(), composition = undefined, claims = undefined, requireSemantic = false } = {}
 ) {
-  const result = validateGroundedBundle(bundle, { baseDir });
-  if (!result.valid) return { result, svg: null, html: null, outputMode: null };
-
-  const data = bundle.decisionState;
-  if (requireSemantic && (!Array.isArray(data.semanticNodes) || data.semanticNodes.length === 0)) {
+  const data = bundle?.decisionState;
+  if (requireSemantic && (!Array.isArray(data?.semanticNodes) || data.semanticNodes.length === 0)) {
     return semanticDeliveryFailure(
       'SEMANTIC_STATE_REQUIRED',
       '/decisionState/semanticNodes',
@@ -43,6 +40,10 @@ export function compileGroundedBundle(
       'canonical production delivery requires a non-empty validated semantic composition'
     );
   }
+
+  const result = validateGroundedBundle(bundle, { baseDir });
+  if (!result.valid) return { result, svg: null, html: null, outputMode: null };
+
   const deliveredClaims = claims ?? buildDeliveredClaims(bundle);
   try {
     return {

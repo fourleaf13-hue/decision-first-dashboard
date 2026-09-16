@@ -295,8 +295,10 @@ test('metric routing reaches semantic nodes, selected presentation, delivered hi
   assert.equal(verifyDeliveredArtifact({ html: result.html, svg: result.svg, manifest: result.manifest }).valid, true);
 
   const renderSource = fs.readFileSync(RENDER_PATH, 'utf8');
-  const semanticBranch = renderSource.indexOf('if (Array.isArray(data?.semanticNodes)) return renderSemanticHtml');
+  const deliveryGuard = renderSource.indexOf('if (options.requireSemantic) assertSemanticDeliveryContract');
+  const semanticBranch = renderSource.indexOf('if (Array.isArray(data?.semanticNodes) && composition) return renderSemanticHtml');
   const legacyBranch = renderSource.indexOf('const coreMarkup = renderHtmlCore');
+  assert.ok(deliveryGuard >= 0 && deliveryGuard < legacyBranch, 'semantic delivery guard must precede legacy compatibility fallback');
   assert.ok(semanticBranch >= 0 && semanticBranch < legacyBranch, 'semantic render branch must precede legacy compatibility fallback');
 });
 

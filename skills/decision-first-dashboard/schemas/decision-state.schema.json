@@ -82,6 +82,12 @@
           "type": "array",
           "maxItems": 24,
           "items": { "$ref": "#/definitions/visibleClaim" }
+        },
+        "semanticNodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 24,
+          "items": { "$ref": "#/definitions/semanticNode" }
         }
       }
     },

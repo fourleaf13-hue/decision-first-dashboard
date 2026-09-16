@@ -71,5 +71,38 @@
       "event": "Plan downgrade requested",
       "time": "2 hr ago"
     }
+  ],
+  "semanticNodes": [
+    {
+      "title": "Subscription health score",
+      "items": [{ "label": "Current score", "value": 68 }]
+    },
+    {
+      "title": "Score components",
+      "items": [
+        { "label": "Retention", "value": 60 },
+        { "label": "Growth", "value": 80 },
+        { "label": "Conversion", "value": 66.6667 }
+      ]
+    },
+    {
+      "title": "Subscription health trend",
+      "items": [
+        { "label": "Period 1", "value": 61 },
+        { "label": "Period 2", "value": 63 },
+        { "label": "Period 3", "value": 64 },
+        { "label": "Period 4", "value": 66 },
+        { "label": "Period 5", "value": 67 },
+        { "label": "Period 6", "value": 68 }
+      ]
+    },
+    {
+      "title": "Active exceptions",
+      "items": [{ "label": "Northstar", "value": "At risk", "detail": "Enterprise · $7,200" }]
+    },
+    {
+      "title": "Recent events",
+      "items": [{ "label": "Northstar", "value": "Plan downgrade requested", "detail": "2 hr ago" }]
+    }
   ]
 }

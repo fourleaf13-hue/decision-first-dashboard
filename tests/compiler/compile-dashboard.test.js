@@ -18,6 +18,9 @@ const noScoreBundle = JSON.parse(fs.readFileSync(path.join(groundingDir, 'no-sco
 const noScoreRouting = JSON.parse(fs.readFileSync(path.join(routingDir, 'no-score.routing.json'), 'utf8'));
 const dashboardWorthiness = JSON.parse(fs.readFileSync(path.join(worthinessDir, 'dashboard.worthiness.json'), 'utf8'));
 const noScoreBrief = JSON.parse(fs.readFileSync(path.join(intakeDir, 'confirmed.decision-brief.json'), 'utf8'));
+const compositeBundle = JSON.parse(fs.readFileSync(path.join(groundingDir, 'composite.grounded.json'), 'utf8'));
+const compositeRouting = JSON.parse(fs.readFileSync(path.join(routingDir, 'composite.routing.json'), 'utf8'));
+const compositeBrief = JSON.parse(fs.readFileSync(path.join(intakeDir, 'composite-confirmed.decision-brief.json'), 'utf8'));
 
 function semanticBundleForContract() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'semantic-contract-'));
@@ -103,11 +106,72 @@ test('production compile passes worthiness and intake before routing, grounding,
   assert.equal(compiled.result.intakeSummary.actionStatus, 'confirmed');
   assert.equal(compiled.result.routingSummary.inventoryCount, 5);
   assert.equal(compiled.result.routingSummary.primaryCount, 5);
-  assert.match(compiled.svg, /Current overview/);
-  assert.match(compiled.html, /Current overview/);
+  assert.match(compiled.svg, /data-semantic-node="primary_signals"/);
+  assert.match(compiled.html, /data-semantic-node="primary_signals"/);
   assert.match(compiled.html, /decision-first-renderer/);
-  assert.doesNotMatch(compiled.svg, /Subscription health|Revenue context|Trend data unavailable/);
-  assert.doesNotMatch(compiled.html, /Subscription health|Revenue context|Trend data unavailable/);
+  assert.match(compiled.svg, /data-structure="metric-comparison"/);
+  assert.match(compiled.html, /data-structure="metric-comparison"/);
+  assert.doesNotMatch(compiled.svg, /OVERALL DIRECTION|Revenue context|Trend data unavailable/);
+  assert.doesNotMatch(compiled.html, /OVERALL DIRECTION|Revenue context|Trend data unavailable/);
+});
+
+test('production composite compilation reaches the shared semantic renderer with score context preserved', () => {
+  const compiled = compileDecisionDashboard(dashboardWorthiness, compositeBrief, compositeRouting, compositeBundle, { baseDir: groundingDir });
+
+  assert.equal(compiled.result.valid, true, JSON.stringify(compiled.result.errors));
+  assert.equal(compiled.result.transition, 'PASS');
+  assert.equal(compiled.manifest.verification.status, 'passed');
+  for (const artifact of [compiled.html, compiled.svg]) {
+    assert.match(artifact, /data-semantic-node="score_summary"/);
+    assert.match(artifact, /data-semantic-node="score_components"/);
+    assert.match(artifact, /data-semantic-node="score_trend"/);
+    assert.match(artifact, /data-semantic-node="active_exceptions"/);
+    assert.match(artifact, /data-semantic-node="recent_events"/);
+    assert.match(artifact, /data-structure="profile-shape"/);
+    assert.match(artifact, /data-claim-id="claim_score_band"/);
+    assert.match(artifact, /At risk/);
+  }
+});
+
+test('production compile cannot disable semantic delivery by omitting all semantic inputs', () => {
+  const routing = structuredClone(noScoreRouting);
+  delete routing.compositionNodes;
+  const bundle = structuredClone(noScoreBundle);
+  delete bundle.decisionState.semanticNodes;
+  const compiled = compileDecisionDashboard(dashboardWorthiness, noScoreBrief, routing, bundle, { baseDir: groundingDir });
+
+  assert.equal(compiled.result.valid, false);
+  assert.equal(compiled.result.stage, 'delivery');
+  assert.equal(compiled.result.transition, 'DELIVERY_CONTRACT_FAILED');
+  assert.ok(compiled.result.errors.some((error) => error.code === 'SEMANTIC_STATE_REQUIRED'));
+  assert.equal(compiled.html, null);
+  assert.equal(compiled.svg, null);
+});
+
+test('production compile fails closed when semantic state is empty', () => {
+  const bundle = structuredClone(noScoreBundle);
+  bundle.decisionState.semanticNodes = [];
+  const compiled = compileDecisionDashboard(dashboardWorthiness, noScoreBrief, noScoreRouting, bundle, { baseDir: groundingDir });
+
+  assert.equal(compiled.result.valid, false);
+  assert.equal(compiled.result.stage, 'delivery');
+  assert.equal(compiled.result.transition, 'DELIVERY_CONTRACT_FAILED');
+  assert.ok(compiled.result.errors.some((error) => error.code === 'SEMANTIC_STATE_REQUIRED'));
+  assert.equal(compiled.html, null);
+  assert.equal(compiled.svg, null);
+});
+
+test('production compile fails closed when semantic composition is empty', () => {
+  const routing = structuredClone(noScoreRouting);
+  routing.compositionNodes = [];
+  const compiled = compileDecisionDashboard(dashboardWorthiness, noScoreBrief, routing, noScoreBundle, { baseDir: groundingDir });
+
+  assert.equal(compiled.result.valid, false);
+  assert.equal(compiled.result.stage, 'delivery');
+  assert.equal(compiled.result.transition, 'DELIVERY_CONTRACT_FAILED');
+  assert.ok(compiled.result.errors.some((error) => error.code === 'SEMANTIC_COMPOSITION_REQUIRED'));
+  assert.equal(compiled.html, null);
+  assert.equal(compiled.svg, null);
 });
 
 test('production semantic compilation fails closed instead of rendering a legacy artifact when semantic state is missing', () => {
@@ -115,7 +179,9 @@ test('production semantic compilation fails closed instead of rendering a legacy
     ...noScoreRouting,
     compositionNodes: [{ id: 'arr', type: 'Trend', presentation: 'full_chart' }]
   };
-  const compiled = compileDecisionDashboard(dashboardWorthiness, noScoreBrief, semanticRouting, noScoreBundle, { baseDir: groundingDir });
+  const bundle = structuredClone(noScoreBundle);
+  delete bundle.decisionState.semanticNodes;
+  const compiled = compileDecisionDashboard(dashboardWorthiness, noScoreBrief, semanticRouting, bundle, { baseDir: groundingDir });
 
   assert.equal(compiled.result.valid, false);
   assert.equal(compiled.result.stage, 'delivery');
