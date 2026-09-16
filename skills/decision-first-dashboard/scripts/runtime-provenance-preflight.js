@@ -116,14 +116,21 @@ export function computeSkillTreeHash(rootPath, { exclude = DEFAULT_EXCLUDES } = 
   const excludes = normalizeExcludes(exclude);
   const files = enumerateFiles(resolvedRoot, excludes);
   const hash = crypto.createHash(HASH_ALGORITHM);
+  const fileHashes = [];
   for (const file of files) {
+    const fileBytes = fs.readFileSync(file.absolutePath);
     hash.update(file.relativePath, 'utf8');
     hash.update(Buffer.from([0]));
-    hash.update(fs.readFileSync(file.absolutePath));
+    hash.update(fileBytes);
+    fileHashes.push({
+      relativePath: file.relativePath,
+      hash: crypto.createHash(HASH_ALGORITHM).update(fileBytes).digest('hex')
+    });
   }
   return {
     hash: hash.digest('hex'),
-    files: files.map((file) => file.relativePath)
+    files: files.map((file) => file.relativePath),
+    fileHashes
   };
 }
 
@@ -131,8 +138,18 @@ function sameFileInventory(left, right) {
   return left.length === right.length && left.every((relativePath, index) => relativePath === right[index]);
 }
 
+function sameFileHashes(left, right) {
+  return left.length === right.length && left.every((file, index) => (
+    file.relativePath === right[index].relativePath && file.hash === right[index].hash
+  ));
+}
+
 function sameSkillTree(left, right) {
-  return left.hash === right.hash && sameFileInventory(left.files, right.files);
+  return (
+    left.hash === right.hash
+    && sameFileInventory(left.files, right.files)
+    && sameFileHashes(left.fileHashes, right.fileHashes)
+  );
 }
 
 function readRepoHead(repoRoot) {
@@ -369,6 +386,8 @@ function recordPostHashes(report, repoSkillPath, runtimeSkillPath, exclude, preT
     && report.runtimeTreeHashPre === report.runtimeTreeHashPost
     && sameFileInventory(preTrees.repoTree.files, repoTree.files)
     && sameFileInventory(preTrees.runtimeTree.files, runtimeTree.files)
+    && sameFileHashes(preTrees.repoTree.fileHashes, repoTree.fileHashes)
+    && sameFileHashes(preTrees.runtimeTree.fileHashes, runtimeTree.fileHashes)
   );
   return { repoTree, runtimeTree };
 }
@@ -504,6 +523,7 @@ export function runRuntimeProvenancePreflight({
       repoTreeHashPre: repoTree.hash,
       runtimeTreeHashPre: runtimeTree.hash,
       fileInventoryMatch: sameFileInventory(repoTree.files, runtimeTree.files),
+      fileFingerprintMatch: sameFileHashes(repoTree.fileHashes, runtimeTree.fileHashes),
       repoFiles: repoTree.files,
       runtimeFiles: runtimeTree.files,
       exclude
@@ -585,6 +605,7 @@ export function runRuntimeProvenancePreflight({
           repoTreeHashPost: report.repoTreeHashPost,
           runtimeTreeHashPost: report.runtimeTreeHashPost,
           fileInventoryMatch: sameFileInventory(postTrees.repoTree.files, postTrees.runtimeTree.files),
+          fileFingerprintMatch: sameFileHashes(postTrees.repoTree.fileHashes, postTrees.runtimeTree.fileHashes),
           repoFiles: postTrees.repoTree.files,
           runtimeFiles: postTrees.runtimeTree.files,
           exclude

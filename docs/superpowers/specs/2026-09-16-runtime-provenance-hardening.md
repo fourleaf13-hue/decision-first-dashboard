@@ -52,7 +52,8 @@ case, sorts those paths deterministically, and hashes each
 directory metadata are excluded. The digest contract remains exactly this
 stream; because the stream has no record terminator, `contentMatchPre` and
 `contentMatchPost` additionally require the sorted file inventories to be
-identical. The digest plus the inventory is the complete package identity
+identical and compare a SHA-256 fingerprint for each corresponding file. The
+digest, inventory, and per-file fingerprints are the complete package identity
 check, so a theoretical stream-boundary collision cannot pass the gate.
 
 Only the four key files receive named invariant diagnostics:

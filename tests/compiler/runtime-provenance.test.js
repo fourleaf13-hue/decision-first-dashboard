@@ -180,6 +180,26 @@ test('tree equality rejects an ambiguous hash stream with different file invento
   assert.equal(acceptanceCalls, 0);
 });
 
+test('tree equality rejects an ambiguous hash stream with the same file inventory', () => {
+  const fixture = createFixture();
+  fs.mkdirSync(path.dirname(fixture.runtimeSkillPath), { recursive: true });
+  fs.cpSync(fixture.repoSkillPath, fixture.runtimeSkillPath, { recursive: true });
+  fs.writeFileSync(path.join(fixture.repoSkillPath, 'zz-a.txt'), 'X');
+  fs.writeFileSync(path.join(fixture.repoSkillPath, 'zz-b.txt'), 'Yzz-b.txt\0Z');
+  fs.writeFileSync(path.join(fixture.runtimeSkillPath, 'zz-a.txt'), 'Xzz-b.txt\0Y');
+  fs.writeFileSync(path.join(fixture.runtimeSkillPath, 'zz-b.txt'), 'Z');
+
+  const { report, acceptanceCalls } = runGate(fixture);
+  assert.equal(report.repoTreeHashPre, report.runtimeTreeHashPre);
+  assert.deepEqual(
+    computeSkillTreeHash(fixture.repoSkillPath).files,
+    computeSkillTreeHash(fixture.runtimeSkillPath).files
+  );
+  assert.equal(report.contentMatchPre, false);
+  assert.equal(report.firstFailingCheck, 'CONTENT_MISMATCH_PRE');
+  assert.equal(acceptanceCalls, 0);
+});
+
 test('missing required file fails closed', () => {
   const fixture = createFixture({ missing: ['scripts/composition.js'] });
   ensureRuntimeSkillBinding({
