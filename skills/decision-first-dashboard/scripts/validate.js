@@ -175,6 +175,16 @@ function visibleCopyFields(data) {
     for (const [claimIndex, claim] of asArray(data.visibleClaims).entries()) {
       add(`/visibleClaims/${claimIndex}/text`, claim?.text);
     }
+    for (const [index, signal] of asArray(data.metricInventory).entries()) {
+      add(`/metricInventory/${index}/label`, signal?.label);
+      add(`/metricInventory/${index}/value`, signal?.value);
+      add(`/metricInventory/${index}/delta`, signal?.delta);
+    }
+    for (const [index, signal] of asArray(data.scorecardSignals).entries()) {
+      add(`/scorecardSignals/${index}/label`, signal?.label);
+      add(`/scorecardSignals/${index}/value`, signal?.value);
+      add(`/scorecardSignals/${index}/delta`, signal?.delta);
+    }
   }
 
   if (data?.mode === 'composite') {
@@ -222,7 +232,45 @@ function validateUiCopySemantics(data, errors) {
   }
 }
 
+function validatePresentationSemantics(data, errors) {
+  if (!data.presentation) return;
+
+  const allMetrics = [
+    ...asArray(data.signals),
+    ...asArray(data.supportingSignals),
+    ...asArray(data.metricInventory),
+    ...asArray(data.scorecardSignals)
+  ];
+  const available = new Set();
+  for (const [index, item] of allMetrics.entries()) {
+    if (!item?.metric) continue;
+    if (available.has(item.metric)) {
+      pushError(errors, `/metricInventory/${index}/metric`, 'metricUniqueness', 'a decision-state metric may appear in only one source collection');
+    }
+    available.add(item.metric);
+  }
+
+  const primary = data.presentation.primaryMetrics;
+  const supporting = data.presentation.supportingMetrics;
+  const scorecard = data.presentation.scorecardMetrics;
+  const allRefs = [...primary, ...supporting, ...scorecard];
+  const seenRefs = new Set();
+  for (const metric of allRefs) {
+    if (seenRefs.has(metric)) {
+      pushError(errors, '/presentation', 'presentationUniqueness', 'a metric may have only one presentation placement');
+    }
+    seenRefs.add(metric);
+    if (!available.has(metric)) {
+      pushError(errors, '/presentation', 'presentationReference', `presentation metric ${metric} does not exist in decision state`);
+    }
+  }
+  if (!primary.includes(data.presentation.heroMetric)) {
+    pushError(errors, '/presentation/heroMetric', 'heroReference', 'heroMetric must be one of the primaryMetrics');
+  }
+}
+
 function validateNoScoreSemantics(data, errors) {
+  validatePresentationSemantics(data, errors);
   const hasRadarScale = Object.hasOwn(data, 'radarScale');
   const scoredSignals = data.signals.filter((signal) => Object.hasOwn(signal, 'normalizedScore'));
   const previousSignals = data.signals.filter((signal) => Object.hasOwn(signal, 'previousNormalizedScore'));

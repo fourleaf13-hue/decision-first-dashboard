@@ -32,6 +32,33 @@ const HTML_LAYOUT = {
 
 export const deriveOverallDirection = deriveOverallDirectionCore;
 
+function prepareRenderData(data) {
+  if (data?.mode !== 'no_score' || !data.presentation) return data;
+
+  const pool = [
+    ...(data.signals ?? []),
+    ...(data.supportingSignals ?? []),
+    ...(data.metricInventory ?? []),
+    ...(data.scorecardSignals ?? [])
+  ];
+  const byMetric = new Map(pool.map((item) => [item.metric, item]));
+  const resolve = (metrics) => metrics.map((metric) => byMetric.get(metric)).filter(Boolean);
+  const resolvePrimary = (metrics) => {
+    const resolved = resolve(metrics);
+    const heroIndex = resolved.findIndex((item) => item.metric === data.presentation.heroMetric);
+    if (heroIndex <= 0) return resolved;
+    return [resolved[heroIndex], ...resolved.slice(0, heroIndex), ...resolved.slice(heroIndex + 1)];
+  };
+
+  const { metricInventory: _metricInventory, ...renderBase } = data;
+  return {
+    ...renderBase,
+    signals: resolvePrimary(data.presentation.primaryMetrics),
+    supportingSignals: resolve(data.presentation.supportingMetrics),
+    scorecardSignals: resolve(data.presentation.scorecardMetrics)
+  };
+}
+
 function radarDimensions(data) {
   if (data?.mode === 'composite') return data.model?.components ?? null;
   if (data?.radarScale && Array.isArray(data.signals)) return data.signals;
@@ -98,7 +125,7 @@ function tuneHtmlLabels(markup, dimensions) {
   let index = 0;
 
   return markup.replace(
-    /<div class="[^"]*radar-label radar-label--(top|bottom|left|right)" data-outside-ring="true" style="left:[^;]+%;top:[^"]+%">/g,
+    /<div class="[^"]*radar-label radar-label--(top|bottom|left|right)" data-outside-ring="true"[^>]*style="left:[^;]+%;top:[^"]+%">/g,
     (block) => {
       if (index >= dimensions.length) return block;
       const angle = -Math.PI / 2 + (Math.PI * 2 * index) / dimensions.length;
@@ -138,18 +165,20 @@ function tuneHtmlRadar(markup, dimensions) {
 export function renderSvg(data, options = {}) {
   const { composition } = options;
   if (Array.isArray(data?.semanticNodes)) return renderSemanticSvg(data, composition, options);
-  const coreMarkup = renderSvgCore(data, options);
-  if (isPlainNoScore(data)) return renderNonRadarSvg(data);
-  const dimensions = radarDimensions(data);
+  const prepared = prepareRenderData(data);
+  const coreMarkup = renderSvgCore(prepared, options);
+  if (isPlainNoScore(prepared)) return renderNonRadarSvg(prepared);
+  const dimensions = radarDimensions(prepared);
   return dimensions?.length ? tuneSvgRadar(coreMarkup, dimensions) : coreMarkup;
 }
 
 export function renderHtml(data, options = {}) {
   const { composition } = options;
   if (Array.isArray(data?.semanticNodes)) return renderSemanticHtml(data, composition, options);
-  const coreMarkup = renderHtmlCore(data, options);
-  if (isPlainNoScore(data)) return renderNonRadarHtml(data);
-  const dimensions = radarDimensions(data);
+  const prepared = prepareRenderData(data);
+  const coreMarkup = renderHtmlCore(prepared, options);
+  if (isPlainNoScore(prepared)) return renderNonRadarHtml(prepared);
+  const dimensions = radarDimensions(prepared);
   return dimensions?.length ? tuneHtmlRadar(coreMarkup, dimensions) : coreMarkup;
 }
 

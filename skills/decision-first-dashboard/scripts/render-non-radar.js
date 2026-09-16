@@ -16,11 +16,17 @@ function directionClass(direction) {
 function signalCopy(signal) {
   const delta = signal.delta ? escapeMarkup(signal.delta) : '';
   return {
+    metric: escapeMarkup(signal.metric),
     label: escapeMarkup(signal.label),
     value: escapeMarkup(signal.value),
     delta,
     direction: directionClass(signal.direction)
   };
+}
+
+function metricMarker(signal, role, presentation, enabled = true) {
+  if (!enabled) return '';
+  return `data-metric="${escapeMarkup(signal.metric)}" data-role="${role}" data-presentation="${presentation}"`;
 }
 
 function sourceRevenueTrend(data) {
@@ -94,21 +100,23 @@ function htmlEventsCard(events = []) {
   return `<article class="support-card"><div class="support-label">Recent events</div>${rows}</article>`;
 }
 
-function htmlSignalFocus(signals) {
+function htmlSignalFocus(signals, heroMetric, markersEnabled = false) {
   const [lead, ...rest] = signals;
   const primary = signalCopy(lead);
   const leadDelta = primary.delta ? `<span class="lead-delta ${primary.direction}">${primary.delta}</span>` : '';
+  const leadMarker = markersEnabled ? ` ${metricMarker(lead, 'primary_signal', lead.metric === heroMetric ? 'hero' : 'primary')}` : '';
   const supporting = rest.map((item) => {
     const signal = signalCopy(item);
     const delta = signal.delta ? `<small class="${signal.direction}">${signal.delta}</small>` : '';
-    return `<article class="signal-support">
+    const marker = markersEnabled ? ` ${metricMarker(item, 'primary_signal', item.metric === heroMetric ? 'hero' : 'primary')}` : '';
+    return `<article class="signal-support"${marker}>
       <span>${signal.label}</span>
       <strong>${signal.value}</strong>
       ${delta}
     </article>`;
   }).join('');
   return `<div class="signal-focus">
-    <article class="signal-lead">
+    <article class="signal-lead"${leadMarker}>
       <span>${primary.label}</span>
       <strong>${primary.value}</strong>
       ${leadDelta}
@@ -117,18 +125,31 @@ function htmlSignalFocus(signals) {
   </div>`;
 }
 
-function htmlSupportingContextRail(signals = []) {
+function htmlSupportingContextRail(signals = [], markersEnabled = false) {
   if (!signals.length) return '';
   const items = signals.map((item) => {
     const signal = signalCopy(item);
     const delta = signal.delta ? `<small class="${signal.direction}">${signal.delta}</small>` : '';
-    return `<article class="supporting-context-item">
+    const marker = markersEnabled ? ` ${metricMarker(item, 'diagnostic', 'supporting')}` : '';
+    return `<article class="supporting-context-item"${marker}>
       <span>${signal.label}</span>
       <strong>${signal.value}</strong>
       ${delta}
     </article>`;
   }).join('');
   return `<section class="supporting-context-rail" aria-label="Supporting context">${items}</section>`;
+}
+
+function htmlScorecardRail(signals = []) {
+  if (!signals.length) return '';
+  const items = signals.map((item) => {
+    const signal = signalCopy(item);
+    const delta = signal.delta ? `<small class="${signal.direction}">${signal.delta}</small>` : '';
+    return `<div class="additional-metric" ${metricMarker(item, 'scorecard_only', 'scorecard')}>
+      <span>${signal.label}</span><strong>${signal.value}</strong>${delta}
+    </div>`;
+  }).join('');
+  return `<details class="additional-metrics" data-presentation="scorecard"><summary>Additional metrics</summary><div class="additional-metric-list">${items}</div></details>`;
 }
 
 function layoutClass(hasLeft, hasRight) {
@@ -162,22 +183,28 @@ export function renderNonRadarHtml(data) {
   const left = leftCards.length ? `<aside class="support-column support-column--left">${leftCards.join('')}</aside>` : '';
   const right = rightCards.length ? `<aside class="support-column support-column--right">${rightCards.join('')}</aside>` : '';
   const layout = layoutClass(Boolean(leftCards.length), Boolean(rightCards.length));
-  const supportingContext = htmlSupportingContextRail(data.supportingSignals);
+  const markersEnabled = Boolean(data.presentation);
+  const supportingContext = htmlSupportingContextRail(data.supportingSignals, markersEnabled);
+  const scorecard = htmlScorecardRail(data.scorecardSignals);
+  const heroMetric = data.presentation?.heroMetric ?? data.signals[0]?.metric;
+  const scorecardStyle = scorecard
+    ? '<style>.additional-metrics{position:relative;z-index:1;width:min(760px,94%);padding:14px 18px;border:1px solid rgba(235,235,246,.92);border-radius:18px;background:rgba(255,255,255,.62);color:var(--ink)}.additional-metrics summary{cursor:pointer;color:var(--muted);font-size:11px;font-weight:700}.additional-metric-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:12px}.additional-metric{display:grid;grid-template-columns:1fr auto;gap:5px 10px;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.75)}.additional-metric span{color:var(--muted);font-size:10px}.additional-metric strong{font-size:13px}.additional-metric small{grid-column:2;color:var(--muted);font-size:9px}</style>'
+    : '';
 
   return `<!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Current overview</title><style>${HTML_CSS}</style></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Current overview</title><style>${HTML_CSS}</style>${scorecardStyle}</head>
 <body><main class="dashboard-shell">
   <header class="page-header"><h1>Current overview</h1><p>Key signals and supporting context</p></header>
   <section class="decision-layout ${layout}">
     ${left}
-    <section class="synthesis-card">${htmlSignalFocus(data.signals)}${supportingContext}</section>
+    <section class="synthesis-card">${htmlSignalFocus(data.signals, heroMetric, markersEnabled)}${supportingContext}${scorecard}</section>
     ${right}
   </section>
 </main></body></html>`;
 }
 
-function svgSignalFocus(signals) {
+function svgSignalFocus(signals, heroMetric, markersEnabled = false) {
   const [lead, ...rest] = signals;
   const primary = signalCopy(lead);
   const leadDelta = primary.delta
@@ -188,15 +215,17 @@ function svgSignalFocus(signals) {
     const signal = signalCopy(item);
     const x = supportXs[index];
     const delta = signal.delta ? `<text x="${x}" y="657" class="${signal.direction}" font-size="10" font-weight="700" text-anchor="middle">${signal.delta}</text>` : '';
-    return `<g class="signal-support">
+    const marker = markersEnabled ? ` ${metricMarker(item, 'primary_signal', item.metric === heroMetric ? 'hero' : 'primary')}` : '';
+    return `<g class="signal-support"${marker}>
       <rect x="${x - 82}" y="548" width="164" height="126" rx="24" class="support-signal-card"/>
       <text x="${x}" y="580" class="muted" font-size="11" font-weight="650" text-anchor="middle">${signal.label}</text>
       <text x="${x}" y="620" class="ink" font-size="27" font-weight="780" text-anchor="middle">${signal.value}</text>
       ${delta}
     </g>`;
   }).join('');
+  const leadMarker = markersEnabled ? ` ${metricMarker(lead, 'primary_signal', lead.metric === heroMetric ? 'hero' : 'primary')}` : '';
   return `<g class="signal-focus">
-    <g class="signal-lead">
+    <g class="signal-lead"${leadMarker}>
       <rect x="475" y="238" width="490" height="270" rx="38" class="lead-card"/>
       <text x="720" y="312" class="muted" font-size="15" font-weight="680" text-anchor="middle">${primary.label}</text>
       <text x="720" y="408" class="accent" font-size="70" font-weight="800" text-anchor="middle">${primary.value}</text>
@@ -206,7 +235,7 @@ function svgSignalFocus(signals) {
   </g>`;
 }
 
-function svgSupportingContextRail(signals = []) {
+function svgSupportingContextRail(signals = [], markersEnabled = false) {
   if (!signals.length) return '';
   const xs = signals.length === 1
     ? [720]
@@ -219,7 +248,8 @@ function svgSupportingContextRail(signals = []) {
     const signal = signalCopy(item);
     const x = xs[index];
     const delta = signal.delta ? `<text x="${x}" y="804" class="${signal.direction}" font-size="9" font-weight="700" text-anchor="middle">${signal.delta}</text>` : '';
-    return `<g class="supporting-context-item">
+    const marker = markersEnabled ? ` ${metricMarker(item, 'diagnostic', 'supporting')}` : '';
+    return `<g class="supporting-context-item"${marker}>
       <rect x="${x - 88}" y="714" width="176" height="96" rx="18" class="context-card"/>
       <text x="${x}" y="744" class="muted" font-size="10" font-weight="650" text-anchor="middle">${signal.label}</text>
       <text x="${x}" y="780" class="ink" font-size="20" font-weight="730" text-anchor="middle">${signal.value}</text>
@@ -227,6 +257,17 @@ function svgSupportingContextRail(signals = []) {
     </g>`;
   }).join('');
   return `<g class="supporting-context-rail" aria-label="Supporting context">${items}</g>`;
+}
+
+function svgScorecardRail(signals = []) {
+  if (!signals.length) return '';
+  const items = signals.slice(0, 12).map((item, index) => {
+    const signal = signalCopy(item);
+    const x = 92 + (index % 4) * 246;
+    const y = 846 + Math.floor(index / 4) * 24;
+    return `<g class="additional-metric" ${metricMarker(item, 'scorecard_only', 'scorecard')}><text x="${x}" y="${y}" class="muted" font-size="10">${signal.label}</text><text x="${x + 210}" y="${y}" class="ink" font-size="11" text-anchor="end">${signal.value}</text></g>`;
+  }).join('');
+  return `<g class="additional-metrics" data-presentation="scorecard" aria-label="Additional metrics">${items}</g>`;
 }
 
 function svgTrendCard(trend) {
@@ -282,12 +323,15 @@ export function renderNonRadarSvg(data) {
   const movement = movementSignals(data.signals);
   const left = `${svgTrendCard(trend)}${svgMovementCard(movement)}`;
   const right = svgRightCards(data.exceptions, data.events);
-  const supportingContext = svgSupportingContextRail(data.supportingSignals);
+  const markersEnabled = Boolean(data.presentation);
+  const supportingContext = svgSupportingContextRail(data.supportingSignals, markersEnabled);
+  const scorecard = svgScorecardRail(data.scorecardSignals);
+  const heroMetric = data.presentation?.heroMetric ?? data.signals[0]?.metric;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
   <title id="title">Current overview</title><desc id="desc">Key source-supported signals and supporting context.</desc>
   <defs><linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F8F8FC"/><stop offset="1" stop-color="#F5F6FB"/></linearGradient><filter id="panelShadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#B6A9E3" flood-opacity="0.14"/></filter></defs>
   <style>.sans{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.ink{fill:#24243a}.muted{fill:#747a9b}.accent{fill:#5448df}.positive{fill:#238764}.negative{fill:#d75b67}.neutral{fill:#747a9b}.support-panel,.lead-card,.support-signal-card{fill:#fff;stroke:#ececf5;stroke-width:1;filter:url(#panelShadow)}.lead-card{fill-opacity:.97}.support-signal-card{fill-opacity:.94}.context-card{fill:#fff;fill-opacity:.74;stroke:#ececf5;stroke-width:1}</style>
   <rect width="1440" height="900" fill="url(#pageBg)"/><circle cx="720" cy="450" r="390" fill="#e9e5f7" fill-opacity=".30"/>
-  <g class="sans"><text x="72" y="76" class="ink" font-size="29" font-weight="760">Current overview</text><text x="72" y="107" class="muted" font-size="14">Key signals and supporting context</text>${left}${svgSignalFocus(data.signals)}${supportingContext}${right}</g>
+  <g class="sans"><text x="72" y="76" class="ink" font-size="29" font-weight="760">Current overview</text><text x="72" y="107" class="muted" font-size="14">Key signals and supporting context</text>${left}${svgSignalFocus(data.signals, heroMetric, markersEnabled)}${supportingContext}${scorecard}${right}</g>
 </svg>`;
 }

@@ -74,7 +74,13 @@
         "undetermined"
       ]
     },
-    "userOverride": { "enum": [true, false] }
+    "userOverride": { "enum": [true, false] },
+    "questionCount": { "type": "integer", "minimum": 0, "maximum": 5 },
+    "metricWorthiness": {
+      "type": "array",
+      "maxItems": 200,
+      "items": { "$ref": "#/$defs/metricWorthiness" }
+    }
   },
   "$defs": {
     "statusDescription": {
@@ -84,6 +90,83 @@
       "properties": {
         "status": { "enum": ["confirmed", "inferred", "absent"] },
         "description": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "metricDimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "description"],
+      "properties": {
+        "status": { "enum": ["confirmed", "inferred", "absent"] },
+        "description": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "metricResponseChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "kind", "description"],
+      "properties": {
+        "status": { "enum": ["confirmed", "inferred", "absent"] },
+        "kind": {
+          "enum": [
+            "action",
+            "priority",
+            "escalation",
+            "intervention",
+            "coordination",
+            "monitoring",
+            "none",
+            "unclear"
+          ]
+        },
+        "description": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "metricRouteOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role"],
+      "properties": {
+        "role": {
+          "enum": ["primary_signal", "diagnostic", "exception", "drilldown", "scorecard_only"]
+        },
+        "heroEligible": { "type": "boolean" },
+        "visibility": { "enum": ["first_view", "supporting", "on_demand", "scorecard"] },
+        "changesDecision": { "type": "boolean" },
+        "decisionImpact": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "explains": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "active": { "type": "boolean" },
+        "surfacePath": { "type": "string", "pattern": "^/(exceptions|events)/[0-9]+$" }
+      }
+    },
+    "metricCandidateAssumption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "assumption", "route"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "assumption": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "route": { "$ref": "#/$defs/metricRouteOutcome" }
+      }
+    },
+    "metricWorthiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric", "status", "source", "whatChanges", "whoCares", "responseChange"],
+      "properties": {
+        "metric": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "status": { "enum": ["inferred", "confirmed", "overridden"] },
+        "source": { "enum": ["screenshot", "screenshot_only", "label", "context", "evidence", "user", "inferred"] },
+        "assumption": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "whatChanges": { "$ref": "#/$defs/metricDimension" },
+        "whoCares": { "$ref": "#/$defs/metricDimension" },
+        "responseChange": { "$ref": "#/$defs/metricResponseChange" },
+        "candidateAssumptions": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/metricCandidateAssumption" }
+        },
+        "override": { "$ref": "#/$defs/metricRouteOutcome" }
       }
     }
   }

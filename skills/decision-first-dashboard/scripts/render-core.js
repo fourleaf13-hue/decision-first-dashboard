@@ -29,6 +29,11 @@ function escapeMarkup(value = '') {
     .replaceAll("'", '&#39;');
 }
 
+function metricMarker(signal, role, presentation, enabled = true) {
+  if (!enabled) return '';
+  return `data-metric="${escapeMarkup(signal.metric)}" data-role="${role}" data-presentation="${presentation}"`;
+}
+
 export function deriveOverallDirection(signals = []) {
   const known = new Set(
     signals
@@ -267,7 +272,7 @@ function htmlRadarVisual(dimensions, min, max) {
             <path class="radar-shape radar-shape--current" d="${current.shape}"></path>`;
 }
 
-function svgRadarNodes(dimensions, min, max, nodeClass) {
+function svgRadarNodes(dimensions, min, max, nodeClass, presentation = null) {
   const geometry = radarGeometry(dimensions, min, max, SVG_RADAR_LAYOUT);
   return dimensions.map((dimension, index) => {
     const point = geometry.labels[index];
@@ -278,7 +283,9 @@ function svgRadarNodes(dimensions, min, max, nodeClass) {
     const deltaNode = delta
       ? `<tspan x="${point.x.toFixed(1)}" dy="18" text-anchor="${anchor}" class="${directionClass(dimension.direction)}" font-size="11" font-weight="700">${escapeMarkup(delta)}</tspan>`
       : '';
-    return `<g class="${nodeClass}">
+    const placement = dimension.metric === presentation?.heroMetric ? 'hero' : 'primary';
+    const marker = presentation ? ` ${metricMarker(dimension, 'primary_signal', placement)}` : '';
+    return `<g class="${nodeClass}"${marker}>
       <text class="radar-label radar-label--${side}" data-outside-ring="true" text-anchor="${anchor}" x="${point.x.toFixed(1)}" y="${startY.toFixed(1)}">
         <tspan x="${point.x.toFixed(1)}" text-anchor="${anchor}" class="muted" font-size="11" font-weight="650">${escapeMarkup(dimension.label)}</tspan>
         <tspan x="${point.x.toFixed(1)}" dy="20" text-anchor="${anchor}" class="ink" font-size="16" font-weight="760">${escapeMarkup(dimension.value)}</tspan>
@@ -288,7 +295,7 @@ function svgRadarNodes(dimensions, min, max, nodeClass) {
   }).join('\n');
 }
 
-function htmlRadarNodes(dimensions, min, max, className) {
+function htmlRadarNodes(dimensions, min, max, className, presentation = null) {
   const geometry = radarGeometry(dimensions, min, max, HTML_RADAR_LAYOUT);
   return dimensions.map((dimension, index) => {
     const point = geometry.labels[index];
@@ -297,7 +304,9 @@ function htmlRadarNodes(dimensions, min, max, className) {
     const deltaNode = delta
       ? `<small class="${directionClass(dimension.direction)}">${escapeMarkup(delta)}</small>`
       : '';
-    return `<div class="${className} radar-label radar-label--${side}" data-outside-ring="true" style="left:${(point.x / 620 * 100).toFixed(2)}%;top:${(point.y / 520 * 100).toFixed(2)}%">
+    const placement = dimension.metric === presentation?.heroMetric ? 'hero' : 'primary';
+    const marker = presentation ? ` ${metricMarker(dimension, 'primary_signal', placement)}` : '';
+    return `<div class="${className} radar-label radar-label--${side}" data-outside-ring="true"${marker} style="left:${(point.x / 620 * 100).toFixed(2)}%;top:${(point.y / 520 * 100).toFixed(2)}%">
     <span>${escapeMarkup(dimension.label)}</span>
     <strong>${escapeMarkup(dimension.value)}</strong>
     ${deltaNode}
@@ -305,7 +314,7 @@ function htmlRadarNodes(dimensions, min, max, className) {
   }).join('\n');
 }
 
-function svgSignalCluster(signals) {
+function svgSignalCluster(signals, heroMetric) {
   const { top, bottom } = splitSignalRows(signals);
   const placed = [];
 
@@ -329,7 +338,8 @@ function svgSignalCluster(signals) {
     const detailNode = display.detail
       ? `<text x="${x}" y="${detailY}" class="muted" font-size="10" text-anchor="middle">${escapeMarkup(display.detail)}</text>`
       : '';
-    return `<g class="signal-node">
+    const marker = heroMetric !== undefined ? ` ${metricMarker(signal, 'primary_signal', signal.metric === heroMetric ? 'hero' : 'primary')}` : '';
+    return `<g class="signal-node"${marker}>
       <rect x="${x - 72}" y="${cardY}" width="144" height="${cardHeight}" rx="19" class="metric-orb"/>
       <circle cx="${x}" cy="${y}" r="8" fill="#ffffff" stroke="#6555e8" stroke-width="3"/>
       <text x="${x}" y="${primaryY}" class="accent" font-size="23" font-weight="760" text-anchor="middle">${escapeMarkup(display.primary)}</text>
@@ -341,7 +351,7 @@ function svgSignalCluster(signals) {
   return { paths, nodes };
 }
 
-function htmlSignalCluster(signals) {
+function htmlSignalCluster(signals, heroMetric) {
   const { top, bottom } = splitSignalRows(signals);
   const placed = [];
 
@@ -359,7 +369,8 @@ function htmlSignalCluster(signals) {
   const nodes = placed.map(({ signal, x, y }) => {
     const display = signalDisplay(signal);
     const detailNode = display.detail ? `<small>${escapeMarkup(display.detail)}</small>` : '';
-    return `<div class="signal metric-orb" style="left:${x}%;top:${y}%">
+    const marker = heroMetric !== undefined ? ` ${metricMarker(signal, 'primary_signal', signal.metric === heroMetric ? 'hero' : 'primary')}` : '';
+    return `<div class="signal metric-orb"${marker} style="left:${x}%;top:${y}%">
     <strong>${escapeMarkup(display.primary)}</strong>
     <span>${escapeMarkup(signal.label)}</span>
     ${detailNode}
@@ -460,6 +471,22 @@ function htmlMovementRows(signals) {
   </div>`).join('\n');
 }
 
+function htmlScorecardSignals(signals = []) {
+  if (!signals.length) return '';
+  const rows = signals.map((signal) => `<div class="additional-metric" ${metricMarker(signal, 'scorecard_only', 'scorecard')}><span>${escapeMarkup(signal.label)}</span><strong>${escapeMarkup(signal.value)}</strong></div>`).join('');
+  return `<details class="additional-metrics" data-presentation="scorecard"><summary>Additional metrics</summary><div class="additional-metric-list">${rows}</div></details>`;
+}
+
+function svgScorecardSignals(signals = []) {
+  if (!signals.length) return '';
+  const rows = signals.slice(0, 12).map((signal, index) => {
+    const x = 92 + (index % 4) * 246;
+    const y = 846 + Math.floor(index / 4) * 24;
+    return `<g class="additional-metric" ${metricMarker(signal, 'scorecard_only', 'scorecard')}><text x="${x}" y="${y}" class="muted" font-size="10">${escapeMarkup(signal.label)}</text><text x="${x + 210}" y="${y}" class="ink" font-size="11" text-anchor="end">${escapeMarkup(signal.value)}</text></g>`;
+  }).join('');
+  return `<g class="additional-metrics" data-presentation="scorecard" aria-label="Additional metrics">${rows}</g>`;
+}
+
 function svgExceptionRows(exceptions = []) {
   if (exceptions.length === 0) {
     return '<text x="1064" y="232" class="muted" font-size="13">No confirmed exceptions visible</text>';
@@ -542,15 +569,15 @@ function renderNoScoreSvg(data) {
   const radar = data.radarScale
     ? {
         visual: svgRadarVisual(data.signals, data.radarScale.min, data.radarScale.max),
-        nodes: svgRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'radar-dimension-node')
+        nodes: svgRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'radar-dimension-node', data.presentation)
       }
     : null;
-  const signalCluster = radar ?? svgSignalCluster(data.signals);
+  const signalCluster = radar ?? svgSignalCluster(data.signals, data.presentation?.heroMetric);
   const orbitVisual = radar
     ? radar.visual
     : `<path class="orbit-spokes" d="${signalCluster.paths}" fill="none" stroke="#d6d0ef" stroke-width="1.6"/>`;
 
-  return fillTemplate(template, {
+  const output = fillTemplate(template, {
     REVENUE_TITLE: escapeMarkup(revenueTitle(revenue)),
     REVENUE_VALUE: escapeMarkup(revenue?.value ?? '—'),
     REVENUE_DELTA_BLOCK: svgRevenueDeltaBlock(revenue),
@@ -562,6 +589,7 @@ function renderNoScoreSvg(data) {
     EXCEPTION_ROWS: svgExceptionRows(data.exceptions),
     EVENT_ROWS: svgEventRows(data.events)
   });
+  return output.replace('</svg>', `${svgScorecardSignals(data.scorecardSignals)}</svg>`);
 }
 
 function renderNoScoreHtml(data) {
@@ -571,15 +599,15 @@ function renderNoScoreHtml(data) {
   const radar = data.radarScale
     ? {
         visual: htmlRadarVisual(data.signals, data.radarScale.min, data.radarScale.max),
-        nodes: htmlRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'radar-dimension')
+        nodes: htmlRadarNodes(data.signals, data.radarScale.min, data.radarScale.max, 'radar-dimension', data.presentation)
       }
     : null;
-  const signalCluster = radar ?? htmlSignalCluster(data.signals);
+  const signalCluster = radar ?? htmlSignalCluster(data.signals, data.presentation?.heroMetric);
   const orbitVisual = radar
     ? radar.visual
     : `<path class="orbit-spokes" d="${signalCluster.paths}"></path>`;
 
-  return fillTemplate(template, {
+  const output = fillTemplate(template, {
     CSS: css,
     REVENUE_TITLE: escapeMarkup(revenueTitle(revenue)),
     REVENUE_VALUE: escapeMarkup(revenue?.value ?? '—'),
@@ -592,6 +620,7 @@ function renderNoScoreHtml(data) {
     HTML_EXCEPTION_ROWS: htmlExceptionRows(data.exceptions),
     HTML_EVENT_ROWS: htmlEventRows(data.events)
   });
+  return output.replace('</body>', `${htmlScorecardSignals(data.scorecardSignals)}</body>`);
 }
 
 function claimEvidenceRefs(claim) {

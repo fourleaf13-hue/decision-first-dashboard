@@ -143,6 +143,16 @@ function requiredNoScorePaths(data) {
       if (Object.hasOwn(signal, field)) paths.push(`/signals/${index}/${field}`);
     }
   });
+  data.metricInventory?.forEach((signal, index) => {
+    for (const field of ['label', 'value', 'delta', 'direction']) {
+      if (Object.hasOwn(signal, field)) paths.push(`/metricInventory/${index}/${field}`);
+    }
+  });
+  data.scorecardSignals?.forEach((signal, index) => {
+    for (const field of ['label', 'value', 'delta', 'direction']) {
+      if (Object.hasOwn(signal, field)) paths.push(`/scorecardSignals/${index}/${field}`);
+    }
+  });
   data.supportingSignals?.forEach((signal, index) => {
     for (const field of ['label', 'value', 'delta', 'direction']) {
       if (Object.hasOwn(signal, field)) paths.push(`/supportingSignals/${index}/${field}`);

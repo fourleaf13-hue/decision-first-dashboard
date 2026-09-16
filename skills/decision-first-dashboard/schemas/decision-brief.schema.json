@@ -4,6 +4,7 @@
   "additionalProperties": false,
   "required": ["decision", "action"],
   "properties": {
+    "questionCount": { "type": "integer", "minimum": 0, "maximum": 5 },
     "decision": { "$ref": "#/definitions/slot" },
     "action": { "$ref": "#/definitions/slot" },
     "exception": { "$ref": "#/definitions/slot" },

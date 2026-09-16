@@ -22,6 +22,18 @@
           "maxItems": 4,
           "items": { "$ref": "#/definitions/supportingSignal" }
         },
+        "metricInventory": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 200,
+          "items": { "$ref": "#/definitions/inventorySignal" }
+        },
+        "scorecardSignals": {
+          "type": "array",
+          "maxItems": 200,
+          "items": { "$ref": "#/definitions/inventorySignal" }
+        },
+        "presentation": { "$ref": "#/definitions/presentation" },
         "radarScale": { "$ref": "#/definitions/radarScale" },
         "context": { "$ref": "#/definitions/noScoreContext" },
         "semanticNodes": {
@@ -99,6 +111,43 @@
         "delta": { "type": "string", "minLength": 1, "maxLength": 20 },
         "direction": { "enum": ["improving", "deteriorating", "flat", "unknown"] },
         "provenance": { "enum": ["source", "derived"] }
+      }
+    },
+    "inventorySignal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric", "label", "value", "provenance"],
+      "properties": {
+        "metric": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "value": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "delta": { "type": "string", "minLength": 1, "maxLength": 20 },
+        "direction": { "enum": ["improving", "deteriorating", "flat", "unknown"] },
+        "provenance": { "enum": ["source", "derived"] }
+      }
+    },
+    "presentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primaryMetrics", "heroMetric", "supportingMetrics", "scorecardMetrics"],
+      "properties": {
+        "primaryMetrics": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 6,
+          "items": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" }
+        },
+        "heroMetric": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+        "supportingMetrics": {
+          "type": "array",
+          "maxItems": 4,
+          "items": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" }
+        },
+        "scorecardMetrics": {
+          "type": "array",
+          "maxItems": 200,
+          "items": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" }
+        }
       }
     },
     "radarScale": {

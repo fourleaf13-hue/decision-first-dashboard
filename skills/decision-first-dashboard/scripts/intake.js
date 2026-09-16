@@ -27,7 +27,7 @@ function semanticErrors(brief) {
 }
 
 function summaryOf(brief) {
-  const summary = {};
+  const summary = { questionCount: brief?.questionCount ?? 0 };
   for (const slotName of ['decision', 'action', 'exception', 'diagnosis', 'audience', 'cadence']) {
     if (brief?.[slotName]) summary[`${slotName}Status`] = brief[slotName].status;
   }
@@ -35,7 +35,14 @@ function summaryOf(brief) {
   return summary;
 }
 
-export function evaluateDecisionBrief(brief) {
+export function countIntakeQuestions({ worthinessQuestionCount = 0, decisionBriefQuestionCount = 0, metricClarificationQuestionCount = 0 } = {}) {
+  return worthinessQuestionCount + decisionBriefQuestionCount + metricClarificationQuestionCount;
+}
+
+export function evaluateDecisionBrief(brief, {
+  worthinessQuestionCount = 0,
+  metricClarificationQuestionCount = 0
+} = {}) {
   const schemaResult = validateAgainstSchema(brief, schema);
   if (!schemaResult.valid) {
     return {
@@ -53,6 +60,17 @@ export function evaluateDecisionBrief(brief) {
   }
 
   const errors = semanticErrors(brief);
+  const questionCount = countIntakeQuestions({
+    worthinessQuestionCount,
+    decisionBriefQuestionCount: brief.questionCount ?? 0,
+    metricClarificationQuestionCount
+  });
+  if (![worthinessQuestionCount, brief.questionCount ?? 0, metricClarificationQuestionCount].every((value) => Number.isInteger(value) && value >= 0)) {
+    errors.push({ code: 'QUESTION_COUNT_INVALID', path: '/questionCount', message: 'question counts must be non-negative integers' });
+  }
+  if (questionCount > 5) {
+    errors.push({ code: 'QUESTION_BUDGET_EXCEEDED', path: '/questionCount', message: 'Dashboard Worthiness, Decision Brief, and metric clarification must share a maximum of five questions' });
+  }
   if (errors.length > 0) {
     return {
       valid: false,
@@ -60,7 +78,7 @@ export function evaluateDecisionBrief(brief) {
       transition: 'FIX_DECISION_BRIEF',
       errors,
       missingSlots: [],
-      summary: summaryOf(brief)
+      summary: { ...summaryOf(brief), questionCount }
     };
   }
 
@@ -72,7 +90,7 @@ export function evaluateDecisionBrief(brief) {
       transition: 'ASK_DECISION_BRIEF_QUESTION',
       errors: [],
       missingSlots,
-      summary: summaryOf(brief)
+      summary: { ...summaryOf(brief), questionCount }
     };
   }
 
@@ -82,7 +100,7 @@ export function evaluateDecisionBrief(brief) {
     transition: 'ALLOW_ROUTING',
     errors: [],
     missingSlots: [],
-    summary: summaryOf(brief)
+    summary: { ...summaryOf(brief), questionCount }
   };
 }
 
