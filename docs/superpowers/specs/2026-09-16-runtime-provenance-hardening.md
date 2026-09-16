@@ -49,7 +49,11 @@ files must live outside the package; they are not silently excluded. The tree
 hash enumerates every included file, keeps relative POSIX paths with original
 case, sorts those paths deterministically, and hashes each
 `relativePath + NUL + fileBytes` sequence. Mtime, ACL, absolute paths, and
-directory metadata are excluded.
+directory metadata are excluded. The digest contract remains exactly this
+stream; because the stream has no record terminator, `contentMatchPre` and
+`contentMatchPost` additionally require the sorted file inventories to be
+identical. The digest plus the inventory is the complete package identity
+check, so a theoretical stream-boundary collision cannot pass the gate.
 
 Only the four key files receive named invariant diagnostics:
 
@@ -81,6 +85,11 @@ cover repository checkout, binding/installation, package contents, repository
 cleanliness, and acceptance invocation. The gate must distinguish a stale
 copied package from a physically wrong link and from a content mutation during
 the acceptance run.
+
+Acceptance results fail closed when they carry a non-null `error` or `signal`,
+or when more than one primary result indicator (`ok`, `status`, or `exitCode`)
+is present. An acceptance callback that throws any JavaScript value is recorded
+as a run failure and still receives the post-run checks.
 
 ## Required regressions
 

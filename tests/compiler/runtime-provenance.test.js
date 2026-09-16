@@ -165,6 +165,21 @@ test('copied package mismatch fails before acceptance', () => {
   assert.equal(acceptanceCalls, 0);
 });
 
+test('tree equality rejects an ambiguous hash stream with different file inventory', () => {
+  const fixture = createFixture();
+  fs.mkdirSync(path.dirname(fixture.runtimeSkillPath), { recursive: true });
+  fs.cpSync(fixture.repoSkillPath, fixture.runtimeSkillPath, { recursive: true });
+  fs.writeFileSync(path.join(fixture.repoSkillPath, 'zz-a.txt'), 'payloadzz-b.txt\0extra');
+  fs.writeFileSync(path.join(fixture.runtimeSkillPath, 'zz-a.txt'), 'payload');
+  fs.writeFileSync(path.join(fixture.runtimeSkillPath, 'zz-b.txt'), 'extra');
+
+  const { report, acceptanceCalls } = runGate(fixture);
+  assert.equal(report.repoTreeHashPre, report.runtimeTreeHashPre);
+  assert.equal(report.contentMatchPre, false);
+  assert.equal(report.firstFailingCheck, 'CONTENT_MISMATCH_PRE');
+  assert.equal(acceptanceCalls, 0);
+});
+
 test('missing required file fails closed', () => {
   const fixture = createFixture({ missing: ['scripts/composition.js'] });
   ensureRuntimeSkillBinding({
@@ -255,6 +270,46 @@ test('asynchronous acceptance callback fails closed instead of being treated as 
   assert.equal(report.firstFailingCheck, 'RUN_FAILED');
   assert.equal(report.acceptanceValid, false);
   assert.equal(report.diagnostic.details.reasonCode, 'ASYNC_ACCEPTANCE_UNSUPPORTED');
+});
+
+test('contradictory or error-marked acceptance results fail closed', () => {
+  const cases = [
+    { ok: true, status: 1 },
+    { status: 0, error: { code: 'ENOENT', message: 'missing command' } },
+    { status: 0, signal: 'SIGTERM' }
+  ];
+  for (const acceptanceResult of cases) {
+    const fixture = createFixture();
+    ensureRuntimeSkillBinding({
+      repoSkillPath: fixture.repoSkillPath,
+      runtimeSkillPath: fixture.runtimeSkillPath
+    });
+    const { report } = runGate({ ...fixture, acceptanceResult });
+    assert.equal(report.firstFailingCheck, 'RUN_FAILED');
+    assert.equal(report.acceptanceValid, false);
+  }
+});
+
+test('arbitrary thrown values fail closed and still run postflight', () => {
+  for (const thrown of [null, undefined, 'boom']) {
+    const fixture = createFixture();
+    ensureRuntimeSkillBinding({
+      repoSkillPath: fixture.repoSkillPath,
+      runtimeSkillPath: fixture.runtimeSkillPath
+    });
+    const report = runRuntimeProvenancePreflight({
+      repoRoot: fixture.repoRoot,
+      runtimeSkillPath: fixture.runtimeSkillPath,
+      expectedRepoHead,
+      repoHeadReader: () => expectedRepoHead,
+      repoStatusReader: () => '',
+      runAcceptance: () => { throw thrown; }
+    });
+    assert.equal(report.firstFailingCheck, 'RUN_FAILED');
+    assert.equal(report.repoCleanPost, true);
+    assert.equal(typeof report.repoTreeHashPost, 'string');
+    assert.equal(report.acceptanceValid, false);
+  }
 });
 
 test('copied runtime mutation is detected by the post hash', () => {

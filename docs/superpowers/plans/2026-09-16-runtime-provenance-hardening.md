@@ -230,8 +230,8 @@ remain green.
 
 Run `git rev-parse HEAD` and
 `git status --porcelain -- skills/decision-first-dashboard/` in the source
-checkout, requiring `6283029a70293408198d9c1b4033983ca06cb0bb` and an empty
-status for the source used by the gate.
+checkout, requiring the expected delivery commit supplied to the gate and an
+empty status for the source used by the gate.
 
 - [ ] **Step 2: Preserve any stale copied runtime package**
 

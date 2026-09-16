@@ -127,6 +127,14 @@ export function computeSkillTreeHash(rootPath, { exclude = DEFAULT_EXCLUDES } = 
   };
 }
 
+function sameFileInventory(left, right) {
+  return left.length === right.length && left.every((relativePath, index) => relativePath === right[index]);
+}
+
+function sameSkillTree(left, right) {
+  return left.hash === right.hash && sameFileInventory(left.files, right.files);
+}
+
 function readRepoHead(repoRoot) {
   try {
     return execFileSync('git', ['rev-parse', 'HEAD'], {
@@ -252,6 +260,26 @@ function setFailure(report, check, message, details = {}) {
   };
 }
 
+function describeThrownValue(value) {
+  if (value === null) return { type: 'null' };
+  if (value === undefined) return { type: 'undefined' };
+  if (value instanceof Error) {
+    return {
+      type: 'error',
+      name: value.name,
+      message: value.message,
+      ...(value.code === undefined ? {} : { code: value.code })
+    };
+  }
+  let message;
+  try {
+    message = String(value);
+  } catch {
+    message = '<unprintable thrown value>';
+  }
+  return { type: typeof value, message };
+}
+
 function assessAcceptanceResult(result) {
   if (result === undefined || result === null) return { success: true };
   if (typeof result?.then === 'function') {
@@ -264,6 +292,17 @@ function assessAcceptanceResult(result) {
     return { success: result === 0, reasonCode: 'NONZERO_EXIT_CODE' };
   }
   if (typeof result === 'object') {
+    if (Object.hasOwn(result, 'error') && result.error !== null && result.error !== undefined) {
+      return { success: false, reasonCode: 'ACCEPTANCE_ERROR' };
+    }
+    if (Object.hasOwn(result, 'signal') && result.signal !== null && result.signal !== undefined) {
+      return { success: false, reasonCode: 'ACCEPTANCE_SIGNAL' };
+    }
+    const primaryIndicators = ['ok', 'status', 'exitCode']
+      .filter((field) => Object.hasOwn(result, field));
+    if (primaryIndicators.length > 1) {
+      return { success: false, reasonCode: 'CONTRADICTORY_ACCEPTANCE_RESULT' };
+    }
     if (Object.hasOwn(result, 'ok')) {
       return { success: result.ok === true, reasonCode: 'OK_FALSE' };
     }
@@ -283,15 +322,17 @@ function assessAcceptanceResult(result) {
   return { success: false, reasonCode: 'UNSUPPORTED_ACCEPTANCE_RESULT' };
 }
 
-function recordPostHashes(report, repoSkillPath, runtimeSkillPath, exclude) {
+function recordPostHashes(report, repoSkillPath, runtimeSkillPath, exclude, preTrees) {
   const repoTree = computeSkillTreeHash(repoSkillPath, { exclude });
   const runtimeTree = computeSkillTreeHash(runtimeSkillPath, { exclude });
   report.repoTreeHashPost = repoTree.hash;
   report.runtimeTreeHashPost = runtimeTree.hash;
-  report.contentMatchPost = repoTree.hash === runtimeTree.hash;
+  report.contentMatchPost = sameSkillTree(repoTree, runtimeTree);
   report.contentStablePost = (
     report.repoTreeHashPre === report.repoTreeHashPost
     && report.runtimeTreeHashPre === report.runtimeTreeHashPost
+    && sameFileInventory(preTrees.repoTree.files, repoTree.files)
+    && sameFileInventory(preTrees.runtimeTree.files, runtimeTree.files)
   );
   return { repoTree, runtimeTree };
 }
@@ -421,11 +462,12 @@ export function runRuntimeProvenancePreflight({
   }
   report.repoTreeHashPre = repoTree.hash;
   report.runtimeTreeHashPre = runtimeTree.hash;
-  report.contentMatchPre = repoTree.hash === runtimeTree.hash;
+  report.contentMatchPre = sameSkillTree(repoTree, runtimeTree);
   if (!report.contentMatchPre) {
     setFailure(report, 'CONTENT_MISMATCH_PRE', 'Repository and runtime Skill tree hashes differ before acceptance', {
       repoTreeHashPre: repoTree.hash,
       runtimeTreeHashPre: runtimeTree.hash,
+      fileInventoryMatch: sameFileInventory(repoTree.files, runtimeTree.files),
       repoFiles: repoTree.files,
       runtimeFiles: runtimeTree.files,
       exclude
@@ -481,7 +523,7 @@ export function runRuntimeProvenancePreflight({
       }
     } catch (error) {
       setFailure(report, 'RUN_FAILED', 'The bracketed acceptance command threw an error', {
-        error: error.message
+        error: describeThrownValue(error)
       });
     }
   }
@@ -501,11 +543,12 @@ export function runRuntimeProvenancePreflight({
     }
 
     try {
-      const postTrees = recordPostHashes(report, repoSkillPath, resolvedRuntimeSkillPath, exclude);
+      const postTrees = recordPostHashes(report, repoSkillPath, resolvedRuntimeSkillPath, exclude, { repoTree, runtimeTree });
       if (!report.contentMatchPost) {
         setFailure(report, 'CONTENT_MISMATCH_POST', 'Repository and runtime Skill tree hashes differ after acceptance', {
           repoTreeHashPost: report.repoTreeHashPost,
           runtimeTreeHashPost: report.runtimeTreeHashPost,
+          fileInventoryMatch: sameFileInventory(postTrees.repoTree.files, postTrees.runtimeTree.files),
           repoFiles: postTrees.repoTree.files,
           runtimeFiles: postTrees.runtimeTree.files,
           exclude
