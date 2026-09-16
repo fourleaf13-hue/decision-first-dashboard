@@ -5,12 +5,14 @@ import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compileDecisionDashboard } from '../../skills/decision-first-dashboard/scripts/compile-dashboard.js';
+import { verifyDeliveredArtifact } from '../../skills/decision-first-dashboard/scripts/composition.js';
 import { evaluateWorthinessAssessment } from '../../skills/decision-first-dashboard/scripts/worthiness.js';
 import { sha256Object } from '../../skills/decision-first-dashboard/scripts/provenance.js';
 import * as routing from '../../skills/decision-first-dashboard/scripts/routing.js';
 
 const DECISION = 'Decide which operating signals need follow-up';
 const ACTION = 'Prioritize the next owner response';
+const RENDER_PATH = path.resolve('skills/decision-first-dashboard/scripts/render.js');
 
 function dimension(description, status = 'inferred') {
   return { status, description };
@@ -72,29 +74,46 @@ function metricRoute(metric, role, extra = {}) {
 }
 
 function manifestForMetrics(metrics) {
-  return {
+  const manifest = {
     decision: DECISION,
     action: ACTION,
     inventoryCount: metrics.length,
     metrics
   };
+  if (metrics.length <= 24) {
+    manifest.compositionNodes = metrics.map((item) => ({
+      id: item.metric,
+      type: 'Trend',
+      presentation: 'full_chart'
+    }));
+  }
+  return manifest;
+}
+
+function semanticNode(metric, index) {
+  return {
+    id: metric,
+    type: 'Trend',
+    title: `${metric} operating trend`,
+    items: [
+      { label: 'Current period', value: `${100 + index}`, provenance: 'source' },
+      { label: 'Reference period', value: `${90 + index}`, provenance: 'source' }
+    ]
+  };
 }
 
 function noScoreState() {
+  const labels = ['Revenue', 'Orders', 'Margin', 'Repeat rate', 'Compliance rate'];
+  const signals = labels.map((label, index) => ({
+    metric: `m${index + 1}`,
+    label,
+    value: `${(index + 1) * 10}`,
+    provenance: 'source'
+  }));
   return {
     mode: 'no_score',
-    signals: [1, 2, 3, 4].map((index) => ({
-      metric: `m${index}`,
-      label: `Metric ${index}`,
-      value: `${index * 10}`,
-      provenance: 'source'
-    })),
-    metricInventory: [{
-      metric: 'm5',
-      label: 'Compliance rate',
-      value: '98%',
-      provenance: 'source'
-    }]
+    signals,
+    semanticNodes: signals.map((signal, index) => semanticNode(signal.metric, index))
   };
 }
 
@@ -121,30 +140,33 @@ function brief(questionCount = 0) {
 
 function groundedBundle(state) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'metric-worthiness-'));
-  const sourceValue = { metrics: {} };
+  const sourceValue = {
+    signals: state.signals.map(({ label, value }) => ({ label, value })),
+    semanticNodes: state.semanticNodes.map((node) => ({
+      title: node.title,
+      items: node.items.map(({ label, value }) => ({ label, value }))
+    }))
+  };
   const evidence = [];
   const claims = [];
-  const fields = [];
-  const addMetric = (metric, decisionPath, item) => {
-    sourceValue.metrics[metric] = { label: item.label, value: item.value };
-    for (const field of ['label', 'value']) {
-      const evidenceId = `ev_${metric}_${field}`;
-      evidence.push({
-        id: evidenceId,
-        anchor: {
-          type: 'json_pointer',
-          pointer: `/metrics/${metric}/${field}`
-        }
-      });
-      claims.push({
-        decisionPath: `${decisionPath}/${field}`,
-        evidenceRef: evidenceId
-      });
-    }
+  const add = (decisionPath, sourcePath) => {
+    const evidenceId = `ev_${evidence.length + 1}`;
+    evidence.push({ id: evidenceId, anchor: { type: 'json_pointer', pointer: sourcePath } });
+    claims.push({ decisionPath, evidenceRef: evidenceId });
   };
 
-  state.signals.forEach((item, index) => addMetric(item.metric, `/signals/${index}`, item));
-  state.metricInventory?.forEach((item, index) => addMetric(item.metric, `/metricInventory/${index}`, item));
+  state.signals.forEach((signal, index) => {
+    add(`/signals/${index}/label`, `/signals/${index}/label`);
+    add(`/signals/${index}/value`, `/signals/${index}/value`);
+  });
+  state.semanticNodes.forEach((node, nodeIndex) => {
+    add(`/semanticNodes/${nodeIndex}/title`, `/semanticNodes/${nodeIndex}/title`);
+    node.items.forEach((item, itemIndex) => {
+      add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/label`, `/semanticNodes/${nodeIndex}/items/${itemIndex}/label`);
+      add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/value`, `/semanticNodes/${nodeIndex}/items/${itemIndex}/value`);
+    });
+  });
+
   const sourcePath = path.join(root, 'source.json');
   const bytes = Buffer.from(`${JSON.stringify(sourceValue, null, 2)}\n`);
   fs.writeFileSync(sourcePath, bytes);
@@ -180,6 +202,10 @@ function compileWith(metricWorthiness, { demote = false } = {}) {
     grounded.bundle,
     { baseDir: grounded.root }
   );
+}
+
+function semanticMarker(metric) {
+  return new RegExp(`data-semantic-node="${metric}"[^>]*data-presentation="([^"]+)"[^>]*data-metric="${metric}"[^>]*data-metric-role="([^"]+)"[^>]*data-metric-priority="([^"]+)"`);
 }
 
 test('worthiness contract accepts typed metric-level assessments and preserves inferred state', () => {
@@ -250,16 +276,42 @@ test('screenshot-only assumptions are recorded as inferred without automatically
   assert.equal(routes.transition, 'PASS');
 });
 
-test('monitoring/compliance demotion preserves the metric as a scorecard presentation', () => {
+test('metric routing reaches semantic nodes, selected presentation, delivered hierarchy, and verifier', () => {
+  const result = compileWith([metricAssessment('m5', { responseKind: 'monitoring' })], { demote: true });
+  assert.equal(result.result.transition, 'PASS', JSON.stringify(result.result.errors));
+  assert.equal(result.manifest.verification.status, 'passed');
+  assert.equal(result.manifest.verification.verifierVersion, 'composition-verifier@2');
+  assert.equal(result.manifest.delivery.nodes.length, 5);
+  for (const artifact of [result.html, result.svg]) {
+    assert.match(artifact, /data-semantic-node="m1"/);
+    assert.match(artifact, semanticMarker('m5'));
+    assert.doesNotMatch(artifact, /data-role="scorecard_only"/);
+  }
+  const delivered = result.manifest.delivery.nodes.find((node) => node.id === 'm5');
+  assert.deepEqual(
+    { presentation: delivered.presentation, metricRole: delivered.metricRole, metricPriority: delivered.metricPriority },
+    { presentation: 'summary', metricRole: 'scorecard_only', metricPriority: 'scorecard' }
+  );
+  assert.equal(verifyDeliveredArtifact({ html: result.html, svg: result.svg, manifest: result.manifest }).valid, true);
+
+  const renderSource = fs.readFileSync(RENDER_PATH, 'utf8');
+  const semanticBranch = renderSource.indexOf('if (Array.isArray(data?.semanticNodes)) return renderSemanticHtml');
+  const legacyBranch = renderSource.indexOf('const coreMarkup = renderHtmlCore');
+  assert.ok(semanticBranch >= 0 && semanticBranch < legacyBranch, 'semantic render branch must precede legacy compatibility fallback');
+});
+
+test('monitoring/compliance demotion preserves the metric as a semantic scorecard presentation', () => {
   const result = compileWith([metricAssessment('m5', { responseKind: 'monitoring' })], { demote: true });
   assert.equal(result.result.transition, 'PASS');
   assert.equal(result.result.routingSummary.primaryCount, 4);
   assert.equal(result.effectiveRoutingManifest?.metrics?.find((item) => item.metric === 'm5')?.role, 'scorecard_only');
   assert.equal(result.manifest.routingManifestSha256, sha256Object(result.effectiveRoutingManifest));
   assert.equal(result.manifest.decisionStateSha256, sha256Object(result.effectiveDecisionState));
-  assert.ok(result.html.includes('data-metric="m5"'));
-  assert.match(result.html, /data-metric="m5"[^>]*data-role="scorecard_only"/);
-  assert.match(result.svg, /data-metric="m5"[^>]*data-role="scorecard_only"/);
+  for (const artifact of [result.html, result.svg]) {
+    assert.match(artifact, semanticMarker('m5'));
+    assert.match(artifact, /data-semantic-node="m5"[^>]*data-presentation="summary"/);
+    assert.doesNotMatch(artifact, /data-semantic-node="m5"[^>]*data-metric-priority="hero"/);
+  }
 });
 
 test('diagnostic override promotes the metric into the canonical HTML/SVG hero', () => {
@@ -274,11 +326,15 @@ test('diagnostic override promotes the metric into the canonical HTML/SVG hero',
   assert.equal(result.result.transition, 'PASS');
   assert.equal(result.result.routingSummary.primaryCount, 5);
   assert.equal(result.result.metricWorthiness.details[0].chosenRoute.role, 'primary_signal');
-  assert.match(result.html, /data-metric="m5"[^>]*data-role="primary_signal"[^>]*data-presentation="hero"/);
-  assert.match(result.svg, /data-metric="m5"[^>]*data-role="primary_signal"[^>]*data-presentation="hero"/);
+  for (const artifact of [result.html, result.svg]) {
+    assert.match(artifact, semanticMarker('m5'));
+    assert.match(artifact, /data-semantic-node="m5"[^>]*data-presentation="full_chart"/);
+    assert.match(artifact, /data-semantic-node="m5"[^>]*data-metric-priority="hero"/);
+  }
+  assert.equal(result.manifest.delivery.nodes.find((node) => node.id === 'm5').metricPriority, 'hero');
 });
 
-test('primary override demotes the old hero and leaves a non-hero canonical marker', () => {
+test('primary override demotes the old hero and leaves a non-hero canonical semantic marker', () => {
   const override = {
     role: 'scorecard_only',
     heroEligible: false,
@@ -288,10 +344,12 @@ test('primary override demotes the old hero and leaves a non-hero canonical mark
   const result = compileWith([metricAssessment('m1', { status: 'overridden', override })]);
   assert.equal(result.result.transition, 'PASS');
   assert.equal(result.result.routingSummary.primaryCount, 3);
-  assert.doesNotMatch(result.html, /data-metric="m1"[^>]*data-presentation="hero"/);
-  assert.doesNotMatch(result.svg, /data-metric="m1"[^>]*data-presentation="hero"/);
-  assert.match(result.html, /data-metric="m1"[^>]*data-role="scorecard_only"[^>]*data-presentation="scorecard"/);
-  assert.match(result.svg, /data-metric="m1"[^>]*data-role="scorecard_only"[^>]*data-presentation="scorecard"/);
+  for (const artifact of [result.html, result.svg]) {
+    assert.doesNotMatch(artifact, /data-semantic-node="m1"[^>]*data-metric-priority="hero"/);
+    assert.match(artifact, /data-semantic-node="m1"[^>]*data-presentation="summary"/);
+    assert.match(artifact, /data-semantic-node="m1"[^>]*data-metric-role="scorecard_only"[^>]*data-metric-priority="scorecard"/);
+  }
+  assert.equal(result.manifest.delivery.nodes.find((node) => node.id === 'm1').metricPriority, 'scorecard');
 });
 
 test('metric clarification consumes at most one shared question even with multiple ambiguous metrics', () => {

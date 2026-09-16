@@ -215,6 +215,9 @@ export function compileDecisionDashboard(
         id: node.id,
         type: node.type,
         presentation: node.presentation,
+        ...(node.metric ? { metric: node.metric } : {}),
+        ...(node.metricRole ? { metricRole: node.metricRole } : {}),
+        ...(node.metricPriority ? { metricPriority: node.metricPriority } : {}),
         coverage: coverageFor(node),
         ...(sourceNode ? { expectedItemCount: renderedItems.length } : {}),
         ...(semanticStructureFor(node) ? { structure: semanticStructureFor(node) } : {})

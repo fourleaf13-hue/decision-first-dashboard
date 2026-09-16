@@ -249,6 +249,9 @@ function validatePresentationSemantics(data, errors) {
     }
     available.add(item.metric);
   }
+  for (const node of asArray(data.semanticNodes)) {
+    if (node?.id) available.add(node.id);
+  }
 
   const primary = data.presentation.primaryMetrics;
   const supporting = data.presentation.supportingMetrics;

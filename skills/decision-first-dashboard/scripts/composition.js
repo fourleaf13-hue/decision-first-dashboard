@@ -416,7 +416,10 @@ function nodeMarkerPresent(artifact, node) {
     const actualCoverage = new Set(String(attrs['data-coverage'] ?? '').split(/\s+/).filter(Boolean));
     return attrs['data-semantic-node'] === node.id &&
       attrs['data-presentation'] === node.presentation &&
-      sameSet(actualCoverage, expectedCoverage);
+      sameSet(actualCoverage, expectedCoverage) &&
+      (!node.metric || attrs['data-metric'] === node.metric) &&
+      (!node.metricRole || attrs['data-metric-role'] === node.metricRole) &&
+      (!node.metricPriority || attrs['data-metric-priority'] === node.metricPriority);
   });
 }
 

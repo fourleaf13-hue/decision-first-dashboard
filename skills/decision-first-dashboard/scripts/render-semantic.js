@@ -95,6 +95,14 @@ function itemAttributes(node, item, index) {
   return `data-semantic-node="${escapeMarkup(node.id)}" data-semantic-item="true" data-item-index="${index}" data-semantic-role="${role}"${rank}`;
 }
 
+function metricNodeAttributes(node) {
+  return [
+    node.metric ? ` data-metric="${escapeMarkup(node.metric)}"` : '',
+    node.metricRole ? ` data-metric-role="${escapeMarkup(node.metricRole)}"` : '',
+    node.metricPriority ? ` data-metric-priority="${escapeMarkup(node.metricPriority)}"` : ''
+  ].join('');
+}
+
 function htmlItem(node, item, index, max) {
   const ratio = Math.max(4, (numericValue(item.value) / max) * 100).toFixed(1);
   const detail = item.detail ? `<small>${escapeMarkup(item.detail)}</small>` : '';
@@ -115,7 +123,7 @@ function htmlBody(node) {
 }
 
 function htmlCard(node) {
-  return `<section class="semantic-card semantic-card--${node.type.toLowerCase()}" data-semantic-node="${escapeMarkup(node.id)}" data-presentation="${escapeMarkup(node.presentation)}" data-coverage="${escapeMarkup(node.coverage.join(' '))}" data-structure="${escapeMarkup(node.structure)}" data-semantic-container="true">
+  return `<section class="semantic-card semantic-card--${node.type.toLowerCase()}" data-semantic-node="${escapeMarkup(node.id)}" data-presentation="${escapeMarkup(node.presentation)}" data-coverage="${escapeMarkup(node.coverage.join(' '))}" data-structure="${escapeMarkup(node.structure)}"${metricNodeAttributes(node)} data-semantic-container="true">
     <header><h2>${escapeMarkup(node.title)}</h2>${node.subtitle ? `<p>${escapeMarkup(node.subtitle)}</p>` : ''}</header>
     ${htmlBody(node)}
   </section>`;
@@ -180,7 +188,7 @@ function svgCard(layout) {
   const { node, x, y, width, height } = layout;
   const max = Math.max(...node.items.map((item) => numericValue(item.value)), 1);
   const rows = node.items.map((item, index) => svgItem(node, item, index, x, y, width, max)).join('');
-  return `<g data-semantic-node="${escapeMarkup(node.id)}" data-presentation="${escapeMarkup(node.presentation)}" data-coverage="${escapeMarkup(node.coverage.join(' '))}" data-structure="${escapeMarkup(node.structure)}" data-semantic-container="true"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="18" class="card"/><text x="${x + 22}" y="${y + 34}" class="title">${escapeMarkup(node.title)}</text>${node.subtitle ? `<text x="${x + 22}" y="${y + 56}" class="subtitle">${escapeMarkup(node.subtitle)}</text>` : ''}${svgStructureVisual(node, x, y, width)}${rows}</g>`;
+  return `<g data-semantic-node="${escapeMarkup(node.id)}" data-presentation="${escapeMarkup(node.presentation)}" data-coverage="${escapeMarkup(node.coverage.join(' '))}" data-structure="${escapeMarkup(node.structure)}"${metricNodeAttributes(node)} data-semantic-container="true"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="18" class="card"/><text x="${x + 22}" y="${y + 34}" class="title">${escapeMarkup(node.title)}</text>${node.subtitle ? `<text x="${x + 22}" y="${y + 56}" class="subtitle">${escapeMarkup(node.subtitle)}</text>` : ''}${svgStructureVisual(node, x, y, width)}${rows}</g>`;
 }
 
 export function renderSemanticSvg(data, composition, options = {}) {

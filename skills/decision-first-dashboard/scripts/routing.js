@@ -221,6 +221,15 @@ function metricObjectsById(decisionState) {
       }
     }
   }
+  for (const node of decisionState?.semanticNodes ?? []) {
+    if (!node?.id || objects.has(node.id)) continue;
+    objects.set(node.id, {
+      metric: node.id,
+      label: node.title ?? node.id,
+      value: node.title ?? node.id,
+      provenance: 'source'
+    });
+  }
   return { objects, errors };
 }
 
@@ -256,6 +265,35 @@ export function rebuildDecisionStateForRouting(decisionState, manifest, { heroMe
         scorecardMetrics
       }
     }
+  };
+}
+
+function metricPriorityForRoute(route, metric, heroMetric) {
+  if (route?.role === 'primary_signal') return metric === heroMetric ? 'hero' : 'primary';
+  if (route?.role === 'exception') return 'exception';
+  if (route?.role === 'diagnostic') return 'supporting';
+  if (route?.role === 'drilldown') return 'drilldown';
+  return 'scorecard';
+}
+
+function decorateCompositionNodes(manifest, routes, heroMetric) {
+  if (!Array.isArray(manifest?.compositionNodes)) return manifest;
+  const routeByMetric = new Map(routes.map((route) => [route?.metric, route]));
+  return {
+    ...manifest,
+    compositionNodes: manifest.compositionNodes.map((node) => {
+      const metric = node?.metric ?? node?.id;
+      const route = routeByMetric.get(metric);
+      if (!route) return { ...node };
+      const roleUsesSummary = ['diagnostic', 'drilldown', 'scorecard_only'].includes(route.role);
+      return {
+        ...node,
+        metric,
+        metricRole: route.role,
+        metricPriority: metricPriorityForRoute(route, metric, heroMetric),
+        ...(roleUsesSummary ? { presentation: 'summary' } : {})
+      };
+    })
   };
 }
 
@@ -300,7 +338,9 @@ export function applyMetricWorthinessRouting(manifest, decisionState, metricWort
   const nextManifest = { ...manifest, metrics: nextMetrics };
   const rebuilt = rebuildDecisionStateForRouting(decisionState, nextManifest, { heroMetric: preferredHeroMetric });
   if (!rebuilt.valid) return { valid: false, errors: rebuilt.errors, manifest: null, decisionState: null, details };
-  return { valid: true, errors: [], manifest: nextManifest, decisionState: rebuilt.decisionState, details };
+  const heroMetric = rebuilt.decisionState?.presentation?.heroMetric ?? preferredHeroMetric;
+  const decoratedManifest = decorateCompositionNodes(nextManifest, nextMetrics, heroMetric);
+  return { valid: true, errors: [], manifest: decoratedManifest, decisionState: rebuilt.decisionState, details };
 }
 
 function visibleMetricIds(decisionState) {
@@ -419,8 +459,8 @@ export function validateMetricRouting(manifest, decisionState, options = {}) {
     add(errors, 'INVENTORY_COUNT_MISMATCH', '/inventoryCount', 'every extracted metric must have exactly one routing entry');
   }
 
-  const compositionNodes = Array.isArray(manifest.compositionNodes) ? manifest.compositionNodes : [];
-  const semanticNodeIds = new Set((decisionState?.semanticNodes ?? []).map((node) => node?.id).filter(Boolean));
+  const compositionNodes = Array.isArray(effectiveManifest.compositionNodes) ? effectiveManifest.compositionNodes : [];
+  const semanticNodeIds = new Set((effectiveDecisionState?.semanticNodes ?? []).map((node) => node?.id).filter(Boolean));
   const compositionNodeIds = new Set();
   for (const [index, node] of compositionNodes.entries()) {
     if (compositionNodeIds.has(node.id)) add(errors, 'DUPLICATE_COMPOSITION_NODE', `/compositionNodes/${index}/id`, 'each semantic node may be selected only once');
