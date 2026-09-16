@@ -69,6 +69,15 @@ function isPlainNoScore(data) {
   return data?.mode === 'no_score' && !data.radarScale;
 }
 
+function assertSemanticDeliveryContract(data, composition) {
+  if (!Array.isArray(data?.semanticNodes) || data.semanticNodes.length === 0) {
+    throw new Error('canonical production rendering requires semanticNodes');
+  }
+  if (!composition || !Array.isArray(composition.nodes) || composition.nodes.length === 0) {
+    throw new Error('canonical production rendering requires a non-empty semantic composition');
+  }
+}
+
 function radialPoint(cx, cy, radius, angle) {
   return {
     x: cx + Math.cos(angle) * radius,
@@ -164,6 +173,7 @@ function tuneHtmlRadar(markup, dimensions) {
 
 export function renderSvg(data, options = {}) {
   const { composition } = options;
+  if (options.requireSemantic) assertSemanticDeliveryContract(data, composition);
   if (Array.isArray(data?.semanticNodes)) return renderSemanticSvg(data, composition, options);
   const prepared = prepareRenderData(data);
   const coreMarkup = renderSvgCore(prepared, options);
@@ -174,6 +184,7 @@ export function renderSvg(data, options = {}) {
 
 export function renderHtml(data, options = {}) {
   const { composition } = options;
+  if (options.requireSemantic) assertSemanticDeliveryContract(data, composition);
   if (Array.isArray(data?.semanticNodes)) return renderSemanticHtml(data, composition, options);
   const prepared = prepareRenderData(data);
   const coreMarkup = renderHtmlCore(prepared, options);

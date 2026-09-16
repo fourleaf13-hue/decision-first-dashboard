@@ -288,6 +288,8 @@ Do not regenerate a separate free-form image or app as the “real” After. If 
 
 `compile.js`, `validate.js`, and `render.js` remain lower-level compatibility/testing tools. They are not substitutes for `compile-dashboard.js` in ordinary production workflows.
 
+When `compile-dashboard.js` establishes a semantic composition, it invokes the compiler with the required semantic-delivery contract. Missing semantic nodes or composition fail at delivery; they cannot fall through to the legacy renderer. Direct `compile.js` compatibility execution remains available when that contract is not requested.
+
 ### 9. Follow failure transitions literally
 
 - `FIX_WORTHINESS_ASSESSMENT` → repair the structured assessment;

@@ -179,10 +179,13 @@ export function compileDecisionDashboard(
   }
 
   const deliveredClaims = buildDeliveredClaims(effectiveBundle);
+  const requireSemantic = Array.isArray(effectiveBundle.decisionState?.semanticNodes) ||
+    Array.isArray(effectiveRoutingManifest.compositionNodes);
   const compiled = compileGroundedBundle(effectiveBundle, {
     baseDir,
     composition: composition.composition,
-    claims: deliveredClaims
+    claims: deliveredClaims,
+    requireSemantic
   });
   if (!compiled.result.valid || compiled.result.transition !== 'PASS') {
     return {
