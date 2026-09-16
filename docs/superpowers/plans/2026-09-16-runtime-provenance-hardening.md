@@ -4,7 +4,7 @@
 
 **Goal:** Make the installed `decision-first-dashboard` Skill version and package binding an executable pre/post acceptance gate.
 
-**Architecture:** Add a standalone `runtime-provenance-preflight.js` library/CLI that computes deterministic package tree hashes, validates the repository commit, detects the runtime binding, checks required files/invariants, and brackets an acceptance command with pre/post checks. Add a separate idempotent binding installer that prefers Windows junctions, falls back to symlinks, and never overwrites a copied or wrong target without an explicit recoverable backup. Existing compiler/package-readiness scripts remain separate and unchanged in behavior.
+**Architecture:** Add a standalone `runtime-provenance-preflight.js` library/CLI that computes deterministic package tree hashes, validates the repository commit, detects the runtime binding, checks required files/invariants, and brackets an acceptance command with pre/post checks. Add a repository-level `run-acceptance.js` entrypoint that invokes that preflight first and rejects copied-directory staleness risk before forwarding the acceptance command. Add a separate idempotent binding installer that prefers Windows junctions, falls back to symlinks, and never overwrites a copied or wrong target without an explicit recoverable backup. Existing compiler/package-readiness scripts remain separate and unchanged in behavior.
 
 **Tech Stack:** Node.js ESM, built-in `node:fs`, `node:crypto`, `node:child_process`, `node:path`, `node:test`, PowerShell/Windows filesystem links for the actual local runtime.
 
@@ -175,14 +175,19 @@ target, copied-directory, mutation, case, and separator assertions.
 
 **Files:**
 - Modify: `package.json`
+- Add: `scripts/run-acceptance.js`
 - Modify: `README.md`
 - Modify: `skills/decision-first-dashboard/SKILL.md`
+- Modify: `skills/decision-first-dashboard/scripts/runtime-provenance-preflight.js`
 - Modify: `.github/workflows/compiler-tests.yml`
+- Add: `tests/compiler/acceptance-entrypoint.test.js`
+- Modify: `tests/compiler/runtime-provenance.test.js`
 - Modify: `tests/compiler/claude-skill-package.test.js`
 
 **Interfaces:**
-- Adds `npm run preflight:runtime-provenance -- ...` as a separate command;
-  it does not replace or extend `preflight:skill`.
+- Adds `npm run preflight:runtime-provenance -- ...` as a separate diagnostic
+  command and `npm run run:acceptance -- ...` as the formal acceptance command;
+  neither replaces or extends `preflight:skill`.
 - Documents the exact runtime path/binding contract, hash algorithm, output
   fields, and explicit backup rule.
 - CI runs the new unit tests and checks that the standalone script is packaged;
@@ -192,8 +197,10 @@ target, copied-directory, mutation, case, and separator assertions.
 
 Parse `--repo-root`, `--runtime-skill-path`, `--expected-repo-head`, and a
 trailing `--run <command> [args...]`; print exactly one JSON report and return
-non-zero on `RUNTIME_PROVENANCE_FAIL`. Keep all acceptance logs/output outside
-the Skill package.
+non-zero on `RUNTIME_PROVENANCE_FAIL`. The formal `run-acceptance.js` wrapper
+must invoke the canonical preflight first with `--reject-staleness-risk`, so a
+copied or mismatched runtime cannot start the acceptance command. Keep all
+acceptance logs/output outside the Skill package.
 
 - [ ] **Step 2: Register and package the command**
 

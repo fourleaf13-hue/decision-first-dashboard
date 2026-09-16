@@ -39,6 +39,7 @@ const FAILURE_REPAIR_LAYERS = Object.freeze({
   REPO_HEAD_UNAVAILABLE: 'repository-checkout',
   BINDING_MISSING: 'runtime-installation',
   BINDING_TYPE_UNSUPPORTED: 'runtime-installation',
+  STALE_RUNTIME_BINDING: 'runtime-installation',
   PHYSICAL_TARGET_MISMATCH: 'runtime-binding',
   CONTENT_MISMATCH_PRE: 'runtime-package-contents',
   REPO_DIRTY_PRE: 'repository-cleanliness',
@@ -398,6 +399,7 @@ export function runRuntimeProvenancePreflight({
   expectedRepoHead,
   runAcceptance,
   exclude = DEFAULT_EXCLUDES,
+  rejectStalenessRisk = false,
   repoHeadReader = () => readRepoHead(repoRoot),
   repoStatusReader = () => readRepoStatus(repoRoot),
   platform = process.platform
@@ -459,6 +461,13 @@ export function runRuntimeProvenancePreflight({
     return report;
   }
   report.stalenessRisk = bindingType === 'copied-directory';
+  if (rejectStalenessRisk && report.stalenessRisk) {
+    setFailure(report, 'STALE_RUNTIME_BINDING', 'Formal acceptance requires a structural runtime binding; copied Skill directories are not allowed', {
+      runtimeSkillPath: resolvedRuntimeSkillPath,
+      bindingType
+    });
+    return report;
+  }
 
   if (bindingType === 'junction' || bindingType === 'symlink') {
     let actualPhysicalTarget;
@@ -651,6 +660,7 @@ function parseCliArgs(argv) {
     runtimeSkillPath: process.env.DECISION_FIRST_RUNTIME_SKILL_PATH ?? null,
     expectedRepoHead: process.env.DECISION_FIRST_EXPECTED_REPO_HEAD ?? null,
     exclude: DEFAULT_EXCLUDES,
+    rejectStalenessRisk: false,
     runCommand: null,
     runArgs: []
   };
@@ -680,6 +690,8 @@ function parseCliArgs(argv) {
     } else if (arg === '--exclude') {
       options.exclude = valueFor(index, arg).split(',').filter(Boolean);
       index += 1;
+    } else if (arg === '--reject-staleness-risk') {
+      options.rejectStalenessRisk = true;
     }
     else throw new Error(`Unknown argument: ${arg}`);
   }

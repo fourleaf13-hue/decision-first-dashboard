@@ -4,8 +4,8 @@
 
 This change makes the provenance of the installed `decision-first-dashboard`
 Skill an executable, bracketed gate. It is limited to runtime package identity,
-Windows binding, tree hashing, required-file/invariant checks, and the
-documentation and tests for those checks.
+Windows binding, tree hashing, required-file/invariant checks, a fail-closed
+formal acceptance entrypoint, and the documentation and tests for those checks.
 
 It does not change Bakery intake, Decision Brief, Metric Router, Worthiness,
 composition, renderer behavior, visual output, or runtime attestation work.
@@ -41,6 +41,15 @@ The gate is valid only when the preconditions and postconditions both pass.
 When a precondition fails, the acceptance command is not run. When the command
 runs, post checks still execute even if the command itself fails.
 
+The repository-level `scripts/run-acceptance.js` is the formal acceptance
+entrypoint. It invokes the canonical `runtime-provenance-preflight.js` as the
+first acceptance step, requires a structural runtime binding by passing
+`--reject-staleness-risk`, and forwards the acceptance command to the
+preflight bracket. A failed provenance preflight terminates the entrypoint
+before the business acceptance command can create a result or canonical
+artifact. The standalone `preflight:runtime-provenance` command remains
+available for diagnostics and lower-level tests.
+
 ## Hash contract
 
 The hash scope is the complete `skills/decision-first-dashboard/` package. The
@@ -72,6 +81,8 @@ directory junction and falls back to a directory symlink. A junction or
 symlink passes physical-target validation only when its resolved target equals
 the repository's `skills/decision-first-dashboard` directory. A copied
 directory may pass exact content checks, but reports `stalenessRisk: true`.
+Formal acceptance rejects `stalenessRisk: true` before invoking the acceptance
+command.
 
 The installer is idempotent: it creates a missing target, validates an already
 correct target, and fails without overwriting a wrong target. It never silently
@@ -101,4 +112,6 @@ missing invariant, dirty repository before the run, dirty repository after the
 run, copied runtime mutation after the run, repository package mutation after
 the run, Windows backslash/POSIX hash normalization, case-sensitive filename
 hashing, idempotent rerun, and no-overwrite behavior for a wrong existing
-target.
+target. It also covers the formal acceptance entrypoint starting only after a
+healthy binding passes, and aborting before execution for copied or physically
+mismatched runtime bindings.

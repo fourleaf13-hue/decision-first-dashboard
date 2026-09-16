@@ -568,8 +568,11 @@ test('runtime provenance gate remains independent and documented', () => {
   const readme = fs.readFileSync(path.join(testDir, '../../README.md'), 'utf8');
   const skill = fs.readFileSync(path.join(testDir, '../../skills/decision-first-dashboard/SKILL.md'), 'utf8');
   assert.equal(typeof packageJson.scripts['preflight:runtime-provenance'], 'string');
+  assert.equal(typeof packageJson.scripts['run:acceptance'], 'string');
   assert.equal(typeof packageJson.scripts['bind:runtime-skill'], 'string');
   assert.match(readme, /Runtime Skill provenance gate/);
+  assert.match(readme, /run:acceptance/);
   assert.match(skill, /runtime-provenance-preflight\.js/);
+  assert.match(skill, /reject-staleness-risk/);
   assert.match(readme, /logs, caches, and temp files must remain\s+outside the package/i);
 });

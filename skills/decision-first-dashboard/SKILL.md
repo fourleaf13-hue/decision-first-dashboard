@@ -307,13 +307,16 @@ symlinks are the fallback, and resolved physical targets must equal the
 repository Skill directory. A copied directory can pass exact content equality
 but must report `stalenessRisk: true`; it is not a zero-staleness-risk runtime.
 
-The bracket command is:
+The formal acceptance entrypoint is:
 
 ```powershell
-npm run preflight:runtime-provenance -- --repo-root "$PWD" --runtime-skill-path "$env:USERPROFILE\.agents\skills\decision-first-dashboard" --expected-repo-head "<expected-40-char-commit>" --run node <acceptance-script.js>
+npm run run:acceptance -- --repo-root "$PWD" --runtime-skill-path "$env:USERPROFILE\.agents\skills\decision-first-dashboard" --expected-repo-head "<expected-40-char-commit>" --run node <acceptance-script.js>
 ```
 
-The gate checks the expected commit, binding and physical identity, complete
+`run-acceptance.js` invokes the canonical `runtime-provenance-preflight.js`
+before the acceptance command and passes `--reject-staleness-risk`. A non-zero
+provenance result terminates the formal acceptance; no business result or
+canonical artifact may be produced. The JSON gate report includes the expected commit, binding and physical identity, complete
 pre/post package tree hashes, clean pre/post status for
 `skills/decision-first-dashboard/`, required files, and these exact runtime
 invariants: `SKILL.md` contains `Agent invocation compliance — behaviorally
@@ -323,7 +326,9 @@ guarded, not runtime-enforced`; `scripts/compile-dashboard.js` contains
 `RUNTIME_PROVENANCE_PASS` with `acceptanceValid: true` before a fresh Bakery
 acceptance session may begin. Keep acceptance logs, caches, and temporary files
 outside the Skill package; the default hash exclude list is empty and does not
-silently hide runtime-generated files.
+silently hide runtime-generated files. The lower-level
+`preflight:runtime-provenance` command remains diagnostic-only; an exact copied
+package reports `stalenessRisk: true` and is rejected by formal acceptance.
 
 ### 9. Follow failure transitions literally
 
