@@ -48,10 +48,11 @@ const FAILURE_REPAIR_LAYERS = Object.freeze({
   RUN_FAILED: 'acceptance-invocation',
   REPO_DIRTY_POST: 'repository-cleanliness',
   CONTENT_MISMATCH_POST: 'runtime-package-contents',
-  CONTENT_DRIFT_POST: 'acceptance-invocation'
+  CONTENT_DRIFT_POST: 'acceptance-invocation',
+  CLI_INPUT_INVALID: 'acceptance-invocation'
 });
 
-function normalizeRelativePath(relativePath) {
+function normalizeExcludePath(relativePath) {
   return String(relativePath).replaceAll('\\', '/');
 }
 
@@ -65,7 +66,7 @@ function normalizeExcludes(exclude) {
   if (exclude === undefined) return [];
   if (!Array.isArray(exclude)) throw new TypeError('exclude must be an array of relative paths');
   return exclude.map((entry) => {
-    const normalized = normalizeRelativePath(entry).replace(/\/+$/, '');
+    const normalized = normalizeExcludePath(entry).replace(/\/+$/, '');
     if (!normalized) throw new TypeError('exclude entries must not be empty');
     return normalized;
   });
@@ -84,7 +85,9 @@ function enumerateFiles(rootPath, excludes) {
       .sort((left, right) => comparePathNames(left.name, right.name));
     for (const entry of entries) {
       const absolutePath = path.join(directory, entry.name);
-      const relativePath = normalizeRelativePath(path.join(relativeDirectory, entry.name));
+      const relativePath = relativeDirectory
+        ? `${relativeDirectory}/${entry.name}`
+        : entry.name;
       if (isExcluded(relativePath, excludes)) continue;
       if (entry.isDirectory()) {
         walk(absolutePath, relativePath);
@@ -249,16 +252,35 @@ function setFailure(report, check, message, details = {}) {
   };
 }
 
-function acceptanceSucceeded(result) {
-  if (result === undefined || result === null) return true;
-  if (typeof result === 'boolean') return result;
-  if (typeof result === 'number') return result === 0;
-  if (typeof result === 'object') {
-    if (typeof result.ok === 'boolean') return result.ok;
-    if (typeof result.status === 'number') return result.status === 0;
-    if (typeof result.exitCode === 'number') return result.exitCode === 0;
+function assessAcceptanceResult(result) {
+  if (result === undefined || result === null) return { success: true };
+  if (typeof result?.then === 'function') {
+    return { success: false, reasonCode: 'ASYNC_ACCEPTANCE_UNSUPPORTED' };
   }
-  return true;
+  if (typeof result === 'boolean') {
+    return { success: result, reasonCode: 'BOOLEAN_RESULT_FALSE' };
+  }
+  if (typeof result === 'number') {
+    return { success: result === 0, reasonCode: 'NONZERO_EXIT_CODE' };
+  }
+  if (typeof result === 'object') {
+    if (Object.hasOwn(result, 'ok')) {
+      return { success: result.ok === true, reasonCode: 'OK_FALSE' };
+    }
+    if (Object.hasOwn(result, 'status')) {
+      return {
+        success: typeof result.status === 'number' && result.status === 0,
+        reasonCode: 'INVALID_OR_NONZERO_STATUS'
+      };
+    }
+    if (Object.hasOwn(result, 'exitCode')) {
+      return {
+        success: typeof result.exitCode === 'number' && result.exitCode === 0,
+        reasonCode: 'INVALID_OR_NONZERO_EXIT_CODE'
+      };
+    }
+  }
+  return { success: false, reasonCode: 'UNSUPPORTED_ACCEPTANCE_RESULT' };
 }
 
 function recordPostHashes(report, repoSkillPath, runtimeSkillPath, exclude) {
@@ -450,9 +472,11 @@ export function runRuntimeProvenancePreflight({
     runStarted = true;
     try {
       const acceptanceResult = runAcceptance();
-      if (!acceptanceSucceeded(acceptanceResult)) {
+      const acceptanceAssessment = assessAcceptanceResult(acceptanceResult);
+      if (!acceptanceAssessment.success) {
         setFailure(report, 'RUN_FAILED', 'The bracketed acceptance command failed', {
-          acceptanceResult
+          acceptanceResult,
+          reasonCode: acceptanceAssessment.reasonCode
         });
       }
     } catch (error) {
@@ -547,9 +571,29 @@ function parseCliArgs(argv) {
   return options;
 }
 
+function createCliInputFailureReport(options, error) {
+  const resolvedRepoRoot = path.resolve(options.repoRoot ?? defaultRepoRoot);
+  const runtimeSkillPath = typeof options.runtimeSkillPath === 'string'
+    ? path.resolve(options.runtimeSkillPath)
+    : null;
+  const report = baseReport({
+    repoHead: readRepoHead(resolvedRepoRoot),
+    expectedRepoHead: options.expectedRepoHead ?? null,
+    runtimeSkillPath,
+    expectedPhysicalTarget: null
+  });
+  setFailure(report, 'CLI_INPUT_INVALID', error.message, {
+    repoRoot: resolvedRepoRoot,
+    runtimeSkillPath,
+    error: error.message
+  });
+  return report;
+}
+
 if (isMainModule(currentFile)) {
+  let options = {};
   try {
-    const options = parseCliArgs(process.argv.slice(2));
+    options = parseCliArgs(process.argv.slice(2));
     let runAcceptance;
     if (options.runCommand) {
       runAcceptance = () => {
@@ -561,7 +605,10 @@ if (isMainModule(currentFile)) {
           status: result.status ?? 1,
           signal: result.signal,
           stdout: result.stdout,
-          stderr: result.stderr
+          stderr: result.stderr,
+          error: result.error
+            ? { code: result.error.code, message: result.error.message }
+            : null
         };
       };
     }
@@ -572,17 +619,7 @@ if (isMainModule(currentFile)) {
     process.stdout.write(`${JSON.stringify(report)}\n`);
     if (report.result !== 'RUNTIME_PROVENANCE_PASS') process.exitCode = 1;
   } catch (error) {
-    process.stdout.write(`${JSON.stringify({
-      result: 'RUNTIME_PROVENANCE_FAIL',
-      acceptanceValid: false,
-      firstFailingCheck: 'CLI_INPUT_INVALID',
-      diagnostic: {
-        code: 'CLI_INPUT_INVALID',
-        message: error.message,
-        repairLayer: 'acceptance-invocation',
-        details: {}
-      }
-    })}\n`);
+    process.stdout.write(`${JSON.stringify(createCliInputFailureReport(options, error))}\n`);
     process.exitCode = 1;
   }
 }

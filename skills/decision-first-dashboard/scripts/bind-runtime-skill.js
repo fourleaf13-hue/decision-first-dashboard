@@ -63,7 +63,8 @@ function windowsLinkType(targetPath, platform) {
 
 export function detectRuntimeBinding(runtimeSkillPath, {
   fsImpl = fs,
-  platform = process.platform
+  platform = process.platform,
+  linkTypeReader = (targetPath) => windowsLinkType(targetPath, platform)
 } = {}) {
   const targetPath = path.resolve(runtimeSkillPath);
   let stat;
@@ -75,20 +76,18 @@ export function detectRuntimeBinding(runtimeSkillPath, {
   }
 
   if (platform === 'win32') {
-    const linkType = windowsLinkType(targetPath, platform);
+    const linkType = linkTypeReader(targetPath);
     if (linkType) return linkType;
+    if (stat.isSymbolicLink()) return null;
+    try {
+      fsImpl.readlinkSync(targetPath);
+      return null;
+    } catch {
+      // No readable reparse target means this may be a regular directory.
+    }
   }
 
   if (stat.isSymbolicLink()) return 'symlink';
-
-  if (platform === 'win32') {
-    try {
-      fsImpl.readlinkSync(targetPath);
-      return 'junction';
-    } catch {
-      // A regular directory does not have a link target.
-    }
-  }
 
   if (stat.isDirectory()) return 'copied-directory';
   return null;

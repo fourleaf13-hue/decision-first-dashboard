@@ -78,7 +78,8 @@ function runGate({
   statusSequence = ['', ''],
   mutateDuringRun,
   expectedHead = expectedRepoHead,
-  repoHead = expectedHead
+  repoHead = expectedHead,
+  acceptanceResult
 }) {
   let statusCalls = 0;
   let acceptanceCalls = 0;
@@ -91,6 +92,7 @@ function runGate({
     runAcceptance: () => {
       acceptanceCalls += 1;
       mutateDuringRun?.();
+      return acceptanceResult;
     }
   });
   return { report, acceptanceCalls };
@@ -219,6 +221,42 @@ test('dirty repository after run fails the bracket', () => {
   assert.equal(report.acceptanceValid, false);
 });
 
+test('null-status acceptance result fails closed', () => {
+  const fixture = createFixture();
+  ensureRuntimeSkillBinding({
+    repoSkillPath: fixture.repoSkillPath,
+    runtimeSkillPath: fixture.runtimeSkillPath
+  });
+
+  const { report } = runGate({
+    ...fixture,
+    acceptanceResult: { status: null, signal: 'SIGTERM' }
+  });
+  assert.equal(report.firstFailingCheck, 'RUN_FAILED');
+  assert.equal(report.acceptanceValid, false);
+  assert.equal(report.diagnostic.details.acceptanceResult.status, null);
+});
+
+test('asynchronous acceptance callback fails closed instead of being treated as complete', () => {
+  const fixture = createFixture();
+  ensureRuntimeSkillBinding({
+    repoSkillPath: fixture.repoSkillPath,
+    runtimeSkillPath: fixture.runtimeSkillPath
+  });
+
+  const report = runRuntimeProvenancePreflight({
+    repoRoot: fixture.repoRoot,
+    runtimeSkillPath: fixture.runtimeSkillPath,
+    expectedRepoHead,
+    repoHeadReader: () => expectedRepoHead,
+    repoStatusReader: () => '',
+    runAcceptance: () => Promise.resolve({ status: 0 })
+  });
+  assert.equal(report.firstFailingCheck, 'RUN_FAILED');
+  assert.equal(report.acceptanceValid, false);
+  assert.equal(report.diagnostic.details.reasonCode, 'ASYNC_ACCEPTANCE_UNSUPPORTED');
+});
+
 test('copied runtime mutation is detected by the post hash', () => {
   const fixture = createFixture();
   fs.mkdirSync(path.dirname(fixture.runtimeSkillPath), { recursive: true });
@@ -266,6 +304,19 @@ test('filename case differences remain different', () => {
   assert.notEqual(computeSkillTreeHash(first).hash, computeSkillTreeHash(second).hash);
 });
 
+test('POSIX literal backslash filenames remain different from nested paths', (context) => {
+  if (process.platform === 'win32') {
+    context.skip('Windows filesystem does not expose POSIX backslash filename semantics');
+    return;
+  }
+  const literal = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-first-literal-slash-'));
+  const nested = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-first-nested-slash-'));
+  fs.writeFileSync(path.join(literal, 'a\\b'), 'same bytes');
+  fs.mkdirSync(path.join(nested, 'a'));
+  fs.writeFileSync(path.join(nested, 'a', 'b'), 'same bytes');
+  assert.notEqual(computeSkillTreeHash(literal).hash, computeSkillTreeHash(nested).hash);
+});
+
 test('rerunning a correct binding is idempotent', () => {
   const fixture = createFixture();
   const first = ensureRuntimeSkillBinding({
@@ -296,6 +347,35 @@ test('wrong existing target is not overwritten', () => {
     /target|binding|physical/i
   );
   assert.equal(fs.existsSync(path.join(wrongSkillPath, 'sentinel.txt')), true);
+});
+
+test('CLI input failures still emit the complete provenance report schema', () => {
+  const preflightPath = path.join(testDir, '../../skills/decision-first-dashboard/scripts/runtime-provenance-preflight.js');
+  const run = spawnSync(process.execPath, [preflightPath, '--unknown-option'], {
+    cwd: testDir,
+    encoding: 'utf8'
+  });
+  assert.equal(run.status, 1);
+  const report = JSON.parse(run.stdout.trim());
+  for (const field of requiredReportFields) assert.equal(Object.hasOwn(report, field), true, `missing report field: ${field}`);
+  assert.equal(report.firstFailingCheck, 'CLI_INPUT_INVALID');
+  assert.equal(report.acceptanceValid, false);
+});
+
+test('Windows reparse-type ambiguity fails closed instead of guessing symlink', (context) => {
+  if (process.platform !== 'win32') {
+    context.skip('Windows-specific reparse-point fallback');
+    return;
+  }
+  const fixture = createFixture();
+  ensureRuntimeSkillBinding({
+    repoSkillPath: fixture.repoSkillPath,
+    runtimeSkillPath: fixture.runtimeSkillPath
+  });
+  assert.equal(
+    detectRuntimeBinding(fixture.runtimeSkillPath, { linkTypeReader: () => null }),
+    null
+  );
 });
 
 test('copied directory replacement requires an explicit recoverable backup', () => {
