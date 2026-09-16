@@ -263,13 +263,32 @@ function setFailure(report, check, message, details = {}) {
 function describeThrownValue(value) {
   if (value === null) return { type: 'null' };
   if (value === undefined) return { type: 'undefined' };
-  if (value instanceof Error) {
-    return {
-      type: 'error',
-      name: value.name,
-      message: value.message,
-      ...(value.code === undefined ? {} : { code: value.code })
-    };
+  let isError = false;
+  try {
+    isError = value instanceof Error;
+  } catch {
+    return { type: typeof value, message: '<uninspectable thrown value>' };
+  }
+  if (isError) {
+    let name = 'Error';
+    try {
+      name = String(value.name);
+    } catch {
+      name = '<unreadable error name>';
+    }
+    let message = '<unreadable error message>';
+    try {
+      message = String(value.message);
+    } catch {
+      // Keep the failure report serializable even when Error.message is hostile.
+    }
+    const description = { type: 'error', name, message };
+    try {
+      if (value.code !== undefined) description.code = String(value.code);
+    } catch {
+      description.code = '<unreadable error code>';
+    }
+    return description;
   }
   let message;
   try {
@@ -278,6 +297,15 @@ function describeThrownValue(value) {
     message = '<unprintable thrown value>';
   }
   return { type: typeof value, message };
+}
+
+function readResultProperty(result, property) {
+  try {
+    if (!(property in result)) return { present: false };
+    return { present: true, value: result[property] };
+  } catch {
+    return { present: true, unreadable: true };
+  }
 }
 
 function assessAcceptanceResult(result) {
@@ -292,10 +320,18 @@ function assessAcceptanceResult(result) {
     return { success: result === 0, reasonCode: 'NONZERO_EXIT_CODE' };
   }
   if (typeof result === 'object') {
-    if (Object.hasOwn(result, 'error') && result.error !== null && result.error !== undefined) {
+    const errorIndicator = readResultProperty(result, 'error');
+    if (errorIndicator.unreadable) {
+      return { success: false, reasonCode: 'ACCEPTANCE_ERROR_INDICATOR_UNREADABLE' };
+    }
+    if (errorIndicator.present && errorIndicator.value !== null && errorIndicator.value !== undefined) {
       return { success: false, reasonCode: 'ACCEPTANCE_ERROR' };
     }
-    if (Object.hasOwn(result, 'signal') && result.signal !== null && result.signal !== undefined) {
+    const signalIndicator = readResultProperty(result, 'signal');
+    if (signalIndicator.unreadable) {
+      return { success: false, reasonCode: 'ACCEPTANCE_SIGNAL_INDICATOR_UNREADABLE' };
+    }
+    if (signalIndicator.present && signalIndicator.value !== null && signalIndicator.value !== undefined) {
       return { success: false, reasonCode: 'ACCEPTANCE_SIGNAL' };
     }
     const primaryIndicators = ['ok', 'status', 'exitCode']

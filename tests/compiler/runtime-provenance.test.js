@@ -291,7 +291,16 @@ test('contradictory or error-marked acceptance results fail closed', () => {
 });
 
 test('arbitrary thrown values fail closed and still run postflight', () => {
-  for (const thrown of [null, undefined, 'boom']) {
+  const revoked = Proxy.revocable({}, {});
+  revoked.revoke();
+  const throwingMessageError = new Error('placeholder');
+  Object.defineProperty(throwingMessageError, 'message', {
+    configurable: true,
+    get() {
+      throw new Error('message getter failed');
+    }
+  });
+  for (const thrown of [null, undefined, 'boom', revoked.proxy, throwingMessageError]) {
     const fixture = createFixture();
     ensureRuntimeSkillBinding({
       repoSkillPath: fixture.repoSkillPath,
@@ -308,6 +317,23 @@ test('arbitrary thrown values fail closed and still run postflight', () => {
     assert.equal(report.firstFailingCheck, 'RUN_FAILED');
     assert.equal(report.repoCleanPost, true);
     assert.equal(typeof report.repoTreeHashPost, 'string');
+    assert.equal(report.acceptanceValid, false);
+  }
+});
+
+test('inherited non-null acceptance errors and signals fail closed', () => {
+  const cases = [
+    Object.assign(Object.create({ error: { code: 'ENOENT' } }), { status: 0 }),
+    Object.assign(Object.create({ signal: 'SIGTERM' }), { status: 0 })
+  ];
+  for (const acceptanceResult of cases) {
+    const fixture = createFixture();
+    ensureRuntimeSkillBinding({
+      repoSkillPath: fixture.repoSkillPath,
+      runtimeSkillPath: fixture.runtimeSkillPath
+    });
+    const { report } = runGate({ ...fixture, acceptanceResult });
+    assert.equal(report.firstFailingCheck, 'RUN_FAILED');
     assert.equal(report.acceptanceValid, false);
   }
 });

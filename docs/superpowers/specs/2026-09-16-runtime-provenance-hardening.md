@@ -86,10 +86,11 @@ cleanliness, and acceptance invocation. The gate must distinguish a stale
 copied package from a physically wrong link and from a content mutation during
 the acceptance run.
 
-Acceptance results fail closed when they carry a non-null `error` or `signal`,
-or when more than one primary result indicator (`ok`, `status`, or `exitCode`)
-is present. An acceptance callback that throws any JavaScript value is recorded
-as a run failure and still receives the post-run checks.
+Acceptance results fail closed when they expose a non-null `error` or `signal`
+(including through the prototype chain), or when more than one primary result
+indicator (`ok`, `status`, or `exitCode`) is present. An acceptance callback that
+throws any JavaScript value, including a value whose diagnostic properties are
+unreadable, is recorded as a run failure and still receives the post-run checks.
 
 ## Required regressions
 
