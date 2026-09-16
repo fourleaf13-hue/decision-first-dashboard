@@ -8,5 +8,8 @@
     { "metric": "gross_margin", "role": "primary_signal", "changesDecision": true, "decisionImpact": "Gross margin changes efficiency prioritization", "visibility": "first_view" },
     { "metric": "cac_payback", "role": "primary_signal", "changesDecision": true, "decisionImpact": "CAC payback changes acquisition-spend prioritization", "visibility": "first_view" },
     { "metric": "burn_multiple", "role": "primary_signal", "changesDecision": true, "decisionImpact": "Burn multiple changes capital-efficiency prioritization", "visibility": "first_view" }
+  ],
+  "compositionNodes": [
+    { "id": "primary_signals", "type": "MetricCluster", "presentation": "comparison" }
   ]
 }

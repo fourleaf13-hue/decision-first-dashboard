@@ -7,17 +7,49 @@ import { buildDeliveredClaims } from './composition.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 
-export function compileGroundedBundle(bundle, { baseDir = process.cwd(), composition = undefined, claims = undefined } = {}) {
+function semanticDeliveryFailure(code, pathValue, message) {
+  return {
+    result: {
+      valid: false,
+      stage: 'delivery',
+      transition: 'DELIVERY_CONTRACT_FAILED',
+      errors: [{ code, path: pathValue, message }]
+    },
+    svg: null,
+    html: null,
+    outputMode: null
+  };
+}
+
+export function compileGroundedBundle(
+  bundle,
+  { baseDir = process.cwd(), composition = undefined, claims = undefined, requireSemantic = false } = {}
+) {
+  const data = bundle?.decisionState;
+  if (requireSemantic && (!Array.isArray(data?.semanticNodes) || data.semanticNodes.length === 0)) {
+    return semanticDeliveryFailure(
+      'SEMANTIC_STATE_REQUIRED',
+      '/decisionState/semanticNodes',
+      'canonical production delivery requires at least one semantic node; legacy rendering is compatibility-only'
+    );
+  }
+  if (requireSemantic && (!composition || !Array.isArray(composition.nodes) || composition.nodes.length === 0)) {
+    return semanticDeliveryFailure(
+      'SEMANTIC_COMPOSITION_REQUIRED',
+      '/composition/nodes',
+      'canonical production delivery requires a non-empty validated semantic composition'
+    );
+  }
+
   const result = validateGroundedBundle(bundle, { baseDir });
   if (!result.valid) return { result, svg: null, html: null, outputMode: null };
 
-  const data = bundle.decisionState;
   const deliveredClaims = claims ?? buildDeliveredClaims(bundle);
   try {
     return {
       result,
-      svg: renderSvg(data, { composition, claims: deliveredClaims }),
-      html: renderHtml(data, { composition, claims: deliveredClaims }),
+      svg: renderSvg(data, { composition, claims: deliveredClaims, requireSemantic }),
+      html: renderHtml(data, { composition, claims: deliveredClaims, requireSemantic }),
       outputMode: data.mode === 'composite' ? 'composite' : 'no-score'
     };
   } catch (error) {

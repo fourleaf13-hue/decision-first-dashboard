@@ -14,6 +14,7 @@ function add(errors, code, path, message) {
 function summaryOf(assessment) {
   return {
     purpose: assessment.purpose,
+    questionCount: assessment.questionCount ?? 0,
     decisionLoopStatus: assessment.decisionLoop.status,
     accountabilityStatus: assessment.accountability.status,
     accountabilityMode: assessment.accountability.mode,
@@ -21,6 +22,53 @@ function summaryOf(assessment) {
     responseChangeKind: assessment.responseChange.kind,
     userOverride: assessment.userOverride === true
   };
+}
+
+function metricWorthinessSummaryOf(assessment) {
+  const metrics = Array.isArray(assessment?.metricWorthiness) ? assessment.metricWorthiness : [];
+  return {
+    count: metrics.length,
+    inferredCount: metrics.filter((item) => item.status === 'inferred').length,
+    confirmedCount: metrics.filter((item) => item.status === 'confirmed').length,
+    overriddenCount: metrics.filter((item) => item.status === 'overridden').length,
+    assumptionsRecorded: metrics.filter((item) => typeof item.assumption === 'string' && item.assumption.trim()).length
+  };
+}
+
+function metricWorthinessSemanticErrors(assessment) {
+  const errors = [];
+  const metrics = Array.isArray(assessment?.metricWorthiness) ? assessment.metricWorthiness : [];
+  const seenMetrics = new Set();
+
+  for (const [index, item] of metrics.entries()) {
+    const base = `/metricWorthiness/${index}`;
+    if (seenMetrics.has(item.metric)) {
+      add(errors, 'DUPLICATE_METRIC_WORTHINESS', `${base}/metric`, 'each metric may have only one worthiness assessment');
+    }
+    seenMetrics.add(item.metric);
+
+    if (['screenshot', 'screenshot_only'].includes(item.source) &&
+      (typeof item.assumption !== 'string' || item.assumption.trim().length === 0)) {
+      add(errors, 'SCREENSHOT_ASSUMPTION_REQUIRED', `${base}/assumption`, 'screenshot-derived metric intent must record the material assumption');
+    }
+
+    if (item.status === 'overridden' && !item.override) {
+      add(errors, 'METRIC_OVERRIDE_REQUIRED', `${base}/override`, 'overridden metric worthiness must declare a typed routing override');
+    }
+    if (item.status !== 'overridden' && item.override) {
+      add(errors, 'METRIC_OVERRIDE_STATUS_CONFLICT', `${base}/status`, 'a metric routing override requires status "overridden"');
+    }
+
+    const candidateIds = new Set();
+    for (const [candidateIndex, candidate] of (item.candidateAssumptions ?? []).entries()) {
+      if (candidateIds.has(candidate.id)) {
+        add(errors, 'DUPLICATE_METRIC_CANDIDATE', `${base}/candidateAssumptions/${candidateIndex}/id`, 'candidate assumption ids must be unique within a metric');
+      }
+      candidateIds.add(candidate.id);
+    }
+  }
+
+  return errors;
 }
 
 function validateSemantics(assessment) {
@@ -91,11 +139,15 @@ export function evaluateWorthinessAssessment(assessment) {
         message: `${error.keyword}: ${error.message}`
       })),
       recommendedFormat: null,
-      summary: null
+      summary: null,
+      metricWorthinessSummary: null
     };
   }
 
-  const semanticErrors = validateSemantics(assessment);
+  const semanticErrors = [
+    ...validateSemantics(assessment),
+    ...metricWorthinessSemanticErrors(assessment)
+  ];
   if (semanticErrors.length > 0) {
     return {
       valid: false,
@@ -103,9 +155,12 @@ export function evaluateWorthinessAssessment(assessment) {
       transition: 'FIX_WORTHINESS_ASSESSMENT',
       errors: semanticErrors,
       recommendedFormat: null,
-      summary: summaryOf(assessment)
+      summary: summaryOf(assessment),
+      metricWorthinessSummary: metricWorthinessSummaryOf(assessment)
     };
   }
+
+  const metricWorthinessSummary = metricWorthinessSummaryOf(assessment);
 
   if (assessment.userOverride === true) {
     return {
@@ -114,7 +169,8 @@ export function evaluateWorthinessAssessment(assessment) {
       transition: 'BUILD_DECISION_BRIEF',
       errors: [],
       recommendedFormat: 'dashboard',
-      summary: summaryOf(assessment)
+      summary: summaryOf(assessment),
+      metricWorthinessSummary
     };
   }
 
@@ -126,7 +182,8 @@ export function evaluateWorthinessAssessment(assessment) {
       transition: 'REDIRECT_NON_DASHBOARD',
       errors: [],
       recommendedFormat: assessment.recommendedFormat,
-      summary: summaryOf(assessment)
+      summary: summaryOf(assessment),
+      metricWorthinessSummary
     };
   }
 
@@ -144,7 +201,8 @@ export function evaluateWorthinessAssessment(assessment) {
       transition: 'ASK_WORTHINESS_QUESTION',
       errors: [],
       recommendedFormat: 'undetermined',
-      summary: summaryOf(assessment)
+      summary: summaryOf(assessment),
+      metricWorthinessSummary
     };
   }
 
@@ -159,7 +217,8 @@ export function evaluateWorthinessAssessment(assessment) {
       transition: 'REDIRECT_NON_DASHBOARD',
       errors: [],
       recommendedFormat: assessment.recommendedFormat,
-      summary: summaryOf(assessment)
+      summary: summaryOf(assessment),
+      metricWorthinessSummary
     };
   }
 
@@ -169,7 +228,8 @@ export function evaluateWorthinessAssessment(assessment) {
     transition: 'BUILD_DECISION_BRIEF',
     errors: [],
     recommendedFormat: 'dashboard',
-    summary: summaryOf(assessment)
+    summary: summaryOf(assessment),
+    metricWorthinessSummary
   };
 }
 

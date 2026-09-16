@@ -74,7 +74,12 @@ test('accepts an exact start/end location for a duplicated text literal', () => 
   bundle.source.path = 'source.txt';
   bundle.source.sha256 = writeText(tempDir, 'source.txt', sourceText);
 
-  for (const evidenceId of ['ev_signal_0_label', 'ev_signal_0_value']) {
+  for (const evidenceId of [
+    'ev_signal_0_label',
+    'ev_signal_0_value',
+    'ev_semantic_primary_signals_0_label',
+    'ev_semantic_primary_signals_0_value'
+  ]) {
     const evidence = bundle.evidence.find((item) => item.id === evidenceId);
     evidence.anchor.start = start;
     evidence.anchor.end = end;

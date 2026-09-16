@@ -177,11 +177,23 @@ FIX_DECISION_BRIEF
 
 An inferred Decision or Action is not equivalent to confirmation. The routing manifest must also preserve the confirmed Decision and Action wording; changing either downstream is a routing failure.
 
+The first intent question should use the user's working language:
+
+> **When you open this dashboard, what are you trying to figure out or do next?**
+
+If the answer remains abstract, ask:
+
+> **What would make that job easier?**
+
+“What decision does this dashboard support?” is a fallback phrasing, not a requirement to use framework terminology.
+
 ### Metric Router
 
 The Action Trigger Test asks: **if this metric changes materially, what decision or action changes?**
 
 The routing manifest preserves the complete extracted inventory while keeping only the minimum sufficient first-view signals visible. Active exceptions cannot be hidden to make the dashboard look healthier.
+
+Metric-level Worthiness is evaluated within the same pipeline. Each metric may be inferred, confirmed, or overridden against the dimensions **what changes**, **who cares**, and **what changes in response**. Monitoring and compliance metrics without an immediate action are not silently deleted: they may be demoted to diagnostic, exception, drill-down, or scorecard-only presentation while remaining preserved in the evidence inventory. A material ambiguity is raised only when candidate routing outcomes diverge and that divergence changes primary/hero eligibility; an override is a routing input that must regenerate the canonical artifact.
 
 ### Four production gates
 
@@ -212,6 +224,18 @@ Composite output is allowed only when all score-model facts are mechanically gro
 A successful `compile-dashboard.js` run stamps the final HTML with canonical renderer metadata and embeds a provenance record in the SVG. It also writes `output.manifest.json` containing hashes for the source, Worthiness Assessment, Decision Brief, routing manifest, grounded bundle, decision state, HTML, and SVG.
 
 This turns “does this look like our renderer?” into a machine-verifiable question. If a final artifact does not have canonical provenance, it is not the canonical Decision-First After.
+
+### Known limitations / trust boundary
+
+The repository distinguishes three separate integrity layers:
+
+1. **Compiler integrity — hard-enforced.** Once `compile-dashboard.js` is invoked, the canonical path must pass Worthiness, Decision Brief, Metric Router, semantic composition, semantic rendering, and delivered verification. The production entrypoint cannot fall back to the legacy renderer.
+2. **Artifact integrity — verifier-enforced.** Final HTML/SVG and `output.manifest.json` must carry canonical provenance, semantic markers, delivered coverage, and a verifier-issued hash-bound verification stamp. A lookalike artifact is not canonical output.
+3. **Agent invocation compliance — behaviorally guarded, not runtime-enforced.** Repository tests cannot prove that an unconstrained agent actually invoked `compile-dashboard.js` instead of writing HTML/SVG directly. Skill instructions and recorded agent evaluations improve compliance, but they are not trusted execution attestation. A runtime with generic file-writing or code-execution capability may still bypass the intended workflow unless the runtime restricts canonical delivery.
+
+Repository tests prove compiler and artifact integrity. They do not prove that an unconstrained agent actually invoked the canonical compiler.
+
+**Schema green ≠ routing green ≠ canonical output green.** Validation must distinguish three claims: the contract shape is valid, routing/composition behavior is correct, and the final HTML/SVG actually contains the delivered semantic result. The delivery gate therefore cross-checks the final artifact's machine-readable markers against the delivered manifest; a composition plan that is not present in the artifact fails even when every schema passes.
 
 The repository also includes a recorded agent E2E regression based on a real ambiguous Sales Dashboard prompt. The passing first turn asks one question for missing decision context; a native artifact that skips intake is rejected. This is a deterministic recorded-turn contract, not a live model benchmark.
 

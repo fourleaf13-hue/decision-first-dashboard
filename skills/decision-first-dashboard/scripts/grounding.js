@@ -130,6 +130,15 @@ function requiredCompositePaths(data) {
   data.context?.scoreSeries?.forEach((_, index) => paths.push(`/context/scoreSeries/${index}`));
   data.exceptions?.forEach((item, index) => paths.push(...visibleObjectPaths(`/exceptions/${index}`, item, ['name', 'plan', 'mrr', 'status'])));
   data.events?.forEach((item, index) => paths.push(...visibleObjectPaths(`/events/${index}`, item, ['subject', 'event', 'detail', 'time'])));
+  data.semanticNodes?.forEach((node, nodeIndex) => {
+    paths.push(`/semanticNodes/${nodeIndex}/title`);
+    if (Object.hasOwn(node, 'subtitle')) paths.push(`/semanticNodes/${nodeIndex}/subtitle`);
+    node.items.forEach((item, itemIndex) => {
+      paths.push(`/semanticNodes/${nodeIndex}/items/${itemIndex}/label`);
+      paths.push(`/semanticNodes/${nodeIndex}/items/${itemIndex}/value`);
+      if (Object.hasOwn(item, 'detail')) paths.push(`/semanticNodes/${nodeIndex}/items/${itemIndex}/detail`);
+    });
+  });
   return paths;
 }
 
@@ -141,6 +150,16 @@ function requiredNoScorePaths(data) {
   data.signals.forEach((signal, index) => {
     for (const field of ['label', 'value', 'delta', 'direction', 'normalizedScore', 'previousNormalizedScore']) {
       if (Object.hasOwn(signal, field)) paths.push(`/signals/${index}/${field}`);
+    }
+  });
+  data.metricInventory?.forEach((signal, index) => {
+    for (const field of ['label', 'value', 'delta', 'direction']) {
+      if (Object.hasOwn(signal, field)) paths.push(`/metricInventory/${index}/${field}`);
+    }
+  });
+  data.scorecardSignals?.forEach((signal, index) => {
+    for (const field of ['label', 'value', 'delta', 'direction']) {
+      if (Object.hasOwn(signal, field)) paths.push(`/scorecardSignals/${index}/${field}`);
     }
   });
   data.supportingSignals?.forEach((signal, index) => {

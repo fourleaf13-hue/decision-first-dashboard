@@ -16,6 +16,14 @@ test('HTML is the primary After deliverable and SVG is a preview/support artifac
   assert.match(readme, /HTML.*primary.*deliverable/is);
 });
 
+test('README separates compiler, artifact, and agent invocation trust boundaries', () => {
+  assert.match(readme, /Compiler integrity.*hard-enforced/is);
+  assert.match(readme, /Artifact integrity.*verifier-enforced/is);
+  assert.match(readme, /Agent invocation compliance.*not runtime-enforced/is);
+  assert.match(readme, /Repository tests prove compiler and artifact integrity/is);
+  assert.match(readme, /do not prove that an unconstrained agent actually invoked the canonical compiler/is);
+});
+
 test('soft attention is the default and hard alerts require explicit source-grounded alert semantics', () => {
   assert.match(skill, /soft attention.*default/is);
   assert.match(skill, /hard alert.*explicit.*source/is);

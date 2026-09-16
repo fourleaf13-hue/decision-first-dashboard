@@ -76,7 +76,9 @@ export function compileDecisionDashboard(
     };
   }
 
-  const intake = evaluateDecisionBrief(decisionBrief);
+  const intake = evaluateDecisionBrief(decisionBrief, {
+    worthinessQuestionCount: worthiness.summary?.questionCount ?? 0
+  });
   if (!intake.valid || intake.transition !== 'ALLOW_ROUTING') {
     return {
       result: {
@@ -114,17 +116,21 @@ export function compileDecisionDashboard(
     };
   }
 
-  const routing = validateMetricRouting(routingManifest, bundle?.decisionState);
+  const routing = validateMetricRouting(routingManifest, bundle?.decisionState, {
+    metricWorthiness: worthinessAssessment.metricWorthiness,
+    existingQuestionCount: intake.summary?.questionCount ?? 0
+  });
   if (!routing.valid) {
     return {
       result: {
         valid: false,
-        stage: 'routing',
-        transition: 'FIX_METRIC_ROUTING',
+        stage: routing.stage ?? 'routing',
+        transition: routing.transition ?? 'FIX_METRIC_ROUTING',
         errors: routing.errors,
         worthinessSummary: worthiness.summary,
         intakeSummary: intake.summary,
-        routingSummary: routing.summary
+        routingSummary: routing.summary,
+        metricWorthiness: routing.metricWorthiness ?? null
       },
       svg: null,
       html: null,
@@ -133,19 +139,23 @@ export function compileDecisionDashboard(
     };
   }
 
+  const effectiveBundle = routing.decisionState && routing.decisionState !== bundle.decisionState
+    ? { ...bundle, decisionState: routing.decisionState }
+    : bundle;
+  const effectiveRoutingManifest = routing.manifest ?? routingManifest;
   const compositionModifiers = {
     audience: decisionBrief.audience?.value ?? null,
     cadence: decisionBrief.cadence?.value ?? null,
-    density: routingManifest.compositionModifiers?.density ?? 'full',
+    density: effectiveRoutingManifest.compositionModifiers?.density ?? 'full',
     activeModifierIds: [
-      ...(routingManifest.compositionModifiers?.activeModifierIds ?? []),
-      ...(routingManifest.compositionModifiers?.density === 'compact' ? ['density_compact'] : [])
+      ...(effectiveRoutingManifest.compositionModifiers?.activeModifierIds ?? []),
+      ...(effectiveRoutingManifest.compositionModifiers?.density === 'compact' ? ['density_compact'] : [])
     ]
   };
   const composition = composeAdaptiveComposition({
     contextRequirements: decisionBrief.contextRequirements ?? [],
-    nodes: routingManifest.compositionNodes ?? [],
-    decisionLog: routingManifest.decisionLog ?? [],
+    nodes: effectiveRoutingManifest.compositionNodes ?? [],
+    decisionLog: effectiveRoutingManifest.decisionLog ?? [],
     modifiers: compositionModifiers
   });
   if (!composition.valid) {
@@ -158,7 +168,8 @@ export function compileDecisionDashboard(
         worthinessSummary: worthiness.summary,
         intakeSummary: intake.summary,
         routingSummary: routing.summary,
-        coverageManifest: composition.coverageManifest
+        coverageManifest: composition.coverageManifest,
+        metricWorthiness: routing.metricWorthiness ?? null
       },
       svg: null,
       html: null,
@@ -167,11 +178,12 @@ export function compileDecisionDashboard(
     };
   }
 
-  const deliveredClaims = buildDeliveredClaims(bundle);
-  const compiled = compileGroundedBundle(bundle, {
+  const deliveredClaims = buildDeliveredClaims(effectiveBundle);
+  const compiled = compileGroundedBundle(effectiveBundle, {
     baseDir,
     composition: composition.composition,
-    claims: deliveredClaims
+    claims: deliveredClaims,
+    requireSemantic: true
   });
   if (!compiled.result.valid || compiled.result.transition !== 'PASS') {
     return {
@@ -189,13 +201,13 @@ export function compileDecisionDashboard(
   const provenance = buildCanonicalProvenance({
     worthinessAssessment,
     decisionBrief,
-    routingManifest,
-    bundle,
-    mode: bundle.decisionState.mode
+    routingManifest: effectiveRoutingManifest,
+    bundle: effectiveBundle,
+    mode: effectiveBundle.decisionState.mode
   });
   const html = injectHtmlProvenance(compiled.html, provenance);
   const svg = injectSvgProvenance(compiled.svg, provenance);
-  const sourceNodes = new Map((bundle.decisionState.semanticNodes ?? []).map((node) => [node.id, node]));
+  const sourceNodes = new Map((effectiveBundle.decisionState.semanticNodes ?? []).map((node) => [node.id, node]));
   const deliveredManifest = {
     nodes: composition.composition.nodes.map((node) => {
       const sourceNode = sourceNodes.get(node.id);
@@ -204,13 +216,16 @@ export function compileDecisionDashboard(
         id: node.id,
         type: node.type,
         presentation: node.presentation,
+        ...(node.metric ? { metric: node.metric } : {}),
+        ...(node.metricRole ? { metricRole: node.metricRole } : {}),
+        ...(node.metricPriority ? { metricPriority: node.metricPriority } : {}),
         coverage: coverageFor(node),
         ...(sourceNode ? { expectedItemCount: renderedItems.length } : {}),
         ...(semanticStructureFor(node) ? { structure: semanticStructureFor(node) } : {})
       };
     }),
     claims: deliveredClaims,
-    evidence: bundle.evidence,
+    evidence: effectiveBundle.evidence,
     coverage: composition.coverageManifest,
     decisionLog: composition.composition.decisionLog,
     modifiers: composition.composition.modifiers
@@ -245,11 +260,14 @@ export function compileDecisionDashboard(
     html,
     svg,
     manifest,
+    effectiveRoutingManifest,
+    effectiveDecisionState: effectiveBundle.decisionState,
     result: {
       ...compiled.result,
       worthinessSummary: worthiness.summary,
       intakeSummary: intake.summary,
-      routingSummary: routing.summary
+      routingSummary: routing.summary,
+      metricWorthiness: routing.metricWorthiness ?? null
     }
   };
 }

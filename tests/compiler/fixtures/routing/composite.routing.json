@@ -6,5 +6,22 @@
     { "metric": "retention", "role": "primary_signal", "changesDecision": true, "decisionImpact": "Retention changes intervention priority", "visibility": "first_view" },
     { "metric": "growth", "role": "primary_signal", "changesDecision": true, "decisionImpact": "Growth changes intervention priority", "visibility": "first_view" },
     { "metric": "conversion", "role": "primary_signal", "changesDecision": true, "decisionImpact": "Conversion changes intervention priority", "visibility": "first_view" }
+  ],
+  "compositionNodes": [
+    { "id": "score_summary", "type": "MetricCluster", "presentation": "summary" },
+    {
+      "id": "score_components",
+      "type": "MetricCluster",
+      "presentation": "radar",
+      "dimensions": [
+        { "metric": "retention", "unit": "score", "value": 60, "normalizedScore": 60 },
+        { "metric": "growth", "unit": "score", "value": 80, "normalizedScore": 80 },
+        { "metric": "conversion", "unit": "score", "value": 66.6667, "normalizedScore": 66.6667 }
+      ],
+      "profile": { "purpose": "profile", "sharedScale": true, "comparable": true }
+    },
+    { "id": "score_trend", "type": "Trend", "presentation": "full_chart" },
+    { "id": "active_exceptions", "type": "ExceptionList", "presentation": "full_list" },
+    { "id": "recent_events", "type": "Drilldown", "presentation": "reachable_detail" }
   ]
 }

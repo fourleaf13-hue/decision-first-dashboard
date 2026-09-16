@@ -1,3 +1,4 @@
+Primary operating signals
 ARR: $4.98M
 NDR: 80.7%
 Gross Margin: 88.9%

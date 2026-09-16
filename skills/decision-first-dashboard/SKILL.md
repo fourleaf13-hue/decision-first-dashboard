@@ -140,6 +140,16 @@ Use two notions of known:
 - **Observed source fact** — directly visible or mechanically extracted. **Never ask the user to repeat source facts** already available.
 - **Business intent** — Decision, Action, exception policy, diagnosis priority, and audience/cadence. It is confirmed only when explicitly supplied or explicitly confirmed by the user.
 
+Prefer plain business language for the first intent question:
+
+> **When you open this dashboard, what are you trying to figure out or do next?**
+
+If the answer remains abstract, follow with:
+
+> **What would make that job easier?**
+
+The abstract “What decision does this dashboard support?” wording is a fallback, not the only allowed intake phrasing. The goal is to confirm the user's real decision or next action without asking them to translate their work into framework terminology.
+
 An **inferred candidate requires confirmation**. Do not use **“inferable from the data”** to **skip confirmation** of **business intent**.
 
 After each answer, evaluate sufficiency. The zero-question path is narrow: use it only when the user's request or already-established context explicitly states both Decision and Action and Worthiness is already resolved. Source data alone never qualifies.
@@ -183,6 +193,10 @@ Route every metric to exactly one role:
 - `scorecard_only` — retained for completeness/audit but not promoted to the decision-first view.
 
 Apply the **Action Trigger Test**: if this metric changes materially, what decision or action changes?
+
+Metric-level Worthiness reuses the Dashboard Worthiness logic for each metric's **what changes**, **who cares**, and **what changes in response** dimensions. Assessments are hypotheses by default (`inferred`) and may become `confirmed` or `overridden`; screenshot-only assumptions must be recorded, but they do not create one question per metric. The compiler adds at most one metric clarification to the shared five-question intake budget, and only when candidate route outcomes diverge mechanically and that divergence changes `primary_signal` or hero eligibility.
+
+Do not treat demotion as deletion. A monitoring or compliance metric without an immediate action may lose primary/hero priority while remaining routed as `diagnostic`, `drilldown`, or `scorecard_only` and preserved in the grounded inventory. A user override is a new routing input: recompute the metric route, rebuild presentation hierarchy, and render the canonical HTML/SVG so promote and demote changes cannot remain only in intermediate JSON.
 
 Do not promote metrics merely because they are relevant. If one mainly explains another primary signal, or is a **complementary slice** of the same distribution, route it as diagnostic unless a material change **independently alters the confirmed decision or action**.
 
@@ -268,7 +282,13 @@ Every canonical HTML includes `decision-first-renderer=canonical` provenance met
 
 Do not regenerate a separate free-form image or app as the “real” After. If the runtime cannot execute the production compiler, do not fake a substitute.
 
+### Contract, behavior, and delivery verification
+
+**Schema green ≠ routing green ≠ canonical output green.** A schema-valid object only proves that its shape is acceptable. It does not prove that routing made the correct decision, that composition preserved the required context, or that the final artifact actually delivered the selected result. Verification therefore proceeds in order: **contract → behavior → canonical HTML/SVG**. The final gate must inspect the delivered artifact and its manifest, including machine-readable semantic markers; an intended composition that is absent from the HTML/SVG is a delivery failure.
+
 `compile.js`, `validate.js`, and `render.js` remain lower-level compatibility/testing tools. They are not substitutes for `compile-dashboard.js` in ordinary production workflows.
+
+`compile-dashboard.js` is the production canonical entrypoint and always invokes the compiler with the required semantic-delivery contract. Missing or empty semantic nodes or composition fail at delivery; they cannot fall through to the legacy renderer. Direct `compile.js` and lower-level `compileGroundedBundle` calls may retain compatibility behavior when `requireSemantic` is not requested.
 
 ### 9. Follow failure transitions literally
 
