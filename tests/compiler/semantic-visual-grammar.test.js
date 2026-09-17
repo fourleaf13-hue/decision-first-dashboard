@@ -215,7 +215,7 @@ test('comparability and layout eligibility expose stable attribution instead of 
 
   const mismatch = evaluateComparability([
     { unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' },
-    { unit: 'percent', comparisonGroup: 'growth', comparabilityDomain: 'growth', normalization: 'raw' }
+    { unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'growth', normalization: 'raw' }
   ]);
   assert.equal(mismatch.pass, false);
   assert.equal(mismatch.reasonCode, 'COMPARABILITY_DOMAIN_MISMATCH');

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { evaluateProfileComparability, visualSpecErrors } from './visual-grammar.js';
 
 const PRESENTATION_COVERAGE = {
   Trend: {
@@ -129,6 +130,11 @@ export function semanticItemsForPresentation(sourceNode, selection) {
   if (selection?.presentation === 'peak_summary') {
     return items.length === 0 ? [] : [items.reduce((peak, item) => numericValue(item.value) > numericValue(peak.value) ? item : peak, items[0])];
   }
+  if (selection?.presentation === 'both_ends' && items.length > 2) {
+    const high = items.reduce((best, item) => numericValue(item.value) > numericValue(best.value) ? item : best, items[0]);
+    const low = items.reduce((best, item) => numericValue(item.value) < numericValue(best.value) ? item : best, items[0]);
+    return high === low ? [high] : [high, low];
+  }
   return items;
 }
 
@@ -139,7 +145,8 @@ function profileTest(node) {
   const sharedScale = node.profile?.sharedScale === true;
   const comparable = node.profile?.comparable === true;
   const requested = node.profile?.purpose === 'profile';
-  const pass = dimensions.length >= 3 && units.size === 1 && normalised && sharedScale && comparable && requested;
+  const comparability = evaluateProfileComparability(dimensions, node);
+  const pass = dimensions.length >= 3 && units.size === 1 && normalised && sharedScale && comparable && requested && comparability.pass;
   return {
     pass,
     reasons: pass ? [] : [
@@ -148,8 +155,10 @@ function profileTest(node) {
       ...(!normalised ? ['dimensions lack source-backed normalization'] : []),
       ...(!sharedScale ? ['dimensions lack a shared scale'] : []),
       ...(!comparable ? ['dimensions are not declared comparable'] : []),
-      ...(!requested ? ['profile comparison is not required'] : [])
-    ]
+      ...(!requested ? ['profile comparison is not required'] : []),
+      ...(!comparability.pass ? comparability.reasons : [])
+    ],
+    comparability
   };
 }
 
@@ -402,6 +411,24 @@ function semanticContainerTags(artifact) {
   return openTags(artifact).filter((tag) => tag.includes('data-semantic-node=') && !tag.includes('data-semantic-item="true"'));
 }
 
+function semanticVisualContainerTags(artifact) {
+  return semanticContainerTags(artifact).filter((tag) => tag.includes('data-semantic-container="true"'));
+}
+
+function semanticRegions(artifact, nodeId) {
+  const tags = semanticVisualContainerTags(artifact);
+  return tags.flatMap((tag, index) => {
+    if (tagAttributes(tag)['data-semantic-node'] !== nodeId) return [];
+    const start = artifact.indexOf(tag);
+    if (start < 0) return [];
+    const nextStart = tags
+      .slice(index + 1)
+      .map((candidate) => artifact.indexOf(candidate, start + tag.length))
+      .find((candidateStart) => candidateStart >= 0);
+    return [artifact.slice(start, nextStart ?? artifact.length)];
+  });
+}
+
 function semanticItemTags(artifact, nodeId) {
   return openTags(artifact).filter((tag) => {
     const attrs = tagAttributes(tag);
@@ -562,6 +589,101 @@ function verifyClaims(deliveryManifest, html, svg, errors) {
   }
 }
 
+function visualGeometryFor(spec) {
+  if (spec.mark === 'line') return 'trajectory';
+  if (spec.mark === 'paired_bar') return 'paired-bars';
+  if (spec.mark === 'radar') return 'radar-polygon';
+  if (spec.mark === 'metric_tile') return 'metric-tiles';
+  if (spec.mark === 'gap_bar') return 'gap-bars';
+  if (spec.mark === 'detail_list') return 'detail-list';
+  if (spec.mark === 'list') return 'list';
+  if (spec.structure === 'ordered-distribution') return 'distribution-bars';
+  if (spec.structure === 'ranked-order' || spec.structure === 'top-ranked') return 'ranking-bars';
+  if (spec.structure === 'decomposition') return 'breakdown-bars';
+  if (spec.mark === 'value') return 'value-summary';
+  return 'items';
+}
+
+function visualEncodingFor(spec) {
+  return Object.entries(spec.encoding ?? {}).map(([key, value]) => `${key}:${value}`).join('|');
+}
+
+function visualMarkerMatches(artifact, node) {
+  const spec = node.visualSpec;
+  return semanticVisualContainerTags(artifact).some((tag) => {
+    const attrs = tagAttributes(tag);
+    const comparability = spec.comparability ?? {};
+    const layout = spec.layout ?? {};
+    return attrs['data-semantic-node'] === node.id &&
+      attrs['data-presentation'] === node.presentation &&
+      attrs['data-structure'] === spec.structure &&
+      attrs['data-visual-mark'] === spec.mark &&
+      attrs['data-visual-orientation'] === spec.orientation &&
+      attrs['data-visual-encoding'] === visualEncodingFor(spec) &&
+      attrs['data-scale-type'] === spec.scale?.type &&
+      attrs['data-scale-domain'] === spec.scale?.domain &&
+      attrs['data-comparability-unit'] === String(comparability.unit ?? '') &&
+      attrs['data-comparison-group'] === String(comparability.comparisonGroup ?? '') &&
+      attrs['data-comparability-domain'] === String(comparability.comparabilityDomain ?? '') &&
+      attrs['data-normalization'] === String(comparability.normalization ?? '') &&
+      attrs['data-comparability-scale-id'] === String(comparability.scaleId ?? '') &&
+      attrs['data-comparability-eligible'] === (comparability.eligible ? 'true' : 'false') &&
+      attrs['data-layout-pattern'] === layout.pattern &&
+      attrs['data-layout-reason'] === layout.reasonCode &&
+      attrs['data-layout-requirement-ref'] === String(layout.requirementRef ?? '') &&
+      attrs['data-layout-modifier-ref'] === String(layout.modifierRef ?? '') &&
+      attrs['data-layout-evidence-refs'] === String((layout.evidenceRefs ?? []).join(' ')) &&
+      attrs['data-visual-geometry'] === visualGeometryFor(spec);
+  });
+}
+
+function visualStructurePresent(artifact, node) {
+  const spec = node.visualSpec;
+  const geometry = visualGeometryFor(spec);
+  return semanticRegions(artifact, node.id).some((region) => {
+    const geometryPattern = new RegExp(`data-visual-geometry="${geometry}"`);
+    if (!geometryPattern.test(region)) return false;
+    if (spec.mark === 'line') return /<polyline[^>]*data-visual-geometry="trajectory"/.test(region);
+    if (spec.mark === 'radar') return /<polygon[^>]*data-visual-geometry="radar-polygon"/.test(region);
+    if (spec.mark === 'paired_bar') return /data-ranking-end="high"/.test(region) && /data-ranking-end="low"/.test(region);
+    if (spec.mark === 'metric_tile') return /data-visual-geometry="metric-tiles"/.test(region) && /class="metric-tile"/.test(region);
+    if (['bar', 'gap_bar'].includes(spec.mark)) return /data-visual-mark-item="bar"/.test(region);
+    return true;
+  });
+}
+
+function verifyVisualSpecs(deliveryManifest, nodes, html, svg, errors) {
+  const knownRequirements = new Set((deliveryManifest.coverage?.requirements ?? []).map((requirement) => requirement?.id).filter(Boolean));
+  const knownModifiers = new Set(['default_composition', ...(deliveryManifest.modifiers?.activeModifierIds ?? [])]);
+  const knownEvidence = evidenceIds(deliveryManifest);
+  for (const node of nodes) {
+    if (!node?.visualSpec) continue;
+    for (const error of visualSpecErrors(node.visualSpec)) {
+      addError(errors, error.code, `/nodes/${node.id}/visualSpec${error.path.replace('/visualSpec', '')}`, error.message);
+    }
+    if (node.visualSpec.nodeId !== node.id || node.visualSpec.semanticType !== node.type || node.visualSpec.presentation !== node.presentation) {
+      addError(errors, 'DELIVERED_VISUAL_SPEC_MISMATCH', `/nodes/${node.id}/visualSpec`, `${node.id} visual spec identity does not match the delivered semantic node.`);
+      continue;
+    }
+    if (node.visualSpec.layout?.requirementRef && !knownRequirements.has(node.visualSpec.layout.requirementRef)) {
+      addError(errors, 'DELIVERED_VISUAL_LAYOUT_REF_NOT_FOUND', `/nodes/${node.id}/visualSpec/layout/requirementRef`, `${node.id} visual layout requirementRef does not resolve to delivered coverage.`);
+    }
+    if (node.visualSpec.layout?.modifierRef && !knownModifiers.has(node.visualSpec.layout.modifierRef)) {
+      addError(errors, 'DELIVERED_VISUAL_LAYOUT_REF_NOT_FOUND', `/nodes/${node.id}/visualSpec/layout/modifierRef`, `${node.id} visual layout modifierRef does not resolve to delivered modifiers.`);
+    }
+    for (const evidenceRef of node.visualSpec.layout?.evidenceRefs ?? []) {
+      if (!knownEvidence.has(evidenceRef)) {
+        addError(errors, 'DELIVERED_VISUAL_LAYOUT_REF_NOT_FOUND', `/nodes/${node.id}/visualSpec/layout/evidenceRefs`, `${node.id} visual layout evidenceRef ${evidenceRef} does not resolve to delivered evidence.`);
+      }
+    }
+    for (const [label, artifact] of [['html', html], ['svg', svg]]) {
+      if (!visualMarkerMatches(artifact, node) || !visualStructurePresent(artifact, node)) {
+        addError(errors, 'DELIVERED_VISUAL_SPEC_MISMATCH', `/nodes/${node.id}/visualSpec`, `${node.id} delivered ${label} artifact does not match its visual spec or registered structure.`);
+      }
+    }
+  }
+}
+
 function stripVerification(manifest) {
   const payload = { ...(manifest ?? {}) };
   delete payload.verification;
@@ -637,6 +759,7 @@ export function verifyDeliveredArtifact({ html = '', svg = '', manifest = {} } =
   verifyCoverageManifest(deliveryManifest, nodes, errors);
   verifyDeliveredDecisionLog(deliveryManifest, nodes, errors);
   verifyClaims(deliveryManifest, html, svg, errors);
+  verifyVisualSpecs(deliveryManifest, nodes, html, svg, errors);
 
   const expected = expectedVerification(artifact, manifest);
   if (errors.length > 0) {
