@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 function git(repoRoot, args) {
   return execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8' });
@@ -56,7 +57,8 @@ function parseArgs(argv) {
   return options;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const invokedAsCli = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invokedAsCli) {
   try {
     const binding = assertCommitBinding(captureCommitBinding(parseArgs(process.argv.slice(2))));
     process.stdout.write(`${JSON.stringify({ binding }, null, 2)}\n`);
