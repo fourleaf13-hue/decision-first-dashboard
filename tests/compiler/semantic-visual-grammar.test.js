@@ -262,3 +262,122 @@ test('delivered verifier rejects visual-spec marker drift in the final artifact'
   assert.equal(result.valid, false);
   assert.ok(result.errors.some((error) => error.code === 'DELIVERED_VISUAL_SPEC_MISMATCH'));
 });
+
+test('HTML, SVG and manifest can each be tampered with independently and are caught', () => {
+  const compiled = compileVisualFixture();
+  assert.equal(compiled.result.valid, true, JSON.stringify(compiled.result.errors));
+  assert.equal(compiled.manifest.verification.status, 'passed');
+
+  const clean = verifyDeliveredArtifact({
+    html: compiled.html,
+    svg: compiled.svg,
+    manifest: compiled.manifest
+  });
+  assert.equal(clean.valid, true, JSON.stringify(clean.errors));
+  assert.equal(
+    clean.verification.artifactHash,
+    crypto.createHash('sha256').update(`${compiled.html}\n${compiled.svg}`).digest('hex')
+  );
+
+  const tamperedHtml = compiled.html.replace('data-visual-geometry="ranking-bars"', 'data-visual-geometry="trajectory"');
+  assert.notEqual(tamperedHtml, compiled.html, 'HTML tamper fixture must actually mutate the artifact');
+  const htmlResult = verifyDeliveredArtifact({
+    html: tamperedHtml,
+    svg: compiled.svg,
+    manifest: structuredClone(compiled.manifest)
+  });
+  assert.equal(htmlResult.valid, false);
+  assert.ok(htmlResult.errors.some((error) => error.code === 'DELIVERED_VISUAL_SPEC_MISMATCH'));
+  assert.ok(htmlResult.errors.some((error) => error.code === 'VERIFICATION_STAMP_MISMATCH'));
+
+  const tamperedSvg = compiled.svg.replace('data-visual-mark="paired_bar"', 'data-visual-mark="bar"');
+  assert.notEqual(tamperedSvg, compiled.svg, 'SVG tamper fixture must actually mutate the artifact');
+  const svgResult = verifyDeliveredArtifact({
+    html: compiled.html,
+    svg: tamperedSvg,
+    manifest: structuredClone(compiled.manifest)
+  });
+  assert.equal(svgResult.valid, false);
+  assert.ok(svgResult.errors.some((error) => error.code === 'DELIVERED_VISUAL_SPEC_MISMATCH'));
+  assert.ok(svgResult.errors.some((error) => error.code === 'VERIFICATION_STAMP_MISMATCH'));
+
+  const manifestLie = structuredClone(compiled.manifest);
+  const roiSpec = manifestLie.delivery.nodes.find((node) => node.id === 'product_roi').visualSpec;
+  roiSpec.mark = 'radar';
+  roiSpec.scale = { type: 'shared', domain: 'profile' };
+  const manifestResult = verifyDeliveredArtifact({
+    html: compiled.html,
+    svg: compiled.svg,
+    manifest: manifestLie
+  });
+  assert.equal(manifestResult.valid, false);
+  assert.ok(manifestResult.errors.some((error) => error.code === 'VISUAL_SPEC_REGISTRY_MISMATCH'));
+  assert.ok(manifestResult.errors.some((error) => error.code === 'DELIVERED_VISUAL_SPEC_MISMATCH'));
+  assert.ok(manifestResult.errors.some((error) => error.code === 'VERIFICATION_STAMP_MISMATCH'));
+});
+
+test('mixed-unit subjects are rejected before any shared visual encoding', async () => {
+  const { evaluateComparability, layoutEligibilityFor } = await import('../../skills/decision-first-dashboard/scripts/visual-grammar.js');
+
+  const mixed = evaluateComparability([
+    { unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' },
+    { unit: 'count', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' }
+  ]);
+  assert.equal(mixed.pass, false);
+  assert.equal(mixed.reasonCode, 'UNIT_MISMATCH');
+
+  const ineligible = layoutEligibilityFor({
+    id: 'mixed_roi',
+    type: 'Ranking',
+    presentation: 'both_ends',
+    items: [
+      { label: 'High', value: '1109%', unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' },
+      { label: 'Low', value: '4', unit: 'count', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' }
+    ]
+  }, { contextRequirements: [], modifiers: { activeModifierIds: [] } });
+  assert.equal(ineligible.valid, false);
+  assert.equal(ineligible.comparability.reasonCode, 'UNIT_MISMATCH');
+  assert.ok(ineligible.errors.some((error) => error.code === 'VISUAL_LAYOUT_INELIGIBLE'));
+});
+
+test('visual spec layout attribution fails closed on unknown reason codes and missing references', async () => {
+  const { VISUAL_SPEC_REGISTRY, visualSpecErrors } = await import('../../skills/decision-first-dashboard/scripts/visual-grammar.js');
+  const config = VISUAL_SPEC_REGISTRY.Ranking.both_ends;
+  const baseSpec = {
+    nodeId: 'product_roi',
+    semanticType: 'Ranking',
+    presentation: 'both_ends',
+    mark: config.mark,
+    orientation: config.orientation,
+    structure: config.structure,
+    encoding: config.encoding,
+    scale: { type: config.scale, domain: config.domain },
+    comparability: { eligible: true, reasonCode: 'COMPARABILITY_CONFIRMED' },
+    layout: { pattern: config.layout, reasonCode: 'PAIRED_RANKING_ELIGIBLE', modifierRef: 'default_composition' }
+  };
+  assert.deepEqual(visualSpecErrors(baseSpec), []);
+
+  const unknownReason = visualSpecErrors({
+    ...baseSpec,
+    layout: { ...baseSpec.layout, reasonCode: 'BECAUSE_IT_LOOKS_BETTER' }
+  });
+  assert.ok(unknownReason.some((error) => error.code === 'VISUAL_SPEC_REASON_UNKNOWN'));
+
+  const unattributed = visualSpecErrors({
+    ...baseSpec,
+    layout: { pattern: baseSpec.layout.pattern, reasonCode: baseSpec.layout.reasonCode }
+  });
+  assert.ok(unattributed.some((error) => error.code === 'VISUAL_SPEC_LAYOUT_UNATTRIBUTED'));
+
+  const freeFormLayout = visualSpecErrors({
+    ...baseSpec,
+    layout: { ...baseSpec.layout, pattern: 'look_ma_Im_freeform' }
+  });
+  assert.ok(freeFormLayout.some((error) => error.code === 'VISUAL_SPEC_LAYOUT_PATTERN_UNKNOWN'));
+
+  const smuggledRadar = visualSpecErrors({
+    ...baseSpec,
+    comparability: { eligible: false, reasonCode: 'UNIT_MISMATCH' }
+  });
+  assert.ok(smuggledRadar.some((error) => error.code === 'VISUAL_SPEC_COMPARABILITY_INELIGIBLE'));
+});
