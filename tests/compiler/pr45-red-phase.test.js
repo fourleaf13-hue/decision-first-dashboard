@@ -288,9 +288,12 @@ test('RED-2: delivered magnitude encoding must declare one scale map and satisfy
   }
 });
 
-test('RED-3: non-commensurate metrics cannot share magnitude encoding', () => {
+test('existing-coverage control (RED-3): mixed-unit magnitude encoding already fails closed', () => {
   const compiled = compileState(mixedUnitState, mixedUnitSelections);
   assert.equal(compiled.result.valid, false, 'mixed percent/count ranking must fail closed before any shared magnitude encoding');
+  const codes = errorCodes(compiled.result);
+  assert.ok(codes.includes('VISUAL_COMPARABILITY_FAILED'), `existing comparability gate must fire; codes=${JSON.stringify(codes)}`);
+  assert.ok(codes.includes('VISUAL_SPEC_COMPARABILITY_INELIGIBLE'), `existing spec eligibility check must fire; codes=${JSON.stringify(codes)}`);
 });
 
 test('RED-4: same unit with different metric identity must not become commensurate', () => {
@@ -305,6 +308,12 @@ test('RED-4: same unit with different metric identity must not become commensura
 
 function errorCodes(result) {
   return Array.isArray(result?.errors) ? result.errors.map((entry) => entry.code) : [];
+}
+
+function verifyUnstamped({ html, svg, manifest }) {
+  const unstamped = structuredClone(manifest);
+  delete unstamped.verification;
+  return verifyDeliveredArtifact({ html, svg, manifest: unstamped });
 }
 
 function horizonEvaluativeClaimBundle() {
@@ -325,7 +334,7 @@ function horizonEvaluativeClaimBundle() {
   return fixture;
 }
 
-test('RED-5: Horizon compiles without source-backed evaluation vocabulary', () => {
+test('existing-coverage control (RED-5): the canonical Horizon artifact already contains no evaluative vocabulary', () => {
   const compiled = compileState(horizonState(false), horizonSelections);
   assert.equal(compiled.result.valid, true, `reconstructed Horizon must compile: ${JSON.stringify(errorCodes(compiled.result))}`);
   const artifact = `${compiled.html}\n${compiled.svg}`;
@@ -357,13 +366,7 @@ test('RED-7: delivered geometry must be verified against the declared scale map'
   const compiled = compileState(roiSingleState, roiSingleSelections);
   assert.equal(compiled.result.valid, true, `mutation harness needs a valid baseline: ${JSON.stringify(errorCodes(compiled.result))}`);
 
-  const verifyRestamped = ({ html, svg, manifest }) => {
-    const unstamped = structuredClone(manifest);
-    delete unstamped.verification;
-    return verifyDeliveredArtifact({ html, svg, manifest: unstamped });
-  };
-
-  const baseline = verifyRestamped({ html: compiled.html, svg: compiled.svg, manifest: compiled.manifest });
+  const baseline = verifyUnstamped({ html: compiled.html, svg: compiled.svg, manifest: compiled.manifest });
   assert.equal(baseline.valid, true, `unmutated artifact must pass the unstamped verifier: ${JSON.stringify(errorCodes(baseline))}`);
   assert.ok(!errorCodes(baseline).some((code) => FUTURE_GEOMETRY_CODES.includes(code)));
 
@@ -373,20 +376,26 @@ test('RED-7: delivered geometry must be verified against the declared scale map'
   );
   assert.notEqual(mutatedGeometry, compiled.svg, 'mutation A must alter delivered geometry');
 
+  // Mutation B stays registry-clean: scale.type/domain, encoding, and the marker
+  // attributes the verifier reads are untouched, so only a geometry-vs-map
+  // comparison can detect the contradicting log map declaration.
   const mutatedManifest = structuredClone(compiled.manifest);
   const declaredNode = mutatedManifest.delivery.nodes.find((node) => node.id === 'roi_all');
-  declaredNode.visualSpec.scale = { ...(declaredNode.visualSpec.scale ?? {}), type: 'log', mapType: 'log', scaleId: 'mutated_scale_map' };
-  const mutatedDeclarationSvg = compiled.svg.replace(/ data-scale-type="[^"]*"/, ' data-scale-type="log"');
-
-  const strippedManifest = structuredClone(compiled.manifest);
-  for (const node of strippedManifest.delivery.nodes) delete node.visualSpec?.scale;
-  const strippedSvg = compiled.svg.replace(/ data-scale-map-id="[^"]*"/g, '').replace(/ data-scale-type="[^"]*"/g, '');
-  const strippedHtml = compiled.html.replace(/ data-scale-map-id="[^"]*"/g, '').replace(/ data-scale-type="[^"]*"/g, '');
+  declaredNode.visualSpec.scale = {
+    ...(declaredNode.visualSpec.scale ?? {}),
+    mapType: 'log',
+    scaleId: 'declared_map_mutated',
+    basis: 'declared_log_map'
+  };
+  const mutatedDeclarationSvg = compiled.svg.replace(
+    'data-semantic-node="roi_all"',
+    'data-semantic-node="roi_all" data-scale-map-id="declared_map_mutated" data-scale-map-type="log"'
+  );
+  assert.notEqual(mutatedDeclarationSvg, compiled.svg, 'mutation B must alter the delivered scale declaration');
 
   const mutations = {
-    'mutation A (geometry changed, declaration unchanged)': verifyRestamped({ html: compiled.html, svg: mutatedGeometry, manifest: compiled.manifest }),
-    'mutation B (declaration changed, geometry unchanged)': verifyRestamped({ html: compiled.html, svg: mutatedDeclarationSvg, manifest: mutatedManifest }),
-    'mutation C (magnitude encoding without scale declaration)': verifyRestamped({ html: strippedHtml, svg: strippedSvg, manifest: strippedManifest })
+    'mutation A (geometry changed, declaration unchanged)': verifyUnstamped({ html: compiled.html, svg: mutatedGeometry, manifest: compiled.manifest }),
+    'mutation B (declaration changed, geometry unchanged)': verifyUnstamped({ html: compiled.html, svg: mutatedDeclarationSvg, manifest: mutatedManifest })
   };
   const undetected = [];
   for (const [name, result] of Object.entries(mutations)) {
@@ -400,17 +409,51 @@ test('RED-7: delivered geometry must be verified against the declared scale map'
   );
 });
 
-test('GREEN-A: a valid single-domain ROI comparison still delivers one monotonic magnitude map', () => {
+test('existing-coverage control (RED-7C): a delivered magnitude encoding without any scale declaration already fails closed', () => {
   const compiled = compileState(roiSingleState, roiSingleSelections);
-  assert.equal(compiled.result.valid, true, `valid ROI comparison must survive: ${JSON.stringify(errorCodes(compiled.result))}`);
-  assert.ok(/data-visual-mark="bar"/.test(compiled.svg), 'ROI comparison must remain a visible magnitude encoding');
+  assert.equal(compiled.result.valid, true, `control needs a valid baseline: ${JSON.stringify(errorCodes(compiled.result))}`);
 
-  const rows = renderedMagnitudes(compiled.svg, ['roi_all']).filter((row) => row.width !== null);
-  assert.equal(rows.length, 3, 'all three ROI products must keep a rendered bar');
+  const strippedManifest = structuredClone(compiled.manifest);
+  for (const node of strippedManifest.delivery.nodes) delete node.visualSpec?.scale;
+  const stripped = verifyUnstamped({ html: compiled.html, svg: compiled.svg, manifest: strippedManifest });
+  assert.equal(stripped.valid, false, 'bars without a scale declaration must already fail closed');
+  const codes = errorCodes(stripped);
+  assert.ok(codes.includes('VISUAL_SPEC_SCALE_REQUIRED'), `existing registry check must fire; codes=${JSON.stringify(codes)}`);
+});
+
+test('GREEN-A: two child nodes sharing one grounded comparison domain must still deliver one shared-scale magnitude comparison', () => {
+  const compiled = compileState(roiSplitState, roiSplitSelections);
+  assert.equal(compiled.result.valid, true, `the split comparison must survive the fix instead of failing closed: ${JSON.stringify(errorCodes(compiled.result))}`);
+
+  const specs = compiled.manifest.delivery.nodes
+    .filter((node) => node.id === 'roi_high' || node.id === 'roi_low')
+    .map((node) => node.visualSpec);
+  assert.equal(specs.length, 2, 'both ROI child nodes must be delivered for this survival pin');
+
+  const domains = specs.map((spec) => spec.comparability?.comparabilityDomain);
+  assert.ok(
+    domains.every((domain) => domain === 'product_roi'),
+    `both child nodes must resolve to the grounded comparison domain product_roi, not node-local defaults: ${JSON.stringify(domains)}`
+  );
+
+  const scaleIds = specs.map((spec) => spec.scale?.scaleId);
+  assert.ok(
+    scaleIds.every((id) => typeof id === 'string' && id.length > 0),
+    `each child node must disclose its scale map id: ${JSON.stringify(scaleIds)}`
+  );
+  assert.equal(new Set(scaleIds).size, 1, `both child nodes must disclose the SAME scale map: ${JSON.stringify(scaleIds)}`);
+
+  assert.ok(/data-visual-mark="bar"/.test(compiled.svg), 'the shared comparison must remain a visible magnitude encoding');
+
+  const rows = renderedMagnitudes(compiled.svg, ['roi_high', 'roi_low']).filter((row) => row.width !== null);
+  assert.equal(rows.length, 4, 'all four products across both child nodes must keep a rendered bar');
   const sorted = [...rows].sort((a, b) => b.value - a.value);
-  assert.deepEqual(sorted.map((row) => row.value), [1109, 163, 104]);
+  assert.deepEqual(sorted.map((row) => row.value), [1109, 753, 163, 104]);
   for (let index = 1; index < sorted.length; index += 1) {
-    assert.ok(sorted[index - 1].width > sorted[index].width, `${sorted[index - 1].value} must render strictly wider than ${sorted[index].value}`);
+    assert.ok(
+      sorted[index - 1].width > sorted[index].width,
+      `on the shared scale, ${sorted[index - 1].value} (${sorted[index - 1].nodeId}) must render strictly wider than ${sorted[index].value} (${sorted[index].nodeId})`
+    );
   }
 });
 
