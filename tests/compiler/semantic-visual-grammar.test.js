@@ -1,0 +1,383 @@
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { compileDecisionDashboard } from '../../skills/decision-first-dashboard/scripts/compile-dashboard.js';
+import { composeAdaptiveComposition, verifyDeliveredArtifact } from '../../skills/decision-first-dashboard/scripts/composition.js';
+
+const worthiness = JSON.parse(fs.readFileSync(new URL('./fixtures/worthiness/dashboard.worthiness.json', import.meta.url), 'utf8'));
+
+function visualState() {
+  return {
+    mode: 'no_score',
+    signals: [
+      { metric: 'orders', label: 'Orders', value: '218', provenance: 'source' },
+      { metric: 'products', label: 'Products', value: '36', provenance: 'source' },
+      { metric: 'repeat_rate', label: 'Repeat rate', value: '77%', provenance: 'source' }
+    ],
+    semanticNodes: [
+      {
+        id: 'annual_orders',
+        type: 'Trend',
+        title: 'Orders across years',
+        items: [
+          { label: '2022', value: 5, provenance: 'source' },
+          { label: '2023', value: 19, provenance: 'source' },
+          { label: '2024', value: 79, provenance: 'source' },
+          { label: '2025', value: 72, provenance: 'source' },
+          { label: '2026', value: 43, provenance: 'source' }
+        ]
+      },
+      {
+        id: 'monthly_orders',
+        type: 'Distribution',
+        title: 'Seasonal order volume',
+        items: [
+          { label: 'Jan', value: 6, provenance: 'source' },
+          { label: 'Feb', value: 18, provenance: 'source' },
+          { label: 'Mar', value: 23, provenance: 'source' },
+          { label: 'Apr', value: 11, provenance: 'source' }
+        ]
+      },
+      {
+        id: 'demand_drivers',
+        type: 'Ranking',
+        title: 'Demand drivers',
+        items: [
+          { label: 'Holiday / Seasonal', value: 37, provenance: 'source' },
+          { label: 'No Theme', value: 34, provenance: 'source' },
+          { label: 'Miscellaneous', value: 28, provenance: 'source' }
+        ]
+      },
+      {
+        id: 'product_roi',
+        type: 'Ranking',
+        title: 'Highest and lowest ROI products',
+        comparability: {
+          unit: 'percent',
+          comparisonGroup: 'product_roi',
+          comparabilityDomain: 'roi',
+          normalization: 'raw'
+        },
+        items: [
+          { label: 'Sugar Cookies', value: '1109%', provenance: 'source' },
+          { label: 'Salted Caramel Chocolate', value: '104%', provenance: 'source' },
+          { label: 'Cinnamon Rolls', value: '108%', provenance: 'source' }
+        ]
+      },
+      {
+        id: 'operating_metrics',
+        type: 'MetricCluster',
+        title: 'Operating metrics',
+        items: [
+          { label: 'Orders', value: '218', provenance: 'source' },
+          { label: 'Products', value: '36', provenance: 'source' },
+          { label: 'Repeat rate', value: '77%', provenance: 'source' }
+        ]
+      }
+    ]
+  };
+}
+
+function makeBundle(state) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'semantic-visual-grammar-'));
+  const sourceValue = {
+    signals: state.signals.map(({ label, value }) => ({ label, value })),
+    semanticNodes: state.semanticNodes.map((node) => ({
+      title: node.title,
+      items: node.items.map(({ label, value }) => ({ label, value }))
+    }))
+  };
+  const bytes = Buffer.from(`${JSON.stringify(sourceValue, null, 2)}\n`);
+  const evidence = [];
+  const claims = [];
+  const add = (pointer) => {
+    const id = `ev_${evidence.length + 1}`;
+    evidence.push({ id, anchor: { type: 'json_pointer', pointer } });
+    claims.push({ decisionPath: pointer, evidenceRef: id });
+  };
+  state.signals.forEach((signal, index) => {
+    add(`/signals/${index}/label`);
+    add(`/signals/${index}/value`);
+  });
+  state.semanticNodes.forEach((node, nodeIndex) => {
+    add(`/semanticNodes/${nodeIndex}/title`);
+    node.items.forEach((item, itemIndex) => {
+      add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/label`);
+      add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/value`);
+    });
+  });
+  fs.writeFileSync(path.join(root, 'source.json'), bytes);
+  return {
+    root,
+    bundle: {
+      source: { kind: 'json', path: 'source.json', sha256: crypto.createHash('sha256').update(bytes).digest('hex') },
+      decisionState: state,
+      evidence,
+      claims
+    }
+  };
+}
+
+function compileVisualFixture() {
+  const state = visualState();
+  const selections = state.semanticNodes.map(({ id, type, comparability }) => ({
+    id,
+    type,
+    presentation: id === 'annual_orders' || id === 'monthly_orders'
+      ? 'full_chart'
+      : id === 'demand_drivers'
+        ? 'full_ranking'
+        : id === 'product_roi'
+          ? 'both_ends'
+          : 'comparison',
+    ...(comparability ? { comparability } : {})
+  }));
+  const fixture = makeBundle(state);
+  const brief = {
+    decision: { status: 'confirmed', value: 'Choose the next operating focus' },
+    action: { status: 'confirmed', value: 'Prioritize the next operating action' },
+    contextRequirements: [
+      { id: 'ctx_annual_temporal', type: 'temporal_reference', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
+      { id: 'ctx_monthly_distribution', type: 'distribution_shape', subject: 'monthly_orders', minimumCoverage: 'full_distribution', status: 'inferred' },
+      { id: 'ctx_product_ranking', type: 'ranking_span', subject: 'product_roi', minimumCoverage: 'both_ends', status: 'inferred' }
+    ]
+  };
+  const routing = {
+    decision: brief.decision.value,
+    action: brief.action.value,
+    inventoryCount: state.signals.length,
+    metrics: state.signals.map((signal) => ({
+      metric: signal.metric,
+      role: 'primary_signal',
+      changesDecision: true,
+      decisionImpact: `${signal.label} changes the next operating action`,
+      visibility: 'first_view'
+    })),
+    compositionNodes: selections
+  };
+  return compileDecisionDashboard(worthiness, brief, routing, fixture.bundle, { baseDir: fixture.root });
+}
+
+test('final semantic artifacts use structurally distinct visuals for each semantic presentation', () => {
+  const compiled = compileVisualFixture();
+  assert.equal(compiled.result.valid, true, JSON.stringify(compiled.result.errors));
+  assert.ok(compiled.manifest.delivery.nodes.every((node) => node.visualSpec), 'delivery manifest must carry the internal visual spec');
+
+  for (const artifact of [compiled.html, compiled.svg]) {
+    assert.match(artifact, /data-semantic-node="annual_orders"[^>]*data-visual-mark="line"/);
+    assert.match(artifact, /data-visual-geometry="trajectory"/);
+    assert.match(artifact, /data-semantic-node="monthly_orders"[^>]*data-visual-mark="bar"/);
+    assert.match(artifact, /data-visual-geometry="distribution-bars"/);
+    assert.match(artifact, /data-semantic-node="demand_drivers"[^>]*data-visual-mark="bar"/);
+    assert.match(artifact, /data-visual-geometry="ranking-bars"/);
+    assert.match(artifact, /data-semantic-node="product_roi"[^>]*data-visual-mark="paired_bar"/);
+    assert.match(artifact, /data-ranking-end="high"/);
+    assert.match(artifact, /data-ranking-end="low"/);
+    assert.match(artifact, /data-semantic-node="operating_metrics"[^>]*data-visual-mark="metric_tile"/);
+    assert.match(artifact, /data-visual-geometry="metric-tiles"/);
+  }
+
+  assert.match(compiled.html, /class="visual-plot visual-plot--trend"/);
+  assert.match(compiled.html, /class="paired-ranking"/);
+  assert.match(compiled.svg, /<polyline[^>]*data-visual-geometry="trajectory"/);
+  assert.match(compiled.svg, /<rect[^>]*data-visual-mark-item="bar"/);
+  assert.equal(verifyDeliveredArtifact({ html: compiled.html, svg: compiled.svg, manifest: compiled.manifest }).valid, true);
+});
+
+test('same-unit but semantically different profile dimensions cannot become a radar', () => {
+  const result = composeAdaptiveComposition({
+    nodes: [{
+      id: 'profile',
+      type: 'MetricCluster',
+      dimensions: [
+        { metric: 'growth', unit: 'percent', value: 80, normalizedScore: 80, comparisonGroup: 'growth', comparabilityDomain: 'growth' },
+        { metric: 'margin', unit: 'percent', value: 70, normalizedScore: 70, comparisonGroup: 'margin', comparabilityDomain: 'margin' },
+        { metric: 'retention', unit: 'percent', value: 60, normalizedScore: 60, comparisonGroup: 'retention', comparabilityDomain: 'retention' }
+      ],
+      profile: { purpose: 'profile', sharedScale: true, comparable: true }
+    }]
+  });
+
+  assert.equal(result.valid, true);
+  assert.equal(result.composition.nodes[0].presentation, 'comparison');
+  assert.equal(result.composition.nodes[0].profileTest.pass, false);
+});
+
+test('comparability and layout eligibility expose stable attribution instead of free-form explanations', async () => {
+  const {
+    buildInternalVisualSpecs,
+    evaluateComparability,
+    layoutEligibilityFor
+  } = await import('../../skills/decision-first-dashboard/scripts/visual-grammar.js');
+
+  const mismatch = evaluateComparability([
+    { unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' },
+    { unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'growth', normalization: 'raw' }
+  ]);
+  assert.equal(mismatch.pass, false);
+  assert.equal(mismatch.reasonCode, 'COMPARABILITY_DOMAIN_MISMATCH');
+
+  const legal = evaluateComparability([
+    { unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' },
+    { unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' }
+  ]);
+  assert.equal(legal.pass, true);
+
+  const paired = layoutEligibilityFor({
+    id: 'product_roi',
+    type: 'Ranking',
+    presentation: 'both_ends',
+    items: [{ label: 'High', value: '1109%' }, { label: 'Low', value: '104%' }],
+    comparability: { unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' }
+  }, { contextRequirements: [], modifiers: { activeModifierIds: [] } });
+  assert.equal(paired.valid, true);
+  assert.equal(paired.layout.pattern, 'paired');
+  assert.equal(typeof paired.layout.reasonCode, 'string');
+  assert.ok(paired.layout.modifierRef || paired.layout.requirementRef || paired.layout.evidenceRefs?.length);
+
+  const specs = buildInternalVisualSpecs({ semanticNodes: [{
+    id: 'product_roi',
+    type: 'Ranking',
+    title: 'ROI',
+    items: [{ label: 'High', value: '1109%', provenance: 'source' }, { label: 'Low', value: '104%', provenance: 'source' }]
+  }] }, { nodes: [{
+    id: 'product_roi',
+    type: 'Ranking',
+    presentation: 'both_ends',
+    comparability: { unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' }
+  }] }, { contextRequirements: [], modifiers: { activeModifierIds: [] } });
+  assert.equal(specs.valid, true, JSON.stringify(specs.errors));
+  assert.equal(specs.specs[0].mark, 'paired_bar');
+  assert.equal(specs.specs[0].layout.pattern, 'paired');
+});
+
+test('delivered verifier rejects visual-spec marker drift in the final artifact', () => {
+  const compiled = compileVisualFixture();
+  assert.equal(compiled.result.valid, true, JSON.stringify(compiled.result.errors));
+  const mutatedHtml = compiled.html.replace('data-visual-mark="line"', 'data-visual-mark="bar"');
+  const result = verifyDeliveredArtifact({ html: mutatedHtml, svg: compiled.svg, manifest: compiled.manifest });
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((error) => error.code === 'DELIVERED_VISUAL_SPEC_MISMATCH'));
+});
+
+test('HTML, SVG and manifest can each be tampered with independently and are caught', () => {
+  const compiled = compileVisualFixture();
+  assert.equal(compiled.result.valid, true, JSON.stringify(compiled.result.errors));
+  assert.equal(compiled.manifest.verification.status, 'passed');
+
+  const clean = verifyDeliveredArtifact({
+    html: compiled.html,
+    svg: compiled.svg,
+    manifest: compiled.manifest
+  });
+  assert.equal(clean.valid, true, JSON.stringify(clean.errors));
+  assert.equal(
+    clean.verification.artifactHash,
+    crypto.createHash('sha256').update(`${compiled.html}\n${compiled.svg}`).digest('hex')
+  );
+
+  const tamperedHtml = compiled.html.replace('data-visual-geometry="ranking-bars"', 'data-visual-geometry="trajectory"');
+  assert.notEqual(tamperedHtml, compiled.html, 'HTML tamper fixture must actually mutate the artifact');
+  const htmlResult = verifyDeliveredArtifact({
+    html: tamperedHtml,
+    svg: compiled.svg,
+    manifest: structuredClone(compiled.manifest)
+  });
+  assert.equal(htmlResult.valid, false);
+  assert.ok(htmlResult.errors.some((error) => error.code === 'DELIVERED_VISUAL_SPEC_MISMATCH'));
+  assert.ok(htmlResult.errors.some((error) => error.code === 'VERIFICATION_STAMP_MISMATCH'));
+
+  const tamperedSvg = compiled.svg.replace('data-visual-mark="paired_bar"', 'data-visual-mark="bar"');
+  assert.notEqual(tamperedSvg, compiled.svg, 'SVG tamper fixture must actually mutate the artifact');
+  const svgResult = verifyDeliveredArtifact({
+    html: compiled.html,
+    svg: tamperedSvg,
+    manifest: structuredClone(compiled.manifest)
+  });
+  assert.equal(svgResult.valid, false);
+  assert.ok(svgResult.errors.some((error) => error.code === 'DELIVERED_VISUAL_SPEC_MISMATCH'));
+  assert.ok(svgResult.errors.some((error) => error.code === 'VERIFICATION_STAMP_MISMATCH'));
+
+  const manifestLie = structuredClone(compiled.manifest);
+  const roiSpec = manifestLie.delivery.nodes.find((node) => node.id === 'product_roi').visualSpec;
+  roiSpec.mark = 'radar';
+  roiSpec.scale = { type: 'shared', domain: 'profile' };
+  const manifestResult = verifyDeliveredArtifact({
+    html: compiled.html,
+    svg: compiled.svg,
+    manifest: manifestLie
+  });
+  assert.equal(manifestResult.valid, false);
+  assert.ok(manifestResult.errors.some((error) => error.code === 'VISUAL_SPEC_REGISTRY_MISMATCH'));
+  assert.ok(manifestResult.errors.some((error) => error.code === 'DELIVERED_VISUAL_SPEC_MISMATCH'));
+  assert.ok(manifestResult.errors.some((error) => error.code === 'VERIFICATION_STAMP_MISMATCH'));
+});
+
+test('mixed-unit subjects are rejected before any shared visual encoding', async () => {
+  const { evaluateComparability, layoutEligibilityFor } = await import('../../skills/decision-first-dashboard/scripts/visual-grammar.js');
+
+  const mixed = evaluateComparability([
+    { unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' },
+    { unit: 'count', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' }
+  ]);
+  assert.equal(mixed.pass, false);
+  assert.equal(mixed.reasonCode, 'UNIT_MISMATCH');
+
+  const ineligible = layoutEligibilityFor({
+    id: 'mixed_roi',
+    type: 'Ranking',
+    presentation: 'both_ends',
+    items: [
+      { label: 'High', value: '1109%', unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' },
+      { label: 'Low', value: '4', unit: 'count', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' }
+    ]
+  }, { contextRequirements: [], modifiers: { activeModifierIds: [] } });
+  assert.equal(ineligible.valid, false);
+  assert.equal(ineligible.comparability.reasonCode, 'UNIT_MISMATCH');
+  assert.ok(ineligible.errors.some((error) => error.code === 'VISUAL_LAYOUT_INELIGIBLE'));
+});
+
+test('visual spec layout attribution fails closed on unknown reason codes and missing references', async () => {
+  const { VISUAL_SPEC_REGISTRY, visualSpecErrors } = await import('../../skills/decision-first-dashboard/scripts/visual-grammar.js');
+  const config = VISUAL_SPEC_REGISTRY.Ranking.both_ends;
+  const baseSpec = {
+    nodeId: 'product_roi',
+    semanticType: 'Ranking',
+    presentation: 'both_ends',
+    mark: config.mark,
+    orientation: config.orientation,
+    structure: config.structure,
+    encoding: config.encoding,
+    scale: { type: config.scale, domain: config.domain },
+    comparability: { eligible: true, reasonCode: 'COMPARABILITY_CONFIRMED' },
+    layout: { pattern: config.layout, reasonCode: 'PAIRED_RANKING_ELIGIBLE', modifierRef: 'default_composition' }
+  };
+  assert.deepEqual(visualSpecErrors(baseSpec), []);
+
+  const unknownReason = visualSpecErrors({
+    ...baseSpec,
+    layout: { ...baseSpec.layout, reasonCode: 'BECAUSE_IT_LOOKS_BETTER' }
+  });
+  assert.ok(unknownReason.some((error) => error.code === 'VISUAL_SPEC_REASON_UNKNOWN'));
+
+  const unattributed = visualSpecErrors({
+    ...baseSpec,
+    layout: { pattern: baseSpec.layout.pattern, reasonCode: baseSpec.layout.reasonCode }
+  });
+  assert.ok(unattributed.some((error) => error.code === 'VISUAL_SPEC_LAYOUT_UNATTRIBUTED'));
+
+  const freeFormLayout = visualSpecErrors({
+    ...baseSpec,
+    layout: { ...baseSpec.layout, pattern: 'look_ma_Im_freeform' }
+  });
+  assert.ok(freeFormLayout.some((error) => error.code === 'VISUAL_SPEC_LAYOUT_PATTERN_UNKNOWN'));
+
+  const smuggledRadar = visualSpecErrors({
+    ...baseSpec,
+    comparability: { eligible: false, reasonCode: 'UNIT_MISMATCH' }
+  });
+  assert.ok(smuggledRadar.some((error) => error.code === 'VISUAL_SPEC_COMPARABILITY_INELIGIBLE'));
+});

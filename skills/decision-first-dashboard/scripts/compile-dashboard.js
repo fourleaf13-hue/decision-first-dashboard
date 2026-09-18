@@ -19,6 +19,7 @@ import {
   injectHtmlProvenance,
   injectSvgProvenance
 } from './provenance.js';
+import { buildInternalVisualSpecs } from './visual-grammar.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 
@@ -178,12 +179,48 @@ export function compileDecisionDashboard(
     };
   }
 
+  const hasSemanticState = Array.isArray(effectiveBundle.decisionState?.semanticNodes) && effectiveBundle.decisionState.semanticNodes.length > 0;
+  const visualGrammar = hasSemanticState
+    ? buildInternalVisualSpecs(
+      effectiveBundle.decisionState,
+      composition.composition,
+      {
+        contextRequirements: decisionBrief.contextRequirements ?? [],
+        modifiers: composition.composition.modifiers,
+        decisionLog: composition.composition.decisionLog
+      }
+    )
+    : { valid: true, specs: [], errors: [] };
+  if (!visualGrammar.valid) {
+    return {
+      result: {
+        valid: false,
+        stage: 'composition',
+        transition: 'DELIVERY_CONTRACT_FAILED',
+        errors: visualGrammar.errors,
+        worthinessSummary: worthiness.summary,
+        intakeSummary: intake.summary,
+        routingSummary: routing.summary,
+        coverageManifest: composition.coverageManifest,
+        visualSpecs: visualGrammar.specs
+      },
+      svg: null,
+      html: null,
+      manifest: null,
+      outputMode: null
+    };
+  }
+
   const deliveredClaims = buildDeliveredClaims(effectiveBundle);
   const compiled = compileGroundedBundle(effectiveBundle, {
     baseDir,
     composition: composition.composition,
     claims: deliveredClaims,
-    requireSemantic: true
+    requireSemantic: true,
+    visualSpecs: visualGrammar.specs,
+    contextRequirements: decisionBrief.contextRequirements ?? [],
+    modifiers: composition.composition.modifiers,
+    decisionLog: composition.composition.decisionLog
   });
   if (!compiled.result.valid || compiled.result.transition !== 'PASS') {
     return {
@@ -208,6 +245,7 @@ export function compileDecisionDashboard(
   const html = injectHtmlProvenance(compiled.html, provenance);
   const svg = injectSvgProvenance(compiled.svg, provenance);
   const sourceNodes = new Map((effectiveBundle.decisionState.semanticNodes ?? []).map((node) => [node.id, node]));
+  const visualSpecs = new Map(visualGrammar.specs.map((spec) => [spec.nodeId, spec]));
   const deliveredManifest = {
     nodes: composition.composition.nodes.map((node) => {
       const sourceNode = sourceNodes.get(node.id);
@@ -221,7 +259,8 @@ export function compileDecisionDashboard(
         ...(node.metricPriority ? { metricPriority: node.metricPriority } : {}),
         coverage: coverageFor(node),
         ...(sourceNode ? { expectedItemCount: renderedItems.length } : {}),
-        ...(semanticStructureFor(node) ? { structure: semanticStructureFor(node) } : {})
+        ...(semanticStructureFor(node) ? { structure: semanticStructureFor(node) } : {}),
+        visualSpec: visualSpecs.get(node.id)
       };
     }),
     claims: deliveredClaims,

@@ -137,6 +137,17 @@ An ambiguous prompt such as “redesign this dashboard” is **not render permis
 
 The canonical compiler also writes `output.manifest.json` and stamps the HTML/SVG with machine-verifiable provenance. A second agent-authored HTML, image, SVG, React app, or native artifact is not the canonical After merely because it looks better.
 
+### Semantic Visual Grammar
+
+The canonical semantic path separates decision context from visual representation:
+
+```text
+Semantic Node → presentation eligibility → comparability → layout eligibility
+  → Internal Visual Spec → deterministic renderer → delivered verifier
+```
+
+The Internal Visual Spec is delivered in the manifest and mirrored by `data-visual-*` markers in both HTML and SVG. Trend, distribution, ranking, paired ranking, metric-strip, and radar presentations have distinct structural output. Shared position/length/area/scale is allowed only for compatible unit, comparison group, comparability domain, normalization, and scale; same unit alone is not enough. The grammar is implemented in the existing pipeline and has no external chart-rendering dependency or use-case-specific template registry.
+
 ### Runtime Skill provenance gate
 
 Before an acceptance run, validate that the runtime is reading the intended

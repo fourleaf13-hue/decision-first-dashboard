@@ -8,6 +8,7 @@ import {
 } from './render-core.js';
 import { renderNonRadarHtml, renderNonRadarSvg } from './render-non-radar.js';
 import { renderSemanticHtml, renderSemanticSvg } from './render-semantic.js';
+import { buildInternalVisualSpecs } from './visual-grammar.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 
@@ -76,6 +77,19 @@ function assertSemanticDeliveryContract(data, composition) {
   if (!composition || !Array.isArray(composition.nodes) || composition.nodes.length === 0) {
     throw new Error('canonical production rendering requires a non-empty semantic composition');
   }
+}
+
+function visualSpecsFor(data, composition, options = {}) {
+  if (Array.isArray(options.visualSpecs)) return options.visualSpecs;
+  const result = buildInternalVisualSpecs(data, composition, {
+    contextRequirements: options.contextRequirements ?? [],
+    modifiers: options.modifiers ?? composition?.modifiers ?? {},
+    decisionLog: options.decisionLog ?? composition?.decisionLog ?? []
+  });
+  if (!result.valid) {
+    throw new Error(`semantic visual grammar failed: ${result.errors.map((error) => `${error.code} ${error.path}`).join('; ')}`);
+  }
+  return result.specs;
 }
 
 function radialPoint(cx, cy, radius, angle) {
@@ -174,7 +188,7 @@ function tuneHtmlRadar(markup, dimensions) {
 export function renderSvg(data, options = {}) {
   const { composition } = options;
   if (options.requireSemantic) assertSemanticDeliveryContract(data, composition);
-  if (Array.isArray(data?.semanticNodes) && composition) return renderSemanticSvg(data, composition, options);
+  if (Array.isArray(data?.semanticNodes) && composition) return renderSemanticSvg(data, composition, { ...options, visualSpecs: visualSpecsFor(data, composition, options) });
   const prepared = prepareRenderData(data);
   const coreMarkup = renderSvgCore(prepared, options);
   if (isPlainNoScore(prepared)) return renderNonRadarSvg(prepared);
@@ -185,7 +199,7 @@ export function renderSvg(data, options = {}) {
 export function renderHtml(data, options = {}) {
   const { composition } = options;
   if (options.requireSemantic) assertSemanticDeliveryContract(data, composition);
-  if (Array.isArray(data?.semanticNodes) && composition) return renderSemanticHtml(data, composition, options);
+  if (Array.isArray(data?.semanticNodes) && composition) return renderSemanticHtml(data, composition, { ...options, visualSpecs: visualSpecsFor(data, composition, options) });
   const prepared = prepareRenderData(data);
   const coreMarkup = renderHtmlCore(prepared, options);
   if (isPlainNoScore(prepared)) return renderNonRadarHtml(prepared);

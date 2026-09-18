@@ -99,6 +99,14 @@ Downstream transitions:
 
 `drilldown`, `scorecard_only`, and diagnostics routed `on_demand` remain preserved for traceability without becoming eager first-view clutter. Only diagnostics explicitly routed with `visibility: "supporting"` may enter the closed `supportingSignals` layer and render as subordinate context.
 
+### Semantic Visual Grammar — explicit HOW contract
+
+After composition selects the semantic nodes, the canonical compiler builds one Internal Visual Spec per selected node. The spec records `nodeId`, `semanticType`, `presentation`, `mark`, `orientation`, `encoding`, `scale`, `comparability`, and attributed `layout`. It is the only source of visual HOW; `render-semantic.js` must consume it and must not infer a chart from labels, audience, fixture, or use case.
+
+The grammar uses one shared registry and one renderer pipeline. Trend full charts are ordered temporal plots, Distribution full charts preserve the complete ordered distribution, full Rankings compare ordered magnitudes, both-end Rankings use an explicit high/low pair, and MetricCluster comparison uses independent metric tiles. Radar remains legal only after the existing Profile Test. No G2, Vega-Lite, Observable Plot, Recharts, ECharts, or other external rendering dependency is permitted.
+
+Shared position, length, area, or scale requires compatible unit, comparison group, comparability domain, normalization, and scale. Same unit is not sufficient. Mixed-unit metrics use independent scales; an illegal shared encoding or paired layout fails closed. Non-default layout patterns require a registered `reasonCode` plus a resolvable requirement, modifier, or evidence reference. The delivered verifier cross-checks these specs and their markers against both final HTML and SVG; a manifest-only composition claim is not delivery.
+
 ## Workflow
 
 ### 1. Run the Dashboard Worthiness Test

@@ -196,7 +196,8 @@
           "minItems": 1,
           "maxItems": 24,
           "items": { "$ref": "#/definitions/semanticItem" }
-        }
+        },
+        "comparability": { "$ref": "#/definitions/comparability" }
       }
     },
     "semanticItem": {
@@ -208,7 +209,29 @@
         "value": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 80 }, { "type": "number" }] },
         "detail": { "type": "string", "maxLength": 120 },
         "role": { "enum": ["actual", "target", "gap", "point", "member", "contributor", "rank", "detail", "dimension"] },
+        "comparability": { "$ref": "#/definitions/comparability" },
         "provenance": { "const": "source" }
+      }
+    },
+    "comparability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "comparisonGroup", "comparabilityDomain"],
+      "properties": {
+        "unit": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "comparisonGroup": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" },
+        "comparabilityDomain": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" },
+        "normalization": { "enum": ["raw", "source_normalized", "percentage_of_total", "index"] },
+        "scaleId": { "type": "string", "pattern": "^[a-z0-9_~.:-]{1,80}$" },
+        "scale": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string", "pattern": "^[a-z0-9_~.:-]{1,80}$" },
+            "min": { "type": "number" },
+            "max": { "type": "number" }
+          }
+        }
       }
     },
     "visibleClaim": {

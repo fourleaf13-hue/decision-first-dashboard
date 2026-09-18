@@ -127,7 +127,8 @@
           "maxItems": 6,
           "items": { "$ref": "#/definitions/profileDimension" }
         },
-        "profile": { "$ref": "#/definitions/profileContract" }
+        "profile": { "$ref": "#/definitions/profileContract" },
+        "comparability": { "$ref": "#/definitions/comparability" }
       }
     },
     "profileDimension": {
@@ -138,7 +139,11 @@
         "metric": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
         "unit": { "type": "string", "minLength": 1, "maxLength": 40 },
         "value": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 80 }, { "type": "number" }] },
-        "normalizedScore": { "type": "number" }
+        "normalizedScore": { "type": "number" },
+        "comparisonGroup": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" },
+        "comparabilityDomain": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" },
+        "normalization": { "enum": ["raw", "source_normalized", "percentage_of_total", "index"] },
+        "scaleId": { "type": "string", "pattern": "^[a-z0-9_~.:-]{1,80}$" }
       }
     },
     "profileContract": {
@@ -149,6 +154,27 @@
         "purpose": { "enum": ["profile", "comparison"] },
         "sharedScale": { "type": "boolean" },
         "comparable": { "type": "boolean" }
+      }
+    },
+    "comparability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "comparisonGroup", "comparabilityDomain"],
+      "properties": {
+        "unit": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "comparisonGroup": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" },
+        "comparabilityDomain": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" },
+        "normalization": { "enum": ["raw", "source_normalized", "percentage_of_total", "index"] },
+        "scaleId": { "type": "string", "pattern": "^[a-z0-9_~.:-]{1,80}$" },
+        "scale": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string", "pattern": "^[a-z0-9_~.:-]{1,80}$" },
+            "min": { "type": "number" },
+            "max": { "type": "number" }
+          }
+        }
       }
     }
   }
