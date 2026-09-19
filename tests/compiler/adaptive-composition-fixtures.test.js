@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { compileDecisionDashboard } from '../../skills/decision-first-dashboard/scripts/compile-dashboard.js';
 import { verifyDeliveredArtifact } from '../../skills/decision-first-dashboard/scripts/composition.js';
 import { VISUAL_SPEC_REGISTRY } from '../../skills/decision-first-dashboard/scripts/visual-grammar.js';
+import { requiredRelationshipPaths } from '../../skills/decision-first-dashboard/scripts/relationship-grammar.js';
 
 const fixtureDir = fileURLToPath(new URL('./fixtures/adaptive-composition/', import.meta.url));
 const worthiness = JSON.parse(fs.readFileSync(fileURLToPath(new URL('./fixtures/worthiness/dashboard.worthiness.json', import.meta.url)), 'utf8'));
@@ -27,8 +28,10 @@ function makeGroundedFixture(fileName, nodeSelections) {
       type: nodeTypes.get(nodeSelections[index].id),
       title: node.title,
       ...(node.subtitle ? { subtitle: node.subtitle } : {}),
+      ...(node.comparability ? { comparability: node.comparability } : {}),
       items: node.items.map((item) => ({ ...item, provenance: 'source' }))
-    }))
+    })),
+    relationships: (source.relationships ?? []).map((relationship) => ({ ...relationship, provenance: 'source' }))
   };
   const evidence = [];
   const claims = [];
@@ -50,6 +53,7 @@ function makeGroundedFixture(fileName, nodeSelections) {
       if (item.detail) add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/detail`, `/semanticNodes/${nodeIndex}/items/${itemIndex}/detail`);
     });
   });
+  requiredRelationshipPaths(decisionState).forEach((relationshipPath) => add(relationshipPath, relationshipPath));
   const brief = {
     decision: { status: 'confirmed', value: 'Choose the next operating focus' },
     action: { status: 'confirmed', value: 'Review the evidence before allocating the next action' }

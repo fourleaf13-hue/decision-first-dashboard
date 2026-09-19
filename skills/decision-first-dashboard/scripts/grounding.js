@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateAgainstSchema, validateDecisionState } from './validate.js';
+import { requiredRelationshipPaths, validateRelationships } from './relationship-grammar.js';
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const groundingSchema = JSON.parse(fs.readFileSync(path.resolve(currentDir, '../schemas/grounded-bundle.schema.json'), 'utf8'));
@@ -412,6 +413,8 @@ export function validateGroundedBundle(bundle, { baseDir = process.cwd() } = {})
     evidenceById.set(evidence.id, evidence);
   }
 
+  errors.push(...validateRelationships(decisionState, { evidenceIds: new Set(evidenceById.keys()) }));
+
   if (source.kind === 'json') {
     validateJsonGroupCoherence(bundle.claims, evidenceById, errors);
   }
@@ -469,7 +472,10 @@ export function validateGroundedBundle(bundle, { baseDir = process.cwd() } = {})
     }
   }
 
-  const requiredPaths = mode === 'composite' ? requiredCompositePaths(decisionState) : requiredNoScorePaths(decisionState);
+  const requiredPaths = [
+    ...(mode === 'composite' ? requiredCompositePaths(decisionState) : requiredNoScorePaths(decisionState)),
+    ...requiredRelationshipPaths(decisionState)
+  ];
   for (const requiredPath of requiredPaths) {
     if (!claimsByPath.has(requiredPath)) {
       pushError(errors, 'MISSING_REQUIRED_GROUNDING', requiredPath, 'required source fact has no evidence claim');

@@ -24,11 +24,15 @@ const state = {
       id: 'product_roi',
       type: 'Ranking',
       title: 'Highest and lowest ROI',
+      comparability: { unit: 'percent', comparisonGroup: 'product_roi', comparabilityDomain: 'roi', normalization: 'raw' },
       items: [
         { label: 'Sugar Cookies', value: '1109%' },
         { label: 'Salted Caramel Chocolate', value: '104%' }
       ]
     }
+  ],
+  relationships: [
+    { id: 'product_roi', relationType: 'comparison', subjectRefs: ['product_roi'], provenance: 'source', comparison: { metricIdentity: 'roi' } }
   ]
 };
 

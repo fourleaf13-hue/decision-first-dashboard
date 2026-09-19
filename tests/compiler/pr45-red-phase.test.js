@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { compileDecisionDashboard } from '../../skills/decision-first-dashboard/scripts/compile-dashboard.js';
 import { verifyDeliveredArtifact } from '../../skills/decision-first-dashboard/scripts/composition.js';
+import { requiredRelationshipPaths } from '../../skills/decision-first-dashboard/scripts/relationship-grammar.js';
 import { captureCommitBinding, assertCommitBinding } from '../../scripts/acceptance-binding.mjs';
 
 const worthiness = JSON.parse(fs.readFileSync(new URL('./fixtures/worthiness/dashboard.worthiness.json', import.meta.url), 'utf8'));
@@ -36,6 +37,7 @@ function makeBundle(state, sourceExtra = {}) {
       title: node.title,
       items: node.items.map(({ label, value, detail }) => (detail === undefined ? { label, value } : { label, value, detail }))
     })),
+    relationships: (state.relationships ?? []).map(({ provenance, ...rest }) => rest),
     ...sourceExtra
   };
   const bytes = Buffer.from(`${JSON.stringify(sourceValue, null, 2)}\n`);
@@ -63,6 +65,7 @@ function makeBundle(state, sourceExtra = {}) {
   (state.visibleClaims ?? []).forEach((claim, index) => {
     add(`/visibleClaims/${index}/text`);
   });
+  requiredRelationshipPaths(state).forEach((pointer) => add(pointer));
   fs.writeFileSync(path.join(root, 'source.json'), bytes);
   return {
     root,
@@ -144,6 +147,13 @@ function scaleDeclarationPresent(compiled) {
 
 const roiComparability = { unit: 'percent', comparisonGroup: 'product_roi', comparabilityDomain: 'product_roi', normalization: 'raw' };
 const roiItem = (label, value) => ({ label, value, provenance: 'source', comparability: roiComparability });
+const roiRelationship = (subjectRefs) => ({
+  id: 'product_roi',
+  relationType: 'comparison',
+  subjectRefs,
+  provenance: 'source',
+  comparison: { metricIdentity: 'product_roi' }
+});
 
 const roiSplitState = {
   mode: 'no_score',
@@ -155,7 +165,8 @@ const roiSplitState = {
   semanticNodes: [
     { id: 'roi_high', type: 'Ranking', title: 'Highest ROI products', items: [roiItem('Sugar Cookies', '1109%'), roiItem('SD Red Velvet', '753%')] },
     { id: 'roi_low', type: 'Ranking', title: 'Lowest ROI products', items: [roiItem('Salted Caramel Chocolate', '104%'), roiItem('Brownies', '163%')] }
-  ]
+  ],
+  relationships: [roiRelationship(['roi_high', 'roi_low'])]
 };
 const roiSplitSelections = [
   { id: 'roi_high', type: 'Ranking', presentation: 'full_ranking' },
@@ -171,7 +182,8 @@ const roiSingleState = {
   ],
   semanticNodes: [
     { id: 'roi_all', type: 'Ranking', title: 'Product ROI spread', items: [roiItem('Sugar Cookies', '1109%'), roiItem('Brownies', '163%'), roiItem('Salted Caramel Chocolate', '104%')] }
-  ]
+  ],
+  relationships: [roiRelationship(['roi_all'])]
 };
 const roiSingleSelections = [{ id: 'roi_all', type: 'Ranking', presentation: 'full_ranking' }];
 
@@ -298,11 +310,17 @@ test('existing-coverage control (RED-3): mixed-unit magnitude encoding already f
 
 test('RED-4: same unit with different metric identity must not become commensurate', () => {
   const compiled = compileState(pctPairState, pctPairSelections);
-  const spec = compiled.manifest.delivery.nodes.find((node) => node.id === 'pct_pair')?.visualSpec;
-  assert.ok(spec, 'pct_pair node must be delivered for this contract probe');
+  assert.equal(
+    compiled.result.valid,
+    false,
+    'Turnover Rate % and Training Completion % share unit percent but are different metrics; the Ranking must fail closed instead of receiving a fabricated comparison domain'
+  );
+  const codes = errorCodes(compiled.result);
+  assert.ok(codes.includes('VISUAL_COMPARABILITY_FAILED'), `gate-1 membership failure must block the layout; codes=${JSON.stringify(codes)}`);
+  assert.ok(codes.includes('VISUAL_SPEC_RELATIONSHIP_REQUIRED'), `spec must require grounded relationship membership; codes=${JSON.stringify(codes)}`);
   assert.ok(
-    compiled.result.valid === false || spec.mark === 'metric_tile' || spec.scale?.type === 'independent',
-    `Turnover Rate % and Training Completion % share unit percent but are different metrics; shared magnitude encoding was granted: ${JSON.stringify({ mark: spec.mark, scale: spec.scale, comparability: spec.comparability })}`
+    JSON.stringify(compiled.result.errors).includes('COMPARISON_RELATIONSHIP_REQUIRED'),
+    `the failure must name the explicit relationship reason; errors=${JSON.stringify(compiled.result.errors)}`
   );
 });
 

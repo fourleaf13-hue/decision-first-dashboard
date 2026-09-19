@@ -7,6 +7,9 @@
   "semanticNodes": [
     { "title": "Revenue against annual target", "items": [{ "label": "Actual revenue", "value": "$4.98M" }, { "label": "Annual target", "value": "$6.00M" }, { "label": "Gap", "value": "$1.02M" }] },
     { "title": "What explains the target gap", "items": [{ "label": "New business shortfall", "value": "$0.55M" }, { "label": "Expansion shortfall", "value": "$0.31M" }, { "label": "Churn impact", "value": "$0.16M" }] },
-    { "title": "Accounts with the largest impact", "items": [{ "label": "Northstar Health", "value": "$0.24M" }, { "label": "Copper Labs", "value": "$0.18M" }, { "label": "Pilgrim Retail", "value": "$0.13M" }] }
+    { "title": "Accounts with the largest impact", "comparability": { "unit": "currency", "comparisonGroup": "top_accounts", "comparabilityDomain": "revenue_impact", "normalization": "raw" }, "items": [{ "label": "Northstar Health", "value": "$0.24M" }, { "label": "Copper Labs", "value": "$0.18M" }, { "label": "Pilgrim Retail", "value": "$0.13M" }] }
+  ],
+  "relationships": [
+    { "id": "top_accounts", "relationType": "comparison", "subjectRefs": ["top_accounts"], "comparison": { "metricIdentity": "revenue_impact" } }
   ]
 }

@@ -1,3 +1,5 @@
+import { resolveNodeRelationship } from './relationship-grammar.js';
+
 const PRESENTATION_VISUALS = {
   Trend: {
     full_chart: { mark: 'line', orientation: 'horizontal', encoding: { x: 'ordered_item', y: 'value' }, scale: 'local', domain: 'node', layout: 'full_width', structure: 'ordered-trajectory' },
@@ -60,6 +62,15 @@ export const VISUAL_REASON_CODES = Object.freeze([
   'HETEROGENEOUS_METRIC_UNCOMPARABLE',
   'PROFILE_COMPARABILITY_CONFIRMED',
   'PROFILE_COMPARABILITY_FAILED',
+  'RELATIONSHIP_GROUNDED',
+  'RELATIONSHIP_INTRINSIC',
+  'RELATIONSHIP_NOT_REQUIRED',
+  'COMPARISON_RELATIONSHIP_REQUIRED',
+  'RELATIONSHIP_REF_UNRESOLVED',
+  'RELATIONSHIP_REF_CONFLICT',
+  'RELATIONSHIP_SUBJECT_NOT_COVERED',
+  'RELATIONSHIP_TYPE_MISMATCH',
+  'RELATIONSHIP_IDENTITY_MISMATCH',
   'PAIRED_RANKING_ELIGIBLE',
   'FULL_SHAPE_CONTEXT_REQUIRED',
   'SOURCE_STRUCTURE_REQUIRED',
@@ -124,13 +135,13 @@ function subjectComparability(subject, { nodeId = 'local', parent = {} } = {}) {
     source.comparisonGroup,
     parentNested.comparisonGroup,
     parentSource.comparisonGroup
-  ) ?? nodeId;
+  );
   const comparabilityDomain = firstString(
     nested.comparabilityDomain,
     source.comparabilityDomain,
     parentNested.comparabilityDomain,
     parentSource.comparabilityDomain
-  ) ?? nodeId;
+  );
   const normalization = firstString(
     nested.normalization,
     source.normalization,
@@ -247,6 +258,21 @@ function layoutError(code, node, message) {
   return { code, path: `/nodes/${node.id}/layout`, message };
 }
 
+function relationshipMembershipFor(node, config, options) {
+  if (!['shared', 'local'].includes(config.scale) || (node.type === 'MetricCluster' && node.presentation === 'radar')) {
+    return {
+      grounded: null,
+      basis: null,
+      relationshipRef: null,
+      relationshipType: null,
+      identity: null,
+      comparisonDomain: null,
+      reasonCode: 'RELATIONSHIP_NOT_REQUIRED'
+    };
+  }
+  return resolveNodeRelationship(node, Array.isArray(options.relationships) ? options.relationships : []);
+}
+
 export function layoutEligibilityFor(node = {}, options = {}) {
   const config = VISUAL_SPEC_REGISTRY[node.type]?.[node.presentation];
   if (!config) {
@@ -254,12 +280,14 @@ export function layoutEligibilityFor(node = {}, options = {}) {
       valid: false,
       layout: null,
       comparability: null,
+      membership: null,
       errors: [layoutError('VISUAL_PRESENTATION_UNKNOWN', node, `${node.type} ${node.presentation} has no registered visual specification.`)]
     };
   }
 
   const items = Array.isArray(node.items) ? node.items : [];
-  const comparability = evaluateComparability(items, { nodeId: node.id, parent: node });
+  const comparability = evaluateComparability(items, { parent: node });
+  const membership = relationshipMembershipFor(node, config, options);
   const layout = {
     pattern: config.layout,
     span: config.layout === 'full_width' ? 'wide' : config.layout,
@@ -281,6 +309,9 @@ export function layoutEligibilityFor(node = {}, options = {}) {
     if (node.type !== 'Ranking' || items.length < 2) {
       errors.push(layoutError('VISUAL_LAYOUT_INELIGIBLE', node, 'paired layout requires at least two Ranking items.'));
     }
+    if (membership.grounded === false) {
+      errors.push(layoutError('VISUAL_LAYOUT_INELIGIBLE', node, `paired layout requires a grounded comparison relationship (${membership.reasonCode}).`));
+    }
     if (!comparability.pass) {
       errors.push(layoutError('VISUAL_LAYOUT_INELIGIBLE', node, `paired layout requires compatible unit, comparison group, domain, normalization, and scale (${comparability.reasonCode}).`));
     }
@@ -288,10 +319,10 @@ export function layoutEligibilityFor(node = {}, options = {}) {
   if (layout.pattern === 'compact' && items.length > 6 && node.type === 'MetricCluster') {
     errors.push(layoutError('VISUAL_LAYOUT_INELIGIBLE', node, 'compact metric strips may contain at most six metrics.'));
   }
-  if (['full_width', 'paired'].includes(layout.pattern) && !comparability.pass && !['MetricCluster', 'ExceptionList', 'Drilldown'].includes(node.type)) {
-    errors.push(layoutError('VISUAL_COMPARABILITY_FAILED', node, `shared visual encoding is not legal for ${comparability.reasonCode}.`));
+  if (['full_width', 'paired'].includes(layout.pattern) && !(comparability.pass && (membership.grounded ?? true)) && !['MetricCluster', 'ExceptionList', 'Drilldown'].includes(node.type)) {
+    errors.push(layoutError('VISUAL_COMPARABILITY_FAILED', node, `shared visual encoding is not legal for ${membership.reasonCode}/${comparability.reasonCode}.`));
   }
-  return { valid: errors.length === 0, layout, comparability, errors };
+  return { valid: errors.length === 0, layout, comparability, membership, errors };
 }
 
 function representative(subjects, field) {
@@ -326,6 +357,13 @@ export function visualSpecErrors(spec = {}) {
   if (!spec.comparability || typeof spec.comparability.reasonCode !== 'string' || typeof spec.comparability.eligible !== 'boolean') errors.push({ code: 'VISUAL_SPEC_COMPARABILITY_REQUIRED', path: '/visualSpec/comparability', message: 'visual spec requires a comparability result, eligibility, and reason code.' });
   if (spec.comparability && typeof spec.comparability.reasonCode === 'string' && !VISUAL_REASON_SET.has(spec.comparability.reasonCode)) errors.push({ code: 'VISUAL_SPEC_REASON_UNKNOWN', path: '/visualSpec/comparability/reasonCode', message: 'visual comparability reason must come from the shared reason-code registry.' });
   if (config && ['shared', 'local'].includes(config.scale) && spec.comparability?.eligible !== true) errors.push({ code: 'VISUAL_SPEC_COMPARABILITY_INELIGIBLE', path: '/visualSpec/comparability/eligible', message: 'visual specs with shared or local quantitative encodings require eligible comparability.' });
+  if (config && ['shared', 'local'].includes(config.scale) && spec.comparability) {
+    if (spec.comparability.membership?.grounded !== true) {
+      errors.push({ code: 'VISUAL_SPEC_RELATIONSHIP_REQUIRED', path: '/visualSpec/comparability/membership', message: 'visual specs with shared or local quantitative encodings require grounded relationship membership.' });
+    } else if (!VISUAL_REASON_SET.has(spec.comparability.membership.reasonCode)) {
+      errors.push({ code: 'VISUAL_SPEC_REASON_UNKNOWN', path: '/visualSpec/comparability/membership/reasonCode', message: 'relationship membership reason must come from the shared reason-code registry.' });
+    }
+  }
   if (!spec.layout || typeof spec.layout.pattern !== 'string' || typeof spec.layout.reasonCode !== 'string') errors.push({ code: 'VISUAL_SPEC_LAYOUT_REQUIRED', path: '/visualSpec/layout', message: 'visual spec requires a layout pattern and reason code.' });
   if (spec.layout?.pattern && !VISUAL_LAYOUT_PATTERNS.has(spec.layout.pattern)) errors.push({ code: 'VISUAL_SPEC_LAYOUT_PATTERN_UNKNOWN', path: '/visualSpec/layout/pattern', message: 'visual layout pattern must come from the shared layout registry.' });
   if (spec.layout && !VISUAL_REASON_SET.has(spec.layout.reasonCode)) errors.push({ code: 'VISUAL_SPEC_REASON_UNKNOWN', path: '/visualSpec/layout/reasonCode', message: 'visual layout reason must come from the shared reason-code registry.' });
@@ -356,7 +394,8 @@ export function buildInternalVisualSpecs(data = {}, composition = {}, options = 
   const context = {
     contextRequirements: options.contextRequirements ?? [],
     modifiers: options.modifiers ?? composition.modifiers ?? {},
-    decisionLog: options.decisionLog ?? composition.decisionLog ?? []
+    decisionLog: options.decisionLog ?? composition.decisionLog ?? [],
+    relationships: Array.isArray(data.relationships) ? data.relationships : []
   };
   const specs = [];
   const errors = [];
@@ -375,17 +414,38 @@ export function buildInternalVisualSpecs(data = {}, composition = {}, options = 
     }
     const layoutResult = layoutEligibilityFor(node, context);
     errors.push(...layoutResult.errors);
-    const profileResult = node.type === 'MetricCluster' && node.presentation === 'radar'
+    const isRadar = node.type === 'MetricCluster' && node.presentation === 'radar';
+    const profileResult = isRadar
       ? evaluateProfileComparability(node.dimensions ?? [], node)
       : layoutResult.comparability;
+    const membership = isRadar
+      ? {
+        grounded: profileResult.pass,
+        basis: 'intrinsic',
+        relationshipRef: `intrinsic_${node.id}_profile`,
+        relationshipType: 'comparison',
+        identity: null,
+        comparisonDomain: `intrinsic_${node.id}_profile`,
+        reasonCode: profileResult.pass ? 'PROFILE_COMPARABILITY_CONFIRMED' : 'PROFILE_COMPARABILITY_FAILED'
+      }
+      : layoutResult.membership;
     if (node.presentation === 'radar' && !profileResult.pass) {
       errors.push(specError('VISUAL_PRESENTATION_INELIGIBLE', node, `radar requires the passing Profile Test (${profileResult.reasonCode}).`));
     }
-    if (!['MetricCluster', 'ExceptionList', 'Drilldown'].includes(node.type) && !profileResult.pass) {
-      errors.push(specError('VISUAL_COMPARABILITY_FAILED', node, `visual encoding requires compatible comparable items (${profileResult.reasonCode}).`));
+    if (!['MetricCluster', 'ExceptionList', 'Drilldown'].includes(node.type) && !(profileResult.pass && (membership.grounded ?? true))) {
+      errors.push(specError('VISUAL_COMPARABILITY_FAILED', node, `visual encoding requires grounded relationship membership and compatible items (${membership.reasonCode}/${profileResult.reasonCode}).`));
     }
 
     const subjects = profileResult.subjects ?? [];
+    const overallReasonCode = isRadar
+      ? profileResult.reasonCode
+      : (node.type === 'MetricCluster' && node.presentation === 'comparison' && !profileResult.pass)
+        ? 'HETEROGENEOUS_METRIC_UNCOMPARABLE'
+        : membership.grounded === false
+          ? membership.reasonCode
+          : !profileResult.pass
+            ? profileResult.reasonCode
+            : 'COMPARABILITY_CONFIRMED';
     const spec = {
       nodeId: node.id,
       semanticType: node.type,
@@ -395,15 +455,21 @@ export function buildInternalVisualSpecs(data = {}, composition = {}, options = 
       encoding: { ...config.encoding },
       scale: { type: config.scale, domain: config.domain },
       comparability: {
-        eligible: Boolean(profileResult.pass),
+        eligible: membership.grounded !== false && Boolean(profileResult.pass),
+        membership,
+        commensurability: {
+          pass: profileResult.pass,
+          reasonCode: profileResult.reasonCode,
+          unit: representative(subjects, 'unit'),
+          normalization: representative(subjects, 'normalization'),
+          scaleId: representative(subjects, 'scaleId')
+        },
         unit: representative(subjects, 'unit'),
-        comparisonGroup: representative(subjects, 'comparisonGroup') ?? node.id,
-        comparabilityDomain: representative(subjects, 'comparabilityDomain') ?? node.id,
+        comparisonGroup: membership.relationshipRef,
+        comparabilityDomain: membership.comparisonDomain,
         normalization: representative(subjects, 'normalization') ?? 'raw',
         scaleId: representative(subjects, 'scaleId'),
-        reasonCode: node.type === 'MetricCluster' && node.presentation === 'comparison' && !profileResult.pass
-          ? 'HETEROGENEOUS_METRIC_UNCOMPARABLE'
-          : profileResult.reasonCode
+        reasonCode: overallReasonCode
       },
       layout: layoutResult.layout,
       structure: config.structure

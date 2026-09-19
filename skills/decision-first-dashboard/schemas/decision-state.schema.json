@@ -42,6 +42,11 @@
           "maxItems": 24,
           "items": { "$ref": "#/definitions/semanticNode" }
         },
+        "relationships": {
+          "type": "array",
+          "maxItems": 48,
+          "items": { "$ref": "#/definitions/relationship" }
+        },
         "visibleClaims": {
           "type": "array",
           "maxItems": 24,
@@ -88,6 +93,81 @@
           "minItems": 1,
           "maxItems": 24,
           "items": { "$ref": "#/definitions/semanticNode" }
+        },
+        "relationships": {
+          "type": "array",
+          "maxItems": 48,
+          "items": { "$ref": "#/definitions/relationship" }
+        }
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "relationType", "subjectRefs", "provenance"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" },
+        "relationType": { "enum": ["distribution", "comparison", "decomposition", "diagnostic_attribution", "temporal"] },
+        "subjectRefs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 24,
+          "items": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" }
+        },
+        "memberRefs": {
+          "type": "array",
+          "maxItems": 48,
+          "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+        },
+        "basisRefs": {
+          "type": "array",
+          "maxItems": 24,
+          "items": { "type": "string", "pattern": "^ev_[A-Za-z0-9_~.-]{1,120}$" }
+        },
+        "scope": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" },
+        "provenance": { "const": "source" },
+        "comparison": { "$ref": "#/definitions/comparisonRelationship" },
+        "distribution": { "$ref": "#/definitions/distributionRelationship" },
+        "decomposition": { "$ref": "#/definitions/decompositionRelationship" },
+        "diagnosticAttribution": { "$ref": "#/definitions/diagnosticAttributionRelationship" }
+      }
+    },
+    "comparisonRelationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metricIdentity"],
+      "properties": {
+        "metricIdentity": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" },
+        "comparisonScope": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" }
+      }
+    },
+    "distributionRelationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dimension"],
+      "properties": {
+        "dimension": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" }
+      }
+    },
+    "decompositionRelationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["whole"],
+      "properties": {
+        "whole": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" },
+        "additivity": { "enum": ["additive", "non_additive"] }
+      }
+    },
+    "diagnosticAttributionRelationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcomeRef"],
+      "properties": {
+        "outcomeRef": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" },
+        "contributorRefs": {
+          "type": "array",
+          "maxItems": 24,
+          "items": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" }
         }
       }
     },

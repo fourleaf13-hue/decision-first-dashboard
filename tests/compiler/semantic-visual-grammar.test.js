@@ -6,6 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compileDecisionDashboard } from '../../skills/decision-first-dashboard/scripts/compile-dashboard.js';
 import { composeAdaptiveComposition, verifyDeliveredArtifact } from '../../skills/decision-first-dashboard/scripts/composition.js';
+import { requiredRelationshipPaths } from '../../skills/decision-first-dashboard/scripts/relationship-grammar.js';
 
 const worthiness = JSON.parse(fs.readFileSync(new URL('./fixtures/worthiness/dashboard.worthiness.json', import.meta.url), 'utf8'));
 
@@ -45,6 +46,12 @@ function visualState() {
         id: 'demand_drivers',
         type: 'Ranking',
         title: 'Demand drivers',
+        comparability: {
+          unit: 'number',
+          comparisonGroup: 'demand_drivers',
+          comparabilityDomain: 'orders',
+          normalization: 'raw'
+        },
         items: [
           { label: 'Holiday / Seasonal', value: 37, provenance: 'source' },
           { label: 'No Theme', value: 34, provenance: 'source' },
@@ -77,6 +84,10 @@ function visualState() {
           { label: 'Repeat rate', value: '77%', provenance: 'source' }
         ]
       }
+    ],
+    relationships: [
+      { id: 'demand_drivers', relationType: 'comparison', subjectRefs: ['demand_drivers'], provenance: 'source', comparison: { metricIdentity: 'orders' } },
+      { id: 'product_roi', relationType: 'comparison', subjectRefs: ['product_roi'], provenance: 'source', comparison: { metricIdentity: 'roi' } }
     ]
   };
 }
@@ -88,7 +99,8 @@ function makeBundle(state) {
     semanticNodes: state.semanticNodes.map((node) => ({
       title: node.title,
       items: node.items.map(({ label, value }) => ({ label, value }))
-    }))
+    })),
+    relationships: (state.relationships ?? []).map(({ provenance, ...rest }) => rest)
   };
   const bytes = Buffer.from(`${JSON.stringify(sourceValue, null, 2)}\n`);
   const evidence = [];
@@ -109,6 +121,7 @@ function makeBundle(state) {
       add(`/semanticNodes/${nodeIndex}/items/${itemIndex}/value`);
     });
   });
+  requiredRelationshipPaths(state).forEach((pointer) => add(pointer));
   fs.writeFileSync(path.join(root, 'source.json'), bytes);
   return {
     root,
@@ -226,24 +239,41 @@ test('comparability and layout eligibility expose stable attribution instead of 
   ]);
   assert.equal(legal.pass, true);
 
+  const roiRelationships = [{ id: 'roi', relationType: 'comparison', subjectRefs: ['product_roi'], provenance: 'source', comparison: { metricIdentity: 'roi' } }];
+
   const paired = layoutEligibilityFor({
     id: 'product_roi',
     type: 'Ranking',
     presentation: 'both_ends',
     items: [{ label: 'High', value: '1109%' }, { label: 'Low', value: '104%' }],
     comparability: { unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' }
-  }, { contextRequirements: [], modifiers: { activeModifierIds: [] } });
+  }, { contextRequirements: [], modifiers: { activeModifierIds: [] }, relationships: roiRelationships });
   assert.equal(paired.valid, true);
   assert.equal(paired.layout.pattern, 'paired');
   assert.equal(typeof paired.layout.reasonCode, 'string');
   assert.ok(paired.layout.modifierRef || paired.layout.requirementRef || paired.layout.evidenceRefs?.length);
+  assert.equal(paired.membership.grounded, true);
+  assert.equal(paired.membership.reasonCode, 'RELATIONSHIP_GROUNDED');
 
-  const specs = buildInternalVisualSpecs({ semanticNodes: [{
+  const ungrounded = layoutEligibilityFor({
     id: 'product_roi',
     type: 'Ranking',
-    title: 'ROI',
-    items: [{ label: 'High', value: '1109%', provenance: 'source' }, { label: 'Low', value: '104%', provenance: 'source' }]
-  }] }, { nodes: [{
+    presentation: 'both_ends',
+    items: [{ label: 'High', value: '1109%' }, { label: 'Low', value: '104%' }],
+    comparability: { unit: 'percent', comparisonGroup: 'roi', comparabilityDomain: 'roi', normalization: 'raw' }
+  }, { contextRequirements: [], modifiers: { activeModifierIds: [] }, relationships: [] });
+  assert.equal(ungrounded.valid, false);
+  assert.equal(ungrounded.membership.reasonCode, 'RELATIONSHIP_REF_UNRESOLVED');
+
+  const specs = buildInternalVisualSpecs({
+    semanticNodes: [{
+      id: 'product_roi',
+      type: 'Ranking',
+      title: 'ROI',
+      items: [{ label: 'High', value: '1109%', provenance: 'source' }, { label: 'Low', value: '104%', provenance: 'source' }]
+    }],
+    relationships: roiRelationships
+  }, { nodes: [{
     id: 'product_roi',
     type: 'Ranking',
     presentation: 'both_ends',
@@ -252,6 +282,7 @@ test('comparability and layout eligibility expose stable attribution instead of 
   assert.equal(specs.valid, true, JSON.stringify(specs.errors));
   assert.equal(specs.specs[0].mark, 'paired_bar');
   assert.equal(specs.specs[0].layout.pattern, 'paired');
+  assert.equal(specs.specs[0].comparability.membership.relationshipRef, 'roi');
 });
 
 test('delivered verifier rejects visual-spec marker drift in the final artifact', () => {
@@ -352,10 +383,31 @@ test('visual spec layout attribution fails closed on unknown reason codes and mi
     structure: config.structure,
     encoding: config.encoding,
     scale: { type: config.scale, domain: config.domain },
-    comparability: { eligible: true, reasonCode: 'COMPARABILITY_CONFIRMED' },
+    comparability: {
+      eligible: true,
+      reasonCode: 'COMPARABILITY_CONFIRMED',
+      membership: {
+        grounded: true,
+        basis: 'declared',
+        relationshipRef: 'roi',
+        relationshipType: 'comparison',
+        identity: 'roi',
+        comparisonDomain: 'roi',
+        reasonCode: 'RELATIONSHIP_GROUNDED'
+      }
+    },
     layout: { pattern: config.layout, reasonCode: 'PAIRED_RANKING_ELIGIBLE', modifierRef: 'default_composition' }
   };
   assert.deepEqual(visualSpecErrors(baseSpec), []);
+
+  const ungroundedMembership = visualSpecErrors({
+    ...baseSpec,
+    comparability: {
+      ...baseSpec.comparability,
+      membership: { ...baseSpec.comparability.membership, grounded: false, reasonCode: 'COMPARISON_RELATIONSHIP_REQUIRED' }
+    }
+  });
+  assert.ok(ungroundedMembership.some((error) => error.code === 'VISUAL_SPEC_RELATIONSHIP_REQUIRED'));
 
   const unknownReason = visualSpecErrors({
     ...baseSpec,
