@@ -344,7 +344,35 @@ export function visualSpecErrors(spec = {}) {
   if (config && (spec.mark !== config.mark || spec.orientation !== config.orientation || spec.structure !== config.structure)) {
     errors.push({ code: 'VISUAL_SPEC_REGISTRY_MISMATCH', path: '/visualSpec', message: 'visual spec mark, orientation, and structure must match the shared presentation registry.' });
   }
-  if (config && (spec.scale?.type !== config.scale || spec.scale?.domain !== config.domain)) {
+  const sharedComparisonScale = spec.scale?.type === 'shared' && spec.scale?.domain === 'relationship';
+  if (sharedComparisonScale) {
+    const membership = spec.comparability?.membership ?? {};
+    const declarationBound = config
+      && ['shared', 'local'].includes(config.scale)
+      && spec.comparability?.eligible === true
+      && membership.grounded === true
+      && membership.basis === 'declared'
+      && membership.relationshipType === 'comparison'
+      && membership.comparisonDomain === spec.scale.comparisonDomainId
+      && spec.scale.scaleId === sharedComparisonScaleId(membership.relationshipRef)
+      && spec.scale.relationshipRef === membership.relationshipRef
+      && typeof spec.scale.mapType === 'string' && spec.scale.mapType.length > 0
+      && typeof spec.scale.normalizationBasis === 'string' && spec.scale.normalizationBasis.length > 0
+      && typeof spec.scale.baseline === 'number' && Number.isFinite(spec.scale.baseline)
+      && Array.isArray(spec.scale.valueDomain)
+      && spec.scale.valueDomain.length === 2
+      && spec.scale.valueDomain.every((bound) => Number.isFinite(bound))
+      && spec.scale.valueDomain[0] <= spec.scale.baseline
+      && spec.scale.valueDomain[1] >= spec.scale.baseline
+      && Array.isArray(spec.scale.memberRefs)
+      && spec.scale.memberRefs.length > 0
+      && spec.scale.memberRefs.every((ref) => typeof ref === 'string' && /^\/semanticNodes\/\d+\/items\/\d+$/.test(ref))
+      && Array.isArray(spec.scale.memberNodeIds)
+      && spec.scale.memberNodeIds.includes(spec.nodeId);
+    if (!declarationBound) {
+      errors.push({ code: 'SHARED_SCALE_DECLARATION_INVALID', path: '/visualSpec/scale', message: 'a relationship-scoped shared comparison scale requires the complete canonical declaration bound to the grounded comparison relationship.' });
+    }
+  } else if (config && (spec.scale?.type !== config.scale || spec.scale?.domain !== config.domain)) {
     errors.push({ code: 'VISUAL_SPEC_REGISTRY_MISMATCH', path: '/visualSpec/scale', message: 'visual spec scale type and domain must match the shared presentation registry.' });
   }
   if (config) {
@@ -388,6 +416,139 @@ function itemsForSelection(sourceNode, selection) {
   return items;
 }
 
+const SHARED_SCALE_ID_PREFIX = 'scale:comparison:';
+const SHARED_SCALE_MAP_TYPE = 'linear';
+const SHARED_SCALE_NORMALIZATION_BASIS = 'domain_max';
+
+export function sharedComparisonScaleId(relationshipRef) {
+  return `${SHARED_SCALE_ID_PREFIX}${relationshipRef}`;
+}
+
+function sharedScaleEligible(entry) {
+  const membership = entry.spec.comparability?.membership ?? {};
+  return !entry.isRadar
+    && ['shared', 'local'].includes(entry.config.scale)
+    && membership.basis === 'declared'
+    && membership.relationshipType === 'comparison'
+    && membership.grounded === true
+    && entry.comparabilityPass === true;
+}
+
+function buildSharedComparisonScaleDeclaration(ref, relationship, group, nodeIndexById) {
+  const errors = [];
+  const identity = group
+    .map((entry) => entry.spec.comparability.membership.identity)
+    .find((value) => typeof value === 'string' && value.length > 0) ?? null;
+  if (identity === null) {
+    for (const entry of group) {
+      errors.push(specError('SHARED_SCALE_DECLARATION_MISSING', entry.spec, `grounded comparison relationship ${ref} has members without a stable comparison domain identity.`));
+    }
+    return { declaration: null, errors };
+  }
+
+  const units = new Set(group.map((entry) => entry.spec.comparability.unit).filter((unit) => typeof unit === 'string' && unit.length > 0));
+  const normalizations = new Set(group.map((entry) => entry.spec.comparability.normalization).filter((value) => typeof value === 'string' && value.length > 0));
+  if (units.size > 1 || normalizations.size > 1) {
+    for (const entry of group) {
+      errors.push(specError('SHARED_SCALE_MEMBERS_INCOMMENSURATE', entry.spec, `members of grounded comparison relationship ${ref} are not commensurate across the whole relationship (unit/normalization divergence).`));
+    }
+    return { declaration: null, errors };
+  }
+
+  const memberRefs = [];
+  const values = [];
+  for (const entry of group) {
+    const sourceItems = Array.isArray(entry.sourceNode?.items) ? entry.sourceNode.items : [];
+    const nodeIndex = nodeIndexById.get(entry.spec.nodeId);
+    for (const item of entry.deliveredItems) {
+      values.push(numericValue(item?.value));
+      if (nodeIndex === undefined) {
+        errors.push(specError('SHARED_SCALE_MEMBER_OUTSIDE_RELATIONSHIP', entry.spec, `delivered member of ${ref} does not resolve to a decision-state semantic node.`));
+        return { declaration: null, errors };
+      }
+      const itemIndex = sourceItems.indexOf(item);
+      memberRefs.push(`/semanticNodes/${nodeIndex}/items/${itemIndex < 0 ? 0 : itemIndex}`);
+    }
+  }
+  const memberNodeIds = [...new Set(group.map((entry) => entry.spec.nodeId))].sort();
+  const subjectRefs = Array.isArray(relationship?.subjectRefs) ? relationship.subjectRefs : [];
+  if (memberNodeIds.some((nodeId) => !subjectRefs.includes(nodeId))) {
+    for (const entry of group) {
+      errors.push(specError('SHARED_SCALE_MEMBER_OUTSIDE_RELATIONSHIP', entry.spec, `shared scale for ${ref} would cover members outside the grounded relationship subjectRefs.`));
+    }
+    return { declaration: null, errors };
+  }
+
+  const valueDomain = [
+    Math.min(0, ...values),
+    Math.max(0, ...values)
+  ];
+  const declaration = Object.freeze({
+    scaleId: sharedComparisonScaleId(ref),
+    comparisonDomainId: identity,
+    relationshipRef: ref,
+    mapType: SHARED_SCALE_MAP_TYPE,
+    normalizationBasis: SHARED_SCALE_NORMALIZATION_BASIS,
+    baseline: 0,
+    valueDomain: Object.freeze(valueDomain),
+    unit: group.map((entry) => entry.spec.comparability.unit).find((unit) => typeof unit === 'string' && unit.length > 0) ?? null,
+    normalization: group.map((entry) => entry.spec.comparability.normalization).find((unit) => typeof unit === 'string' && unit.length > 0) ?? 'raw',
+    memberNodeIds: Object.freeze(memberNodeIds),
+    memberRefs: Object.freeze([...new Set(memberRefs)].sort())
+  });
+  return { declaration, errors };
+}
+
+function applySharedComparisonScales(entries, relationships, nodeIndexById) {
+  const errors = [];
+  const groups = new Map();
+  for (const entry of entries) {
+    if (!sharedScaleEligible(entry)) continue;
+    const ref = entry.spec.comparability.membership.relationshipRef;
+    if (!groups.has(ref)) groups.set(ref, []);
+    groups.get(ref).push(entry);
+  }
+
+  const declarations = new Map();
+  for (const [ref, group] of groups) {
+    const relationship = relationships.find((candidate) => candidate?.id === ref);
+    const built = buildSharedComparisonScaleDeclaration(ref, relationship, group, nodeIndexById);
+    errors.push(...built.errors);
+    if (built.declaration) declarations.set(ref, built.declaration);
+  }
+
+  const scaleIdsByDomain = new Map();
+  const domainsByScaleId = new Map();
+  for (const declaration of declarations.values()) {
+    if (!scaleIdsByDomain.has(declaration.comparisonDomainId)) scaleIdsByDomain.set(declaration.comparisonDomainId, new Set());
+    scaleIdsByDomain.get(declaration.comparisonDomainId).add(declaration.scaleId);
+    if (!domainsByScaleId.has(declaration.scaleId)) domainsByScaleId.set(declaration.scaleId, new Set());
+    domainsByScaleId.get(declaration.scaleId).add(JSON.stringify(declaration));
+  }
+  for (const [ref, declaration] of declarations) {
+    if (scaleIdsByDomain.get(declaration.comparisonDomainId).size > 1) {
+      for (const entry of groups.get(ref)) {
+        errors.push(specError('SHARED_SCALE_DOMAIN_CONFLICT', entry.spec, `comparison domain ${declaration.comparisonDomainId} resolves to more than one scaleId; siblings must share exactly one canonical scale map.`));
+      }
+      declarations.delete(ref);
+      continue;
+    }
+    if (domainsByScaleId.get(declaration.scaleId).size > 1) {
+      for (const entry of groups.get(ref)) {
+        errors.push(specError('SHARED_SCALE_DECLARATION_CONFLICT', entry.spec, `scaleId ${declaration.scaleId} would carry more than one canonical map declaration.`));
+      }
+      declarations.delete(ref);
+    }
+  }
+
+  for (const [ref, declaration] of declarations) {
+    for (const entry of groups.get(ref)) {
+      entry.spec.scale = { type: 'shared', domain: 'relationship', ...declaration };
+    }
+  }
+  return errors;
+}
+
 export function buildInternalVisualSpecs(data = {}, composition = {}, options = {}) {
   const source = new Map((data.semanticNodes ?? []).map((node) => [node.id, node]));
   const nodes = Array.isArray(composition?.nodes) ? composition.nodes : [];
@@ -399,6 +560,7 @@ export function buildInternalVisualSpecs(data = {}, composition = {}, options = 
   };
   const specs = [];
   const errors = [];
+  const entries = [];
 
   for (const selection of nodes) {
     const sourceNode = source.get(selection.id);
@@ -477,6 +639,23 @@ export function buildInternalVisualSpecs(data = {}, composition = {}, options = 
     const specErrors = visualSpecErrors(spec);
     for (const error of specErrors) errors.push(specError(error.code, node, error.message));
     specs.push(spec);
+    entries.push({
+      spec,
+      config,
+      isRadar,
+      sourceNode,
+      deliveredItems: node.items,
+      comparabilityPass: Boolean(profileResult.pass)
+    });
+  }
+
+  const nodeIndexById = new Map((Array.isArray(data.semanticNodes) ? data.semanticNodes : []).map((node, index) => [node?.id, index]));
+  errors.push(...applySharedComparisonScales(entries, context.relationships, nodeIndexById));
+  for (const entry of entries) {
+    if (entry.spec.scale?.domain !== 'relationship') continue;
+    for (const error of visualSpecErrors(entry.spec)) {
+      errors.push(specError(error.code, { id: entry.spec.nodeId }, error.message));
+    }
   }
 
   return { valid: errors.length === 0, specs, errors };

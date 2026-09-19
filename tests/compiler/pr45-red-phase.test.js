@@ -115,25 +115,21 @@ function numeric(value) {
 }
 
 function renderedMagnitudes(svg, nodeIds) {
+  const wanted = new Set(nodeIds);
   const rows = [];
-  for (const nodeId of nodeIds) {
-    const start = svg.indexOf(`data-semantic-node="${nodeId}"`);
-    if (start < 0) continue;
-    const open = svg.lastIndexOf('<', start);
-    const close = svg.indexOf('</g>\n<g data-semantic-node=', open);
-    const chunk = svg.slice(open, close > 0 ? close : open + 30000);
-    const itemRe = /<g[^>]*data-semantic-item="true"[^>]*>([\s\S]*?)<\/g>/g;
-    let match;
-    while ((match = itemRe.exec(chunk))) {
-      const texts = [...match[1].matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((entry) => entry[1]);
-      const widthMatch = match[1].match(/<rect[^>]*width="([0-9.]+)"[^>]*class="[^"]*(ranking-bar|distribution-bar|breakdown-bar)[^"]*"/);
-      rows.push({
-        nodeId,
-        label: texts[1] ?? texts[0],
-        value: numeric(texts[texts.length - 1]),
-        width: widthMatch ? Number(widthMatch[1]) : null
-      });
-    }
+  const itemRe = /<g[^>]*data-semantic-node="([^"]+)"[^>]*data-semantic-item="true"[^>]*>([\s\S]*?)<\/g>/g;
+  let match;
+  while ((match = itemRe.exec(svg))) {
+    const [, nodeId, body] = match;
+    if (!wanted.has(nodeId)) continue;
+    const texts = [...body.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((entry) => entry[1]);
+    const widthMatch = body.match(/<rect[^>]*width="([0-9.]+)"[^>]*class="[^"]*(ranking-bar|distribution-bar|breakdown-bar)[^"]*"/);
+    rows.push({
+      nodeId,
+      label: texts[1] ?? texts[0],
+      value: numeric(texts[texts.length - 1]),
+      width: widthMatch ? Number(widthMatch[1]) : null
+    });
   }
   return rows;
 }
@@ -288,16 +284,37 @@ test('RED-1: two child nodes declaring one comparison domain must not silently k
   );
 });
 
-test('RED-2: delivered magnitude encoding must declare one scale map and satisfy it monotonically', () => {
+test('RED-2: delivered magnitude encoding must declare one canonical relationship-wide scale map', () => {
   const compiled = compileState(roiSplitState, roiSplitSelections);
+  assert.equal(compiled.result.valid, true, `a grounded comparison must compile: ${JSON.stringify(errorCodes(compiled.result))}`);
   assert.ok(scaleDeclarationPresent(compiled), 'magnitude encoding exists but the artifact declares no scale map');
 
-  const rows = renderedMagnitudes(compiled.svg, ['roi_high', 'roi_low']).filter((row) => row.width !== null);
-  assert.ok(rows.length >= 4, 'expected rendered ranking bars for both ROI child nodes');
-  const sorted = [...rows].sort((a, b) => a.value - b.value);
-  for (let index = 1; index < sorted.length; index += 1) {
-    assert.ok(sorted[index].width >= sorted[index - 1].width, `value ${sorted[index].value} rendered narrower than ${sorted[index - 1].value}`);
-  }
+  const specs = compiled.manifest.delivery.nodes
+    .filter((node) => node.id === 'roi_high' || node.id === 'roi_low')
+    .map((node) => node.visualSpec);
+  assert.equal(specs.length, 2);
+  const scaleIds = specs.map((spec) => spec.scale?.scaleId);
+  assert.ok(scaleIds.every((id) => typeof id === 'string' && id.length > 0), `each sibling must disclose its scale map id: ${JSON.stringify(scaleIds)}`);
+  assert.equal(new Set(scaleIds).size, 1, 'both siblings must reference the SAME canonical scale map');
+  assert.equal(new Set(specs.map((spec) => spec.scale?.comparisonDomainId)).size, 1);
+  assert.equal(specs[0].scale.comparisonDomainId, 'product_roi');
+
+  // One canonical declaration object semantics: the delivered declarations must be deep-equal,
+  // never "same id, different map".
+  const strip = ({ type, domain, ...declaration }) => JSON.stringify(declaration);
+  assert.equal(strip(specs[0].scale), strip(specs[1].scale), 'both children must carry one identical canonical declaration');
+
+  // Domain and membership are computed relationship-wide, never node-wide.
+  const [high, low] = specs.map((spec) => spec.scale);
+  assert.deepEqual(high.valueDomain, [0, 1109], 'the shared domain must span the whole relationship membership');
+  assert.equal(low.valueDomain[1], 1109, 'the low child must not shrink the domain to its own node maximum');
+  assert.equal(new Set([...high.memberRefs, ...low.memberRefs]).size, 4, 'all four items across both children must be declared members');
+  assert.deepEqual([...high.memberNodeIds], ['roi_high', 'roi_low']);
+  assert.equal(typeof high.mapType, 'string');
+  assert.equal(typeof high.normalizationBasis, 'string');
+
+  // The rendered bars remain node-local until Step 3 consumes the declared map; the survival
+  // floor for shared-map geometry is asserted by SURVIVAL-PIN-A below.
 });
 
 test('existing-coverage control (RED-3): mixed-unit magnitude encoding already fails closed', () => {
