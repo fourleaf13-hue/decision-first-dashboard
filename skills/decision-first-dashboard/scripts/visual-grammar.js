@@ -483,6 +483,17 @@ function buildSharedComparisonScaleDeclaration(ref, relationship, group, nodeInd
     Math.min(0, ...values),
     Math.max(0, ...values)
   ];
+  // Frozen supported profile: linear / domain_max / low == baseline == 0 / high > 0.
+  // Negative lower bounds, centered, diverging, log and z-score maps are NOT supported -
+  // the builder must fail closed rather than half-support a domain the verifier cannot check.
+  const high = valueDomain[1];
+  const outsideProfile = values.some((value) => !Number.isFinite(value) || value < 0 || value > high) || !(high > 0);
+  if (outsideProfile) {
+    for (const entry of group) {
+      errors.push(specError('SHARED_SCALE_PROFILE_UNSUPPORTED', entry.spec, `members of grounded comparison relationship ${ref} fall outside the frozen shared-scale profile (0 <= value, high > 0); negative-centered, diverging, log, or z-score domains are not supported.`));
+    }
+    return { declaration: null, errors };
+  }
   const declaration = Object.freeze({
     scaleId: sharedComparisonScaleId(ref),
     comparisonDomainId: identity,

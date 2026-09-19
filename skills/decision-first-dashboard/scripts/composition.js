@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { evaluateProfileComparability, visualSpecErrors } from './visual-grammar.js';
+import { verifyDeliveredGeometry } from './geometry-verifier.js';
 
 const PRESENTATION_COVERAGE = {
   Trend: {
@@ -718,6 +719,10 @@ function verificationMismatch(supplied, expected) {
     .some((key) => supplied?.[key] !== expected[key]);
 }
 
+export function issueVerificationStamp({ html = '', svg = '', manifest = {} } = {}) {
+  return expectedVerification(`${html}\n${svg}`, manifest);
+}
+
 export function verifyDeliveredArtifact({ html = '', svg = '', manifest = {} } = {}) {
   const artifact = `${html}\n${svg}`;
   const errors = [];
@@ -760,6 +765,9 @@ export function verifyDeliveredArtifact({ html = '', svg = '', manifest = {} } =
   verifyDeliveredDecisionLog(deliveryManifest, nodes, errors);
   verifyClaims(deliveryManifest, html, svg, errors);
   verifyVisualSpecs(deliveryManifest, nodes, html, svg, errors);
+  for (const geometryError of verifyDeliveredGeometry({ html, svg, delivery: deliveryManifest })) {
+    addError(errors, geometryError.code, geometryError.path, geometryError.message);
+  }
 
   const expected = expectedVerification(artifact, manifest);
   if (errors.length > 0) {

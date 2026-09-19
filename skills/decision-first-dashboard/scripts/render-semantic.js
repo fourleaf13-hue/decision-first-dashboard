@@ -204,6 +204,15 @@ function magnitudeWidth(node, value, max, available) {
   return Math.max(10, (numericValue(value) / max) * available);
 }
 
+// Structural drawable-span marker for shared relationship scales only. It is
+// pure markup: the delivered-geometry verifier cross-checks these numbers
+// against actual bar origins and the full-domain bar, never trusting them alone.
+function plotTrack(node, x1, x2, y) {
+  const spec = node.visualSpec;
+  if (spec?.scale?.type !== 'shared' || spec?.scale?.domain !== 'relationship') return '';
+  return `<line data-plot-track="true" data-semantic-node="${escapeMarkup(node.id)}" x1="${x1.toFixed(1)}" y1="${y.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y.toFixed(1)}" class="plot-track"/>`;
+}
+
 function htmlRow(node, item, index, max, mark = null) {
   const detail = item.detail ? `<small>${escapeMarkup(item.detail)}</small>` : '';
   const rank = node.type === 'Ranking' ? `<em>${index + 1}</em>` : '';
@@ -367,14 +376,14 @@ function svgRanking(node, x, y, width, paired = false) {
       const barWidth = magnitudeWidth(node, value.value, max, endWidth - 36);
       return `<g data-ranking-end="${end}" class="ranking-end ranking-end--${end}"><text x="${startX}" y="${y + 118}" class="small-label">${end === 'high' ? 'Highest' : 'Lowest'}</text><g ${itemAttributes(node, value, index, 'bar')}><text x="${startX}" y="${y + 148}" class="label">${escapeMarkup(value.label)}</text><text x="${startX + endWidth - 16}" y="${y + 148}" text-anchor="end" class="value">${escapeMarkup(value.value)}</text><rect data-visual-mark-item="bar" x="${startX}" y="${y + 158}" width="${barWidth.toFixed(1)}" height="8" rx="4" class="ranking-bar"/></g></g>`;
     };
-    return `<g data-visual-geometry="paired-bars">${item(high, 0, 'high', x + 22)}${item(low, 1, 'low', x + 22 + endWidth + 20)}</g>`;
+    return `<g data-visual-geometry="paired-bars">${plotTrack(node, x + 22, x + 22 + endWidth - 36, y + 162)}${plotTrack(node, x + 22 + endWidth + 20, x + 22 + endWidth + 20 + endWidth - 36, y + 162)}${item(high, 0, 'high', x + 22)}${item(low, 1, 'low', x + 22 + endWidth + 20)}</g>`;
   }
   const rows = node.items.map((item, index) => {
     const rowY = y + 110 + index * 30;
     const barWidth = magnitudeWidth(node, item.value, max, width - 190);
     return `<g ${itemAttributes(node, item, index, 'bar')}><text x="${x + 22}" y="${rowY}" class="rank">${index + 1}</text><text x="${x + 50}" y="${rowY}" class="label">${escapeMarkup(item.label)}</text><text x="${x + width - 22}" y="${rowY}" text-anchor="end" class="value">${escapeMarkup(item.value)}</text><rect data-visual-mark-item="bar" x="${x + 50}" y="${rowY + 8}" width="${barWidth.toFixed(1)}" height="6" rx="3" class="ranking-bar"/></g>`;
   }).join('');
-  return `<g data-visual-geometry="ranking-bars">${rows}</g>`;
+  return `<g data-visual-geometry="ranking-bars">${plotTrack(node, x + 50, x + 50 + width - 190, y + 118)}${rows}</g>`;
 }
 
 function svgMetricStrip(node, x, y, width) {
@@ -412,7 +421,7 @@ function svgBars(node, x, y, width, className = 'bar') {
     const barWidth = magnitudeWidth(node, item.value, max, width - 190);
     return `<g ${itemAttributes(node, item, index, 'bar')}><text x="${x + 22}" y="${rowY}" class="label">${escapeMarkup(item.label)}</text><text x="${x + width - 22}" y="${rowY}" text-anchor="end" class="value">${escapeMarkup(item.value)}</text><rect data-visual-mark-item="bar" x="${x + 22}" y="${rowY + 8}" width="${barWidth.toFixed(1)}" height="7" rx="3" class="${className}"/></g>`;
   }).join('');
-  return `<g data-visual-geometry="${visualGeometry(node.visualSpec)}">${rows}</g>`;
+  return `<g data-visual-geometry="${visualGeometry(node.visualSpec)}">${plotTrack(node, x + 22, x + 22 + width - 190, y + 118)}${rows}</g>`;
 }
 
 function svgList(node, x, y, width) {
@@ -443,5 +452,5 @@ export function renderSemanticSvg(data, composition, options = {}) {
   const claims = visibleClaims(data, options).map((claim, index) => renderTypedClaim(claim, 'svg', index)).join('');
   const last = layouts.at(-1);
   const height = Math.max(520, (last?.y ?? 110) + (last?.height ?? 284) + 60);
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 ${height}" role="img"><style>.card{fill:#fff;stroke:#e5e9f2}.title{font:700 18px Inter,Arial;fill:#172235}.subtitle{font:12px Inter,Arial;fill:#66758c}.label{font:13px Inter,Arial;fill:#34445d}.value{font:700 13px Inter,Arial;fill:#172235}.small-label{font:11px Inter,Arial;fill:#63728a}.small-value{font:700 12px Inter,Arial;fill:#172235}.rank{font:700 11px Inter,Arial;fill:#7b86a0}.plot-baseline{stroke:#d5dced;stroke-width:1}.trend-line{fill:none;stroke:#526bd8;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.distribution-bar{fill:#73a1e8}.ranking-bar{fill:#5577d8}.gap-bar{fill:#7d91b6}.breakdown-bar{fill:#5c8fcf}.metric-tile{fill:#f4f7fc;stroke:#e5eaf4}.metric-value{font:700 22px Inter,Arial;fill:#172235}.radar-ring{fill:none;stroke:#dce3f0}.radar-axis{stroke:#e2e7f1;stroke-width:1}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}</style><rect width="1440" height="${height}" fill="#f7f8fc"/><text x="48" y="52" class="title" font-size="28">Decision dashboard</text><text x="48" y="78" class="subtitle">Source-backed context for the next decision.</text>${claims}${layouts.map(svgCard).join('')}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 ${height}" role="img"><style>.card{fill:#fff;stroke:#e5e9f2}.title{font:700 18px Inter,Arial;fill:#172235}.subtitle{font:12px Inter,Arial;fill:#66758c}.label{font:13px Inter,Arial;fill:#34445d}.value{font:700 13px Inter,Arial;fill:#172235}.small-label{font:11px Inter,Arial;fill:#63728a}.small-value{font:700 12px Inter,Arial;fill:#172235}.rank{font:700 11px Inter,Arial;fill:#7b86a0}.plot-baseline{stroke:#d5dced;stroke-width:1}.plot-track{stroke:none}.trend-line{fill:none;stroke:#526bd8;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.distribution-bar{fill:#73a1e8}.ranking-bar{fill:#5577d8}.gap-bar{fill:#7d91b6}.breakdown-bar{fill:#5c8fcf}.metric-tile{fill:#f4f7fc;stroke:#e5eaf4}.metric-value{font:700 22px Inter,Arial;fill:#172235}.radar-ring{fill:none;stroke:#dce3f0}.radar-axis{stroke:#e2e7f1;stroke-width:1}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}</style><rect width="1440" height="${height}" fill="#f7f8fc"/><text x="48" y="52" class="title" font-size="28">Decision dashboard</text><text x="48" y="78" class="subtitle">Source-backed context for the next decision.</text>${claims}${layouts.map(svgCard).join('')}</svg>`;
 }
