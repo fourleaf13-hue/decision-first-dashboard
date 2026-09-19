@@ -149,10 +149,65 @@ function maxValue(items) {
   return Math.max(...items.map((item) => numericValue(item.value)), 1);
 }
 
+function numericMagnitude(value) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  const matched = String(value ?? '').replace(/[,\s]/g, '').match(/-?\d+(?:\.\d+)?/);
+  return matched ? Number.parseFloat(matched[0]) : null;
+}
+
+export function evaluateDeclaredMagnitude(value, scaleDeclaration) {
+  const declaration = scaleDeclaration && typeof scaleDeclaration === 'object' && !Array.isArray(scaleDeclaration)
+    ? scaleDeclaration
+    : null;
+  if (!declaration) throw new Error('SHARED_SCALE_DECLARATION_MISSING: a shared relationship scale has no canonical declaration to consume');
+  const scaleLabel = String(declaration.scaleId ?? '<unnamed>');
+  if (declaration.mapType !== 'linear') {
+    throw new Error(`SHARED_SCALE_MAP_UNSUPPORTED: renderer cannot consume mapType "${String(declaration.mapType)}" on declared scale "${scaleLabel}"`);
+  }
+  if (declaration.normalizationBasis !== 'domain_max') {
+    throw new Error(`SHARED_SCALE_BASIS_UNSUPPORTED: renderer cannot consume normalizationBasis "${String(declaration.normalizationBasis)}" on declared scale "${scaleLabel}"`);
+  }
+  const domain = declaration.valueDomain;
+  if (!Array.isArray(domain) || domain.length !== 2 || !domain.every((entry) => Number.isFinite(entry))) {
+    throw new Error(`SHARED_SCALE_DOMAIN_INVALID: declared scale "${scaleLabel}" is missing a finite two-entry valueDomain`);
+  }
+  const [domainMin, domainMax] = domain;
+  if (!(domainMax > domainMin)) {
+    throw new Error(`SHARED_SCALE_DOMAIN_INVALID: declared scale "${scaleLabel}" has a non-positive valueDomain span`);
+  }
+  if (!Number.isFinite(declaration.baseline) || declaration.baseline < domainMin || declaration.baseline > domainMax) {
+    throw new Error(`SHARED_SCALE_BASELINE_INVALID: declared scale "${scaleLabel}" needs a finite baseline inside its valueDomain`);
+  }
+  const numeric = numericMagnitude(value);
+  if (numeric === null) throw new Error(`SHARED_SCALE_VALUE_NOT_NUMERIC: value "${String(value)}" cannot be mapped by declared scale "${scaleLabel}"`);
+  if (numeric < domainMin || numeric > domainMax) {
+    throw new Error(`SHARED_SCALE_VALUE_OUTSIDE_DOMAIN: value "${String(value)}" falls outside declared scale "${scaleLabel}"`);
+  }
+  return (numeric - domainMin) / (domainMax - domainMin);
+}
+
+function magnitudeFraction(node, value) {
+  const spec = node.visualSpec;
+  if (spec?.scale?.type !== 'shared' || spec?.scale?.domain !== 'relationship') return null;
+  return evaluateDeclaredMagnitude(value, spec.scale);
+}
+
+function magnitudePercent(node, item, max) {
+  const fraction = magnitudeFraction(node, item.value);
+  if (fraction !== null) return Math.max(4, Math.min(100, fraction * 100)).toFixed(1);
+  return ratio(item.value, max);
+}
+
+function magnitudeWidth(node, value, max, available) {
+  const fraction = magnitudeFraction(node, value);
+  if (fraction !== null) return Math.max(10, fraction * available);
+  return Math.max(10, (numericValue(value) / max) * available);
+}
+
 function htmlRow(node, item, index, max, mark = null) {
   const detail = item.detail ? `<small>${escapeMarkup(item.detail)}</small>` : '';
   const rank = node.type === 'Ranking' ? `<em>${index + 1}</em>` : '';
-  const bar = mark ? `<i class="visual-bar" data-visual-mark-item="${escapeMarkup(mark)}" style="--value:${ratio(item.value, max)}%"></i>` : '';
+  const bar = mark ? `<i class="visual-bar" data-visual-mark-item="${escapeMarkup(mark)}" style="--value:${magnitudePercent(node, item, max)}%"></i>` : '';
   return `<li ${itemAttributes(node, item, index, mark)}><span>${rank}${escapeMarkup(item.label)}</span><b>${escapeMarkup(item.value)}</b>${detail}${bar}</li>`;
 }
 
@@ -175,7 +230,7 @@ function htmlTrend(node) {
 
 function htmlDistribution(node) {
   const max = maxValue(node.items);
-  const rows = node.items.map((item, index) => `<li class="distribution-member"><div ${itemAttributes(node, item, index, 'bar')}><span>${escapeMarkup(item.label)}</span><b>${escapeMarkup(item.value)}</b><i class="visual-bar" data-visual-mark-item="bar" style="--value:${ratio(item.value, max)}%"></i></div></li>`).join('');
+  const rows = node.items.map((item, index) => `<li class="distribution-member"><div ${itemAttributes(node, item, index, 'bar')}><span>${escapeMarkup(item.label)}</span><b>${escapeMarkup(item.value)}</b><i class="visual-bar" data-visual-mark-item="bar" style="--value:${magnitudePercent(node, item, max)}%"></i></div></li>`).join('');
   return `<figure class="visual-plot visual-plot--distribution" data-visual-geometry="distribution-bars"><ol class="distribution-bars" data-structure="ordered-distribution" data-item-count="${node.items.length}">${rows}</ol></figure>`;
 }
 
@@ -309,14 +364,14 @@ function svgRanking(node, x, y, width, paired = false) {
     const [high, low] = node.items;
     const endWidth = (width - 42) / 2;
     const item = (value, index, end, startX) => {
-      const barWidth = Math.max(10, (numericValue(value.value) / max) * (endWidth - 36));
+      const barWidth = magnitudeWidth(node, value.value, max, endWidth - 36);
       return `<g data-ranking-end="${end}" class="ranking-end ranking-end--${end}"><text x="${startX}" y="${y + 118}" class="small-label">${end === 'high' ? 'Highest' : 'Lowest'}</text><g ${itemAttributes(node, value, index, 'bar')}><text x="${startX}" y="${y + 148}" class="label">${escapeMarkup(value.label)}</text><text x="${startX + endWidth - 16}" y="${y + 148}" text-anchor="end" class="value">${escapeMarkup(value.value)}</text><rect data-visual-mark-item="bar" x="${startX}" y="${y + 158}" width="${barWidth.toFixed(1)}" height="8" rx="4" class="ranking-bar"/></g></g>`;
     };
     return `<g data-visual-geometry="paired-bars">${item(high, 0, 'high', x + 22)}${item(low, 1, 'low', x + 22 + endWidth + 20)}</g>`;
   }
   const rows = node.items.map((item, index) => {
     const rowY = y + 110 + index * 30;
-    const barWidth = Math.max(10, (numericValue(item.value) / max) * (width - 190));
+    const barWidth = magnitudeWidth(node, item.value, max, width - 190);
     return `<g ${itemAttributes(node, item, index, 'bar')}><text x="${x + 22}" y="${rowY}" class="rank">${index + 1}</text><text x="${x + 50}" y="${rowY}" class="label">${escapeMarkup(item.label)}</text><text x="${x + width - 22}" y="${rowY}" text-anchor="end" class="value">${escapeMarkup(item.value)}</text><rect data-visual-mark-item="bar" x="${x + 50}" y="${rowY + 8}" width="${barWidth.toFixed(1)}" height="6" rx="3" class="ranking-bar"/></g>`;
   }).join('');
   return `<g data-visual-geometry="ranking-bars">${rows}</g>`;
@@ -354,7 +409,7 @@ function svgBars(node, x, y, width, className = 'bar') {
   const max = maxValue(node.items);
   const rows = node.items.map((item, index) => {
     const rowY = y + 110 + index * 30;
-    const barWidth = Math.max(10, (numericValue(item.value) / max) * (width - 190));
+    const barWidth = magnitudeWidth(node, item.value, max, width - 190);
     return `<g ${itemAttributes(node, item, index, 'bar')}><text x="${x + 22}" y="${rowY}" class="label">${escapeMarkup(item.label)}</text><text x="${x + width - 22}" y="${rowY}" text-anchor="end" class="value">${escapeMarkup(item.value)}</text><rect data-visual-mark-item="bar" x="${x + 22}" y="${rowY + 8}" width="${barWidth.toFixed(1)}" height="7" rx="3" class="${className}"/></g>`;
   }).join('');
   return `<g data-visual-geometry="${visualGeometry(node.visualSpec)}">${rows}</g>`;
