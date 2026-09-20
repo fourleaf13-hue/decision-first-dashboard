@@ -1,0 +1,195 @@
+{
+  "reconstruction": {
+    "fixtureName": "RECONSTRUCTED_HORIZON_WORKFORCE_OVERVIEW_REGRESSION",
+    "status": "reconstructed",
+    "isOriginalBaseline": false,
+    "note": "Reconstructed from the Horizon - Workforce and Operations Analytics Overview screenshot supplied by the user on 2026-09-20. The original input bundle is not on this machine, so this must never be cited as an original baseline."
+  },
+  "integrity": {
+    "scope": {
+      "marker": "YEAR_SLICER_AS_DISPLAYED",
+      "year": "2026",
+      "policy": "The Before shows the Overview page with the Year slicer set to 2026. The After keeps that scope in copy only where the source states it."
+    },
+    "displayOnlyOmissions": {
+      "marker": "DISPLAY_ONLY_NOT_GROUNDED",
+      "policy": "Sidebar navigation, the logo, the Year dropdown control, treemap tile colors, and the green/red coloring of the delta chips are display chrome in the source. The After carries the numbers verbatim but renders no color-based judgment; no severity encoding exists in Monitor v1.",
+      "omittedChrome": [
+        "sidebar: Overview/Workforce/Capacity/Management/Talent/Recruitment/Leave",
+        "delta chip colors (green/red) and their implied favorability",
+        "treemap tile colors"
+      ]
+    },
+    "periodBasis": {
+      "year2026": "UNKNOWN",
+      "marker": "PERIOD_BASIS_UNKNOWN",
+      "policy": "The source does not state whether the 2026 bar and the 2026 KPI values cover a full or partial year. Disclose, never infer decline."
+    },
+    "valueAudit": {
+      "marker": "PROVENANCE_AUDIT_PASSED",
+      "departmentSum": 189,
+      "totalHeadcount": 189,
+      "misalignment": false,
+      "policy": "The seven legible department counts sum exactly to the Total Headcount of 189, so the department view is recorded as an additive decomposition of the same-year total."
+    },
+    "deltaPresentation": {
+      "marker": "PY_VALUES_ONLY_DELTAS_DROPPED",
+      "policy": "The screenshot delta chips are display-derived strings, not source facts. Recomputing from the displayed current/PY values reproduces headcount (+9.88%) and training (+2.34%) but not turnover (-8.62% recomputed vs -8.99% displayed) or appraisal (-1.65% recomputed vs -1.63% displayed). Because the displayed deltas cannot be transparently re-derived from grounded values, the After shows current + PY values only and drops every delta percentage.",
+      "audit": [
+        {
+          "metric": "total_headcount",
+          "displayedDelta": "9.88%",
+          "recomputed": "+9.88%",
+          "reproduces": true
+        },
+        {
+          "metric": "turnover_rate",
+          "displayedDelta": "-8.99%",
+          "recomputed": "-8.62%",
+          "reproduces": false
+        },
+        {
+          "metric": "training_completion",
+          "displayedDelta": "2.34%",
+          "recomputed": "+2.34%",
+          "reproduces": true
+        },
+        {
+          "metric": "avg_appraisal",
+          "displayedDelta": "-1.63%",
+          "recomputed": "-1.65%",
+          "reproduces": false
+        }
+      ]
+    },
+    "snapshotInconsistency": {
+      "marker": "PY_VS_TREND_HEADCOUNT_UNRECONCILED",
+      "kpiPriorYear": 172,
+      "annualTrend2025": 177,
+      "policy": "The KPI chip reads PY 172 while the annual trend bar for 2025 reads 177. Both values are kept exactly as displayed, neither is chosen as correct, and the inconsistency is disclosed via a neutral secondary integrity note on the KPI region."
+    }
+  },
+  "signals": [
+    {
+      "metric": "total_headcount",
+      "label": "Total Headcount",
+      "value": "189"
+    },
+    {
+      "metric": "turnover_rate",
+      "label": "Turnover Rate",
+      "value": "1.59%"
+    },
+    {
+      "metric": "avg_appraisal",
+      "label": "Avg Appraisal",
+      "value": "3.58"
+    },
+    {
+      "metric": "training_completion",
+      "label": "Training Completion",
+      "value": "79.17%"
+    }
+  ],
+  "semanticNodes": [
+    {
+      "title": "Workforce KPIs",
+      "subtitle": "Source snapshot shows PY headcount 172 in the KPI and 2025 headcount 177 in the annual trend; the source does not reconcile them.",
+      "items": [
+        {
+          "label": "Total Headcount",
+          "value": "189",
+          "metric": "total_headcount",
+          "detail": "PY 172"
+        },
+        {
+          "label": "Turnover Rate",
+          "value": "1.59%",
+          "metric": "turnover_rate",
+          "detail": "PY 1.74%"
+        },
+        {
+          "label": "Training Completion",
+          "value": "79.17%",
+          "metric": "training_completion",
+          "detail": "PY 77.36%"
+        },
+        {
+          "label": "Avg Appraisal",
+          "value": "3.58",
+          "metric": "avg_appraisal",
+          "detail": "PY 3.64"
+        }
+      ]
+    },
+    {
+      "title": "Total Headcount by year",
+      "subtitle": "As displayed. The source does not state whether 2026 is a full or partial year.",
+      "items": [
+        {
+          "label": "2023",
+          "value": 144
+        },
+        {
+          "label": "2024",
+          "value": 167
+        },
+        {
+          "label": "2025",
+          "value": 177
+        },
+        {
+          "label": "2026",
+          "value": 189
+        }
+      ]
+    },
+    {
+      "title": "Total Headcount by department",
+      "subtitle": "All seven departments shown; the counts sum to the 189 total.",
+      "items": [
+        {
+          "label": "Consulting",
+          "value": 34
+        },
+        {
+          "label": "Marketing",
+          "value": 33
+        },
+        {
+          "label": "IT",
+          "value": 33
+        },
+        {
+          "label": "Finance",
+          "value": 26
+        },
+        {
+          "label": "Sales",
+          "value": 25
+        },
+        {
+          "label": "HR",
+          "value": 20
+        },
+        {
+          "label": "Operations",
+          "value": 18
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "id": "department_headcount",
+      "relationType": "decomposition",
+      "subjectRefs": [
+        "department_headcount"
+      ],
+      "decomposition": {
+        "whole": "total_headcount",
+        "additivity": "additive"
+      }
+    }
+  ]
+}
