@@ -476,7 +476,10 @@ function roleRules(breakpointId) {
   const ladder = ROLE_PRESENTATION.ladders[breakpointId];
   return ROLE_ORDER.map((role) => {
     const t = ladder[role];
-    const chrome = breakpointId === 'wide' && ROLE_CHROME[role] ? `;${ROLE_CHROME[role]}` : '';
+    // The surface channel is part of the hierarchy, not of the span geometry:
+    // when breakpoints collapse every card to full width, chrome is what
+    // keeps anchor and detail distinguishable without re-inventing roles.
+    const chrome = ROLE_CHROME[role] ? `;${ROLE_CHROME[role]}` : '';
     return `.semantic-card--role-${role}{--rp-title:${t.title}px;--rp-value:${t.value}px;--rp-label:${t.label}px;--rp-meta:${t.meta}px;--rp-pad:${t.pad}px${chrome}}`;
   }).join('');
 }
