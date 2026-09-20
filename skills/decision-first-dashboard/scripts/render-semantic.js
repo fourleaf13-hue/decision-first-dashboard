@@ -240,18 +240,20 @@ function htmlRow(node, item, index, max, mark = null) {
 function htmlTrend(node) {
   const max = maxValue(node.items);
   const width = 560;
-  const height = 150;
-  const baseline = 108;
+  const height = 200;
+  const baseline = 158;
+  const amplitude = 104;
   const points = node.items.map((item, index) => {
     const x = 20 + ((width - 40) * index) / Math.max(node.items.length - 1, 1);
-    const y = baseline - (numericValue(item.value) / max) * 80;
+    const y = baseline - (numericValue(item.value) / max) * amplitude;
     return [x, y];
   });
   const polyline = points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   const markers = points.map(([x, y], index) => {
     const item = node.items[index];
     const labelX = Math.max(44, Math.min(width - 44, x));
-    return `<g ${itemAttributes(node, item, index)}><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" class="trend-point"/><text x="${labelX.toFixed(1)}" y="${(y - 12).toFixed(1)}" text-anchor="middle" class="trend-value">${escapeMarkup(item.value)}</text><text x="${labelX.toFixed(1)}" y="130" text-anchor="middle" class="trend-year">${escapeMarkup(item.label)}</text></g>`;
+    const latest = index === points.length - 1 ? ' trend-point--latest' : '';
+    return `<g ${itemAttributes(node, item, index)}><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" class="trend-point${latest}"/><text x="${labelX.toFixed(1)}" y="${(y - 13).toFixed(1)}" text-anchor="middle" class="trend-value">${escapeMarkup(item.value)}</text><text x="${labelX.toFixed(1)}" y="188" text-anchor="middle" class="trend-year">${escapeMarkup(item.label)}</text></g>`;
   }).join('');
   return `<figure class="visual-plot visual-plot--trend" data-visual-geometry="trajectory" data-item-count="${node.items.length}"><svg class="trend-plot" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeMarkup(node.title)}"><line x1="20" y1="${baseline}" x2="540" y2="${baseline}" class="plot-baseline"/><polyline data-visual-geometry="trajectory" data-point-count="${node.items.length}" points="${polyline}" class="trend-line"/>${markers}</svg></figure>`;
 }
@@ -347,7 +349,78 @@ function pageHeaderText(options) {
   return { title: clean(header.title, DEFAULT_PAGE_TITLE), subtitle: clean(header.subtitle, DEFAULT_PAGE_SUBTITLE) };
 }
 
-const CSS = `:root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#172235;background:#f7f8fc}.semantic-shell{max-width:1360px;margin:0 auto;padding:38px 28px 56px}.semantic-shell h1{font-size:30px;margin:0}.semantic-shell>p{color:#60708a;margin:8px 0 28px}.typed-claims{display:grid;gap:8px;margin:0 0 18px}.typed-claim{display:inline-flex;width:max-content;max-width:100%;padding:9px 12px;border-radius:10px;background:#fff3d8;color:#6e4b00;font-size:13px;font-weight:700}.semantic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:18px}.semantic-card{background:#fff;border:1px solid #e5e9f2;border-radius:18px;padding:20px;box-shadow:0 10px 28px rgba(38,55,92,.08)}.semantic-card header{border-bottom:1px solid #edf0f5;padding-bottom:12px}.semantic-card h2{font-size:16px;margin:0}.semantic-card p{font-size:12px;color:#66758c;margin:6px 0 0}.semantic-card ol{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}.semantic-card li{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:end;position:relative;padding-bottom:9px}.semantic-card li span{font-size:13px}.semantic-card li b{font-size:13px}.semantic-card li em{font-size:11px;color:#7b86a0;font-style:normal;margin-right:5px}.semantic-card li small{grid-column:1/-1;color:#728098;font-size:11px}.visual-bar{display:block;width:var(--value);height:5px;background:#5470df;border-radius:9px}.visual-plot{margin-top:16px}.trend-plot{display:block;width:100%;height:150px;background:#f8faff;border-radius:12px;border:1px solid #edf1fa}.plot-baseline{stroke:#d5dced;stroke-width:1}.trend-line{fill:none;stroke:#5470df;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.trend-value{font:700 11px Inter,Arial;fill:#172235}.trend-year{font:11px Inter,Arial;fill:#63728a}.visual-plot--distribution .distribution-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(48px,1fr));gap:8px;align-items:end}.distribution-member{display:block!important;padding:0!important}.distribution-member>div{min-height:126px;display:flex;flex-direction:column;justify-content:end;gap:4px;padding:8px 5px;background:#f4f7ff;border-radius:10px}.distribution-member span{font-size:11px;text-align:center;color:#60708a}.distribution-member b{font-size:12px;text-align:center}.distribution-member .visual-bar{width:100%;height:calc(var(--value) * .82);min-height:5px;background:#73a1e8}.visual-ranking{gap:12px!important}.visual-ranking li .visual-bar,.breakdown-bars li .visual-bar,.relationship-row li .visual-bar{background:#5577d8}.paired-ranking{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.ranking-end{border:1px solid #e4eaf4;border-radius:14px;padding:14px;background:#fbfcff}.ranking-end h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#71809b}.ranking-end--high{border-top:4px solid #2a987a}.ranking-end--low{border-top:4px solid #cf6b73}.ranking-end ol{margin-top:14px}.metric-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:18px;background:#f7f9fd;border:1px solid #edf1f8;border-radius:16px;padding:10px}.metric-tile{min-height:94px;display:flex;flex-direction:column;justify-content:space-between;padding:13px;border-radius:13px;background:transparent;border:1px solid transparent}.metric-tile span{font-size:12px;color:#687993}.metric-tile strong{font-size:22px;letter-spacing:-.03em}.metric-tile--lead{grid-column:span 2;background:#eef3fd;border-color:#c9d6f2}.metric-tile--lead strong{font-size:${LEAD_VALUE_FONT_PX}px}.metric-tile small{font-size:11px;color:#8390a5}.subset-note{margin:12px 0 0;font-size:11px;color:#8390a5;text-align:right}.visual-profile{margin-top:14px;display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:center}.radar-plot{width:220px;height:220px;background:#f8faff;border-radius:50%}.radar-ring{fill:none;stroke:#dce3f0}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}.radar-dimensions{display:grid;gap:8px}.radar-dimension{font-size:12px;color:#63728a}.radar-dimension b{display:block;color:#172235;font-size:14px}.relationship-bars li .visual-bar{background:#7d91b6}.relationship-row--gap .visual-bar{background:#ce7474}.relationship-row--target .visual-bar{background:#9caac0}.breakdown-bars li .visual-bar{background:#5c8fcf}.semantic-list li{padding-bottom:12px}.semantic-grid--hero_support{grid-template-columns:repeat(2,minmax(0,1fr))}.semantic-grid--asymmetric{grid-template-columns:69fr 31fr}.semantic-card--role-anchor{border-color:#c3cfe8;box-shadow:0 16px 40px rgba(38,55,92,.14)}.semantic-card--role-anchor h2{font-size:19px}.semantic-card--value .semantic-list li .visual-bar{display:none}`;
+// Visual-polish presentation tokens. These consume the frozen CR-4 attention
+// taxonomy (anchor > primary > supporting > detail) and never assign it.
+// Every breakpoint keeps a strict total order on each tested ladder field, so
+// collapsing span geometry cannot silently collapse semantic hierarchy.
+export const ROLE_ORDER = Object.freeze(['anchor', 'primary', 'supporting', 'detail']);
+
+export const ROLE_PRESENTATION = Object.freeze({
+  visualLanguage: 'vp-1',
+  hierarchyDegradation: 'none',
+  breakpoints: Object.freeze([
+    Object.freeze({ id: 'wide', condition: 'min-width:901px' }),
+    Object.freeze({ id: 'tablet', condition: 'max-width:900px' }),
+    Object.freeze({ id: 'narrow', condition: 'max-width:620px' })
+  ]),
+  ladders: Object.freeze({
+    wide: Object.freeze({
+      anchor: Object.freeze({ title: 23, value: 19, label: 14, meta: 13, pad: 26 }),
+      primary: Object.freeze({ title: 19, value: 16, label: 13, meta: 12, pad: 24 }),
+      supporting: Object.freeze({ title: 17, value: 14, label: 13, meta: 11, pad: 22 }),
+      detail: Object.freeze({ title: 15, value: 13, label: 12, meta: 11, pad: 18 })
+    }),
+    tablet: Object.freeze({
+      anchor: Object.freeze({ title: 22, value: 19, label: 13, meta: 12, pad: 24 }),
+      primary: Object.freeze({ title: 18, value: 16, label: 13, meta: 11, pad: 22 }),
+      supporting: Object.freeze({ title: 16, value: 14, label: 12, meta: 11, pad: 20 }),
+      detail: Object.freeze({ title: 14, value: 13, label: 12, meta: 10, pad: 16 })
+    }),
+    narrow: Object.freeze({
+      anchor: Object.freeze({ title: 21, value: 18, label: 13, meta: 12, pad: 20 }),
+      primary: Object.freeze({ title: 17, value: 15, label: 12, meta: 11, pad: 18 }),
+      supporting: Object.freeze({ title: 15, value: 13, label: 12, meta: 11, pad: 16 }),
+      detail: Object.freeze({ title: 13, value: 12, label: 11, meta: 10, pad: 14 })
+    })
+  })
+});
+
+const ROLE_CHROME = {
+  anchor: 'border-color:#c9d5ec;box-shadow:0 1px 2px rgba(15,26,44,.05),0 20px 48px rgba(15,26,44,.11)',
+  detail: 'background:#fbfcfe;border-color:#eceff6;box-shadow:none'
+};
+
+function roleRules(breakpointId) {
+  const ladder = ROLE_PRESENTATION.ladders[breakpointId];
+  return ROLE_ORDER.map((role) => {
+    const t = ladder[role];
+    const chrome = breakpointId === 'wide' && ROLE_CHROME[role] ? `;${ROLE_CHROME[role]}` : '';
+    return `.semantic-card--role-${role}{--rp-title:${t.title}px;--rp-value:${t.value}px;--rp-label:${t.label}px;--rp-meta:${t.meta}px;--rp-pad:${t.pad}px${chrome}}`;
+  }).join('');
+}
+
+// The SVG artifact is one fixed 1440 canvas (geometry scales with the viewBox,
+// so it has no media breakpoints), but the same total order must still hold on
+// its own typography ladders.
+export const SVG_ROLE_LADDER = Object.freeze({
+  title: Object.freeze({ anchor: 22, primary: 19, supporting: 17, detail: 15 }),
+  value: Object.freeze({ anchor: 17, primary: 15, supporting: 14, detail: 13 })
+});
+
+function svgRoleRules() {
+  const { title, value } = SVG_ROLE_LADDER;
+  return [
+    ...ROLE_ORDER.map((role) => `g[data-attention-role="${role}"]>.title{font-size:${title[role]}px}`).join(''),
+    'g[data-attention-role="detail"]>.title{fill:#42506a}',
+    'g[data-attention-role="anchor"]>.card{stroke:#c9d5ec}',
+    'g[data-attention-role="detail"]>.card{fill:#fbfcfe;stroke:#eceff6}',
+    ...ROLE_ORDER.map((role) => `g[data-attention-role="${role}"] .value{font-size:${value[role]}px}`).join('')
+  ].join('');
+}
+
+const CSS_BASE = `:root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#172235;background:#eef1f6}.semantic-shell{max-width:1360px;margin:0 auto;padding:44px 30px 64px}.semantic-shell h1{font-size:32px;letter-spacing:-.02em;margin:0;color:#0f1a2c}.semantic-shell>p{font-size:14px;color:#74849e;margin:8px 0 34px}.typed-claims{display:grid;gap:8px;margin:0 0 20px}.typed-claim{display:inline-flex;width:max-content;max-width:100%;padding:9px 12px;border-radius:10px;background:#fff3d8;color:#6e4b00;font-size:13px;font-weight:700}.semantic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:22px}.semantic-card{background:#fff;border:1px solid #e7ebf3;border-radius:16px;padding:var(--rp-pad,20px);box-shadow:0 1px 2px rgba(15,26,44,.04),0 10px 26px rgba(15,26,44,.07)}.semantic-card header{border-bottom:1px solid #eef1f7;padding-bottom:12px}.semantic-card h2{font-size:var(--rp-title,16px);letter-spacing:-.012em;margin:0;color:#131e30}.semantic-card p{font-size:var(--rp-meta,12px);color:#75849c;margin:6px 0 0}.semantic-card ol{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}.semantic-card li{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:end;position:relative;padding-bottom:9px}.semantic-card li span{font-size:var(--rp-label,13px);color:#41516b}.semantic-card li b{font-size:var(--rp-value,13px);color:#111c2e}.semantic-card li em{font-size:11px;color:#8290a8;font-style:normal;margin-right:6px}.semantic-card li small{grid-column:1/-1;color:#7f8ca3;font-size:var(--rp-meta,11px)}.visual-bar{display:block;width:var(--value);height:6px;background:#7e97c9;border-radius:999px}.visual-plot{margin-top:18px}.trend-plot{display:block;width:100%;height:200px;background:#fbfcfe;border-radius:12px}.trend-plot--compact{height:120px}.plot-baseline{stroke:#e3e8f1;stroke-width:1}.trend-line{fill:none;stroke:#3e63c6;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.trend-point{fill:#fff;stroke:#3e63c6;stroke-width:2}.trend-point--latest{fill:#3e63c6}.trend-value{font:700 12px Inter,Arial;fill:#22314a}.trend-year{font:11px Inter,Arial;fill:#75839a}.visual-plot--distribution .distribution-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(48px,1fr));gap:8px;align-items:end}.distribution-member{display:block!important;padding:0!important}.distribution-member>div{min-height:126px;display:flex;flex-direction:column;justify-content:end;gap:4px;padding:8px 5px;background:#f6f8fd;border-radius:10px}.distribution-member span{font-size:11px;text-align:center;color:#66758e}.distribution-member b{font-size:12px;text-align:center}.distribution-member .visual-bar{width:100%;height:calc(var(--value) * .82);min-height:5px;background:#8fabdb}.visual-ranking{gap:12px!important}.visual-ranking li .visual-bar,.breakdown-bars li .visual-bar,.relationship-row li .visual-bar{background:#7e97c9}.paired-ranking{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.ranking-end{border:1px solid #e7ebf3;border-radius:14px;padding:14px;background:#fbfcfe}.ranking-end h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#7d8aa1}.ranking-end--high{border-top:4px solid #3e63c6}.ranking-end--low{border-top:4px solid #a4b0c5}.ranking-end ol{margin-top:14px}.metric-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:18px;background:#f8fafd;border-radius:14px;padding:10px}.metric-tile{min-height:94px;display:flex;flex-direction:column;justify-content:space-between;padding:13px;border-radius:12px}.metric-tile span{font-size:12px;font-weight:600;color:#687993}.metric-tile strong{font-size:22px;letter-spacing:-.02em;color:#101b2d}.metric-tile--lead{grid-column:span 2;background:#eef3fd;border:1px solid #c9d6f2}.metric-tile--lead strong{font-size:${LEAD_VALUE_FONT_PX}px}.metric-tile small{font-size:11px;color:#8390a5}.subset-note{margin:12px 0 0;font-size:11px;color:#8390a5;text-align:right}.visual-profile{margin-top:14px;display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:center}.radar-plot{width:220px;height:220px;background:#f8faff;border-radius:50%}.radar-ring{fill:none;stroke:#dce3f0}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}.radar-dimensions{display:grid;gap:8px}.radar-dimension{font-size:12px;color:#63728a}.radar-dimension b{display:block;color:#172235;font-size:14px}.relationship-bars li .visual-bar{background:#8d9db8}.relationship-row--gap .visual-bar{background:#94a1b8}.relationship-row--target .visual-bar{background:#aeb9cc}.breakdown-bars li .visual-bar{background:#7e97c9}.semantic-list li{padding-bottom:12px}.semantic-grid--hero_support{grid-template-columns:repeat(2,minmax(0,1fr))}.semantic-grid--asymmetric{grid-template-columns:69fr 31fr}.semantic-card--value .semantic-list li .visual-bar{display:none}`;
+
+const CSS = `${CSS_BASE}${roleRules('wide')}@media(max-width:900px){.semantic-grid,.semantic-grid--hero_support,.semantic-grid--asymmetric{grid-template-columns:1fr}${roleRules('tablet')}}@media(max-width:620px){.semantic-shell{padding:28px 14px 48px}.semantic-shell h1{font-size:26px}.metric-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.visual-profile{grid-template-columns:1fr}.paired-ranking{grid-template-columns:1fr}${roleRules('narrow')}}`;
 
 export function renderSemanticHtml(data, composition, options = {}) {
   const nodes = resolvedNodes(data, composition, options);
@@ -362,7 +435,7 @@ export function renderSemanticHtml(data, composition, options = {}) {
 
 function cardHeight(node) {
   if (node.visualSpec.mark === 'radar') return 360;
-  if (node.visualSpec.mark === 'line') return 240;
+  if (node.visualSpec.mark === 'line') return 286;
   if (node.visualSpec.mark === 'metric_tile') return 250;
   if (node.visualSpec.mark === 'paired_bar') return 270;
   if (node.visualSpec.structure === 'ordered-distribution') return 320;
@@ -435,16 +508,18 @@ function svgTextItem(node, item, index, x, y, className = 'label', mark = null, 
 
 function svgTrend(node, x, y, width) {
   const max = maxValue(node.items);
-  const baselineY = y + 150;
+  const baselineY = y + 178;
+  const amplitude = 108;
   const points = node.items.map((item, index) => {
     const pointX = x + 44 + ((width - 88) * index) / Math.max(node.items.length - 1, 1);
-    const pointY = baselineY - (numericValue(item.value) / max) * 80;
+    const pointY = baselineY - (numericValue(item.value) / max) * amplitude;
     return [pointX, pointY];
   });
   const polyline = points.map(([pointX, pointY]) => `${pointX.toFixed(1)},${pointY.toFixed(1)}`).join(' ');
   const markers = points.map(([pointX, pointY], index) => {
     const item = node.items[index];
-    return `<g ${itemAttributes(node, item, index)}><circle cx="${pointX.toFixed(1)}" cy="${pointY.toFixed(1)}" r="4" class="trend-point"/><text x="${pointX.toFixed(1)}" y="${(pointY - 12).toFixed(1)}" text-anchor="middle" class="trend-value">${escapeMarkup(item.value)}</text><text x="${pointX.toFixed(1)}" y="${(baselineY + 20).toFixed(1)}" text-anchor="middle" class="trend-year">${escapeMarkup(item.label)}</text></g>`;
+    const latest = index === points.length - 1 ? ' trend-point--latest' : '';
+    return `<g ${itemAttributes(node, item, index)}><circle cx="${pointX.toFixed(1)}" cy="${pointY.toFixed(1)}" r="4" class="trend-point${latest}"/><text x="${pointX.toFixed(1)}" y="${(pointY - 13).toFixed(1)}" text-anchor="middle" class="trend-value">${escapeMarkup(item.value)}</text><text x="${pointX.toFixed(1)}" y="${(baselineY + 22).toFixed(1)}" text-anchor="middle" class="trend-year">${escapeMarkup(item.label)}</text></g>`;
   }).join('');
   return `<g data-visual-geometry="trajectory"><line x1="${x + 28}" y1="${baselineY}" x2="${x + width - 28}" y2="${baselineY}" class="plot-baseline"/><polyline data-visual-geometry="trajectory" data-point-count="${node.items.length}" points="${polyline}" class="trend-line"/>${markers}</g>`;
 }
@@ -562,5 +637,5 @@ export function renderSemanticSvg(data, composition, options = {}) {
   const height = Math.max(520, (last?.y ?? 110) + (last?.height ?? 284) + 60);
   const pageAttrs = pageComposition ? ` data-page-pattern="${escapeMarkup(pageComposition.pattern)}" data-page-archetype="${escapeMarkup(pageComposition.archetype)}"` : '';
   const header = pageHeaderText(options);
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 ${height}" role="img"${pageAttrs}><style>.card{fill:#fff;stroke:#e5e9f2}.title{font:700 18px Inter,Arial;fill:#172235}.subtitle{font:12px Inter,Arial;fill:#66758c}.label{font:13px Inter,Arial;fill:#34445d}.value{font:700 13px Inter,Arial;fill:#172235}.small-label{font:11px Inter,Arial;fill:#63728a}.small-value{font:700 12px Inter,Arial;fill:#172235}.rank{font:700 11px Inter,Arial;fill:#7b86a0}.plot-baseline{stroke:#d5dced;stroke-width:1}.plot-track{stroke:none}.trend-line{fill:none;stroke:#526bd8;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.trend-value{font:700 11px Inter,Arial;fill:#172235}.trend-year{font:11px Inter,Arial;fill:#63728a}.distribution-bar{fill:#73a1e8}.ranking-bar{fill:#5577d8}.gap-bar{fill:#7d91b6}.breakdown-bar{fill:#5c8fcf}.metric-strip-plate{fill:#f7f9fd;stroke:#edf1f8}.metric-tile{fill:none;stroke:none}.metric-tile--lead{fill:#eef3fd;stroke:#c9d6f2}.metric-value{font:700 22px Inter,Arial;fill:#172235}.metric-value--lead{font:700 ${LEAD_VALUE_FONT_PX}px Inter,Arial;fill:#172235}.radar-ring{fill:none;stroke:#dce3f0}.radar-axis{stroke:#e2e7f1;stroke-width:1}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}</style><rect width="1440" height="${height}" fill="#f7f8fc"/><text x="48" y="52" class="title" font-size="28">${escapeMarkup(header.title)}</text><text x="48" y="78" class="subtitle">${escapeMarkup(header.subtitle)}</text>${claims}${layouts.map(svgCard).join('')}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 ${height}" role="img"${pageAttrs}><style>.card{fill:#fff;stroke:#e7ebf3}.title{font:700 18px Inter,Arial;fill:#131e30}.subtitle{font:12px Inter,Arial;fill:#75849c}.label{font:13px Inter,Arial;fill:#3d4d67}.value{font:700 13px Inter,Arial;fill:#111c2e}.small-label{font:11px Inter,Arial;fill:#75839a}.small-value{font:700 12px Inter,Arial;fill:#172235}.rank{font:700 11px Inter,Arial;fill:#8290a8}.detail{font:11px Inter,Arial;fill:#7f8ca3}.plot-baseline{stroke:#e3e8f1;stroke-width:1}.plot-track{stroke:none}.trend-line{fill:none;stroke:#3e63c6;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.trend-point{fill:#fff;stroke:#3e63c6;stroke-width:2}.trend-point--latest{fill:#3e63c6}.trend-value{font:700 12px Inter,Arial;fill:#22314a}.trend-year{font:11px Inter,Arial;fill:#75839a}.distribution-bar{fill:#8fabdb}.ranking-bar{fill:#7e97c9}.gap-bar{fill:#8d9db8}.breakdown-bar{fill:#7e97c9}.metric-strip-plate{fill:#f8fafd;stroke:none}.metric-tile{fill:none;stroke:none}.metric-tile--lead{fill:#eef3fd;stroke:#c9d6f2}.metric-value{font:700 22px Inter,Arial;fill:#101b2d}.metric-value--lead{font:700 ${LEAD_VALUE_FONT_PX}px Inter,Arial;fill:#101b2d}.radar-ring{fill:none;stroke:#dce3f0}.radar-axis{stroke:#e2e7f1;stroke-width:1}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}text.title[x="48"][font-size="28"]{font:700 28px Inter,Arial;letter-spacing:-.02em;fill:#0f1a2c}text.subtitle[x="48"]{font-size:13px;fill:#74849e}${svgRoleRules()}</style><rect width="1440" height="${height}" fill="#eef1f6"/><text x="48" y="52" class="title" font-size="28">${escapeMarkup(header.title)}</text><text x="48" y="78" class="subtitle">${escapeMarkup(header.subtitle)}</text>${claims}${layouts.map(svgCard).join('')}</svg>`;
 }

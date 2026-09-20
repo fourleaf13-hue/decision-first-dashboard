@@ -357,6 +357,24 @@ export function compileDecisionDashboard(
     decisionLog: composition.composition.decisionLog,
     modifiers: composition.composition.modifiers,
     ...(composition.composition.pageComposition ? { pageComposition: composition.composition.pageComposition } : {}),
+    // Visual-polish trace: every rendered surface keeps its canonical CR-4
+    // attentionRole; the presentation layer only consumes it. Geometry may
+    // collapse across breakpoints, but no presentation-tier merge is declared
+    // (hierarchyDegradation stays 'none' until a principal approves one).
+    presentation: {
+      visualLanguage: 'vp-1',
+      hierarchyChannel: 'attentionRole',
+      hierarchyOrder: ['anchor', 'primary', 'supporting', 'detail'],
+      hierarchyDegradation: 'none',
+      responsiveVariants: [
+        { id: 'wide', condition: 'min-width:901px' },
+        { id: 'tablet', condition: 'max-width:900px' },
+        { id: 'narrow', condition: 'max-width:620px' }
+      ],
+      surfaces: composition.composition.nodes
+        .filter((node) => node.attentionRole)
+        .map((node) => ({ surfaceId: node.id, attentionRole: node.attentionRole, regionSpan: node.regionSpan ?? null }))
+    },
     ...(relevanceMetrics.length > 0
       ? {
         relevance: {
