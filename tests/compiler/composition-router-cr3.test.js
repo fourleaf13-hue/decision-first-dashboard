@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { compileDecisionDashboard } from '../../skills/decision-first-dashboard/scripts/compile-dashboard.js';
 import { classifyCompositionIntent, evaluateCompositionIntent } from '../../skills/decision-first-dashboard/scripts/composition-intent.js';
 import { requiredRelationshipPaths } from '../../skills/decision-first-dashboard/scripts/relationship-grammar.js';
+import { visibleTextOf } from './helpers/composition-signature.mjs';
 
 const adaptiveDir = fileURLToPath(new URL('./fixtures/adaptive-composition/', import.meta.url));
 const cr2Dir = fileURLToPath(new URL('./fixtures/composition-router/', import.meta.url));
@@ -164,8 +165,9 @@ test('T3-B grounded prioritize classifies PRIORITIZE_READONLY as eligible with b
   assert.equal(orderingBasis.basisRefs.length, 6, 'basisRefs must ground the actual/target/gap structure plus every candidate magnitude');
   assert.equal(orderingBasis.relationshipRef, 'intrinsic_revenue_target_comparison');
 
-  const artifactText = `${compiled.html}\n${compiled.svg}`;
-  assert.doesNotMatch(artifactText, /prioritize_readonly|compositionIntent|questionShape|actionShape|grounded_gap/i, 'compiler-owned intent must not appear in visible dashboard copy');
+  // The firewall guards visible copy, not machine metadata: CR-4 page grammar
+  // legitimately emits data-page-archetype / data-attention-role attributes.
+  assert.doesNotMatch(visibleTextOf({ html: compiled.html, svg: compiled.svg }), /prioritize_readonly|compositionIntent|questionShape|actionShape|grounded_gap/i, 'compiler-owned intent must not appear in visible dashboard copy');
 });
 
 test('T3-C prioritize without grounded basis fails closed into ASK', () => {

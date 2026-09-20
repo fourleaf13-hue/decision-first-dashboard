@@ -180,7 +180,9 @@ export function compileDecisionDashboard(
     contextRequirements: decisionBrief.contextRequirements ?? [],
     nodes: effectiveRoutingManifest.compositionNodes ?? [],
     decisionLog: effectiveRoutingManifest.decisionLog ?? [],
-    modifiers: compositionModifiers
+    modifiers: compositionModifiers,
+    compositionIntent,
+    semanticNodeIds: (effectiveBundle.decisionState?.semanticNodes ?? []).map((node) => node?.id)
   });
   if (!composition.valid) {
     return {
@@ -283,6 +285,8 @@ export function compileDecisionDashboard(
         coverage: coverageFor(node),
         ...(sourceNode ? { expectedItemCount: renderedItems.length } : {}),
         ...(semanticStructureFor(node) ? { structure: semanticStructureFor(node) } : {}),
+        ...(node.attentionRole ? { attentionRole: node.attentionRole, regionSpan: node.regionSpan } : {}),
+        ...(node.itemOrderStrategy ? { itemOrderStrategy: node.itemOrderStrategy } : {}),
         visualSpec: visualSpecs.get(node.id)
       };
     }),
@@ -290,7 +294,8 @@ export function compileDecisionDashboard(
     evidence: effectiveBundle.evidence,
     coverage: composition.coverageManifest,
     decisionLog: composition.composition.decisionLog,
-    modifiers: composition.composition.modifiers
+    modifiers: composition.composition.modifiers,
+    ...(composition.composition.pageComposition ? { pageComposition: composition.composition.pageComposition } : {})
   };
   const manifestPayload = {
     ...finalizeOutputManifest(provenance, html, svg),

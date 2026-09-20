@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { evaluateProfileComparability, visualSpecErrors } from './visual-grammar.js';
+import { applyRegionItemOrder, evaluateProfileComparability, visualSpecErrors } from './visual-grammar.js';
 import { verifyDeliveredGeometry } from './geometry-verifier.js';
 
 const PRESENTATION_COVERAGE = {
@@ -126,7 +126,7 @@ function numericValue(value) {
 }
 
 export function semanticItemsForPresentation(sourceNode, selection) {
-  const items = Array.isArray(sourceNode?.items) ? sourceNode.items : [];
+  const items = applyRegionItemOrder(sourceNode?.items, selection?.itemOrderStrategy);
   if (['summary', 'top_summary'].includes(selection?.presentation)) return items.slice(0, 1);
   if (selection?.presentation === 'peak_summary') {
     return items.length === 0 ? [] : [items.reduce((peak, item) => numericValue(item.value) > numericValue(peak.value) ? item : peak, items[0])];
@@ -354,7 +354,85 @@ export function buildDeliveredClaims(bundle) {
   return claims;
 }
 
-export function composeAdaptiveComposition({ contextRequirements = [], nodes = [], decisionLog = [], modifiers = {} } = {}) {
+export const REGION_ATTENTION_ROLES = Object.freeze(['anchor', 'primary', 'supporting', 'detail']);
+
+const MONITOR_EXCEPTION_ORDER = ['ExceptionList', 'Trend', 'MetricCluster', 'Relationship', 'Distribution', 'Breakdown', 'Ranking', 'Drilldown'];
+const MONITOR_DESCRIPTIVE_ORDER = ['MetricCluster', 'Relationship', 'Trend', 'Distribution', 'Breakdown', 'Ranking', 'ExceptionList', 'Drilldown'];
+const PRIORITIZE_ORDER = ['Relationship', 'Trend', 'MetricCluster', 'Distribution', 'Breakdown', 'Ranking', 'ExceptionList', 'Drilldown'];
+
+function structureForSelected(node) {
+  return PRESENTATION_STRUCTURE[node?.type]?.[node?.presentation] ?? null;
+}
+
+function isStateReading(type) {
+  return type === 'MetricCluster' || type === 'Relationship';
+}
+
+function rankNodesByReadingOrder(nodes, order) {
+  return nodes
+    .map((node, index) => ({ node, index, rank: order.indexOf(node.type) }))
+    .sort((a, b) => (a.rank === -1 ? 99 : a.rank) - (b.rank === -1 ? 99 : b.rank) || a.index - b.index)
+    .map((entry) => entry.node);
+}
+
+export function derivePageComposition({ nodes = [], compositionIntent = null, semanticNodeIds = [] } = {}) {
+  const archetype = compositionIntent?.archetype ?? null;
+  if (archetype !== 'monitor' && archetype !== 'prioritize_readonly') return null;
+  // A page grammar needs a reading path to express; one- and two-region pages keep their
+  // presentation-level layout untouched so the frozen single/dual-node artifacts stay stable.
+  if (nodes.length < 3) return null;
+
+  const exceptionLed = archetype === 'monitor' && nodes.some((node) => structureForSelected(node) === 'exception-list');
+  let ordered;
+  let anchorNode = null;
+  let itemOrderStrategy = null;
+  let pattern;
+
+  if (archetype === 'prioritize_readonly') {
+    pattern = 'asymmetric';
+    const basis = compositionIntent.orderingBasis ?? null;
+    itemOrderStrategy = basis?.kind === 'grounded_rank' ? 'rank_asc' : basis?.kind === 'grounded_gap' ? 'gap_desc' : null;
+    if (!itemOrderStrategy || !Array.isArray(basis.candidateRefs) || basis.candidateRefs.length === 0) return null;
+    const candidateSegment = Number(String(basis.candidateRefs[0]).split('/')[2]);
+    const candidateNodeId = Number.isInteger(candidateSegment) ? semanticNodeIds[candidateSegment] ?? null : null;
+    anchorNode = nodes.find((node) => node.id === candidateNodeId) ?? null;
+    if (!anchorNode) return null;
+    ordered = [anchorNode, ...rankNodesByReadingOrder(nodes.filter((node) => node !== anchorNode), PRIORITIZE_ORDER)];
+  } else {
+    pattern = 'hero_support';
+    ordered = rankNodesByReadingOrder(nodes, exceptionLed ? MONITOR_EXCEPTION_ORDER : MONITOR_DESCRIPTIVE_ORDER);
+  }
+
+  const regions = ordered.map((node, index) => {
+    let attentionRole;
+    if (index === 0) attentionRole = 'anchor';
+    else if (structureForSelected(node) === 'reachable-detail') attentionRole = 'detail';
+    else if (index === 1 && archetype === 'prioritize_readonly') attentionRole = 'primary';
+    else if (index === 1 && exceptionLed && (node.type === 'Trend' || isStateReading(node.type))) attentionRole = 'primary';
+    else if (index === 1 && !exceptionLed && archetype === 'monitor' && isStateReading(node.type)) attentionRole = 'primary';
+    else attentionRole = 'supporting';
+    const span = attentionRole === 'anchor'
+      ? 'full'
+      : pattern === 'asymmetric'
+        ? attentionRole === 'primary' ? 'wide' : 'narrow'
+        : 'standard';
+    return {
+      nodeId: node.id,
+      attentionRole,
+      span,
+      itemOrderStrategy: attentionRole === 'anchor' ? itemOrderStrategy : null
+    };
+  });
+
+  return {
+    archetype,
+    pattern,
+    exceptionLed: exceptionLed || null,
+    regions
+  };
+}
+
+export function composeAdaptiveComposition({ contextRequirements = [], nodes = [], decisionLog = [], modifiers = {}, compositionIntent = null, semanticNodeIds = [] } = {}) {
   const normalizedModifiers = normalizeModifiers(modifiers);
   const { requirements, errors: requirementErrors } = normalizeRequirements(contextRequirements);
   const selectedNodes = nodes.map((node, inputIndex) => {
@@ -380,13 +458,24 @@ export function composeAdaptiveComposition({ contextRequirements = [], nodes = [
   const resolvedDecisionLog = selectedNodes.flatMap((node) => defaultDecisionsFor(node, requirements, normalizedModifiers));
   const resolvedLog = [...resolvedDecisionLog, ...decisionLog];
   const decisionErrors = decisionLogErrors(resolvedLog, selectedNodes, requirements, normalizedModifiers);
+  const pageComposition = derivePageComposition({ nodes: selectedNodes, compositionIntent, semanticNodeIds });
+  const regionByNodeId = new Map((pageComposition?.regions ?? []).map((region) => [region.nodeId, region]));
+  const orderedNodes = pageComposition
+    ? pageComposition.regions.map((region) => selectedNodes.find((node) => node.id === region.nodeId)).filter(Boolean)
+    : selectedNodes;
 
   return {
     valid: requirementErrors.length + presentationErrors.length + contextErrors.length + decisionErrors.length === 0,
     composition: {
-      nodes: selectedNodes.map(({ inputIndex, ...node }) => node),
+      nodes: orderedNodes.map(({ inputIndex, ...node }) => {
+        const region = regionByNodeId.get(node.id) ?? null;
+        return region
+          ? { ...node, attentionRole: region.attentionRole, regionSpan: region.span, ...(region.itemOrderStrategy ? { itemOrderStrategy: region.itemOrderStrategy } : {}) }
+          : node;
+      }),
       decisionLog: resolvedLog,
-      modifiers: normalizedModifiers
+      modifiers: normalizedModifiers,
+      ...(pageComposition ? { pageComposition } : {})
     },
     coverageManifest: {
       required,

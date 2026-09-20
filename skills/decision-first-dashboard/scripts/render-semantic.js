@@ -138,7 +138,8 @@ function visualNodeAttributes(node) {
   const encoding = Object.entries(spec.encoding ?? {}).map(([key, value]) => `${key}:${value}`).join('|');
   const comparability = spec.comparability ?? {};
   const layout = spec.layout ?? {};
-  return `data-semantic-node="${escapeMarkup(node.id)}" data-presentation="${escapeMarkup(node.presentation)}" data-coverage="${escapeMarkup(node.coverage.join(' '))}" data-structure="${escapeMarkup(node.structure)}" data-visual-mark="${escapeMarkup(spec.mark)}" data-visual-orientation="${escapeMarkup(spec.orientation)}" data-visual-encoding="${escapeMarkup(encoding)}" data-scale-type="${escapeMarkup(spec.scale?.type)}" data-scale-domain="${escapeMarkup(spec.scale?.domain)}" data-comparability-unit="${escapeMarkup(comparability.unit ?? '')}" data-comparison-group="${escapeMarkup(comparability.comparisonGroup ?? '')}" data-comparability-domain="${escapeMarkup(comparability.comparabilityDomain ?? '')}" data-normalization="${escapeMarkup(comparability.normalization ?? '')}" data-comparability-scale-id="${escapeMarkup(comparability.scaleId ?? '')}" data-comparability-eligible="${comparability.eligible ? 'true' : 'false'}" data-layout-pattern="${escapeMarkup(layout.pattern)}" data-layout-reason="${escapeMarkup(layout.reasonCode)}" data-layout-requirement-ref="${escapeMarkup(layout.requirementRef ?? '')}" data-layout-modifier-ref="${escapeMarkup(layout.modifierRef ?? '')}" data-layout-evidence-refs="${escapeMarkup((layout.evidenceRefs ?? []).join(' '))}" data-visual-geometry="${visualGeometry(spec)}"${metricNodeAttributes(node)} data-semantic-container="true"`;
+  const region = node.attentionRole ? ` data-attention-role="${escapeMarkup(node.attentionRole)}"${node.regionSpan ? ` data-region-span="${escapeMarkup(node.regionSpan)}"` : ''}` : '';
+  return `data-semantic-node="${escapeMarkup(node.id)}" data-presentation="${escapeMarkup(node.presentation)}" data-coverage="${escapeMarkup(node.coverage.join(' '))}" data-structure="${escapeMarkup(node.structure)}" data-visual-mark="${escapeMarkup(spec.mark)}" data-visual-orientation="${escapeMarkup(spec.orientation)}" data-visual-encoding="${escapeMarkup(encoding)}" data-scale-type="${escapeMarkup(spec.scale?.type)}" data-scale-domain="${escapeMarkup(spec.scale?.domain)}" data-comparability-unit="${escapeMarkup(comparability.unit ?? '')}" data-comparison-group="${escapeMarkup(comparability.comparisonGroup ?? '')}" data-comparability-domain="${escapeMarkup(comparability.comparabilityDomain ?? '')}" data-normalization="${escapeMarkup(comparability.normalization ?? '')}" data-comparability-scale-id="${escapeMarkup(comparability.scaleId ?? '')}" data-comparability-eligible="${comparability.eligible ? 'true' : 'false'}" data-layout-pattern="${escapeMarkup(layout.pattern)}" data-layout-reason="${escapeMarkup(layout.reasonCode)}" data-layout-requirement-ref="${escapeMarkup(layout.requirementRef ?? '')}" data-layout-modifier-ref="${escapeMarkup(layout.modifierRef ?? '')}" data-layout-evidence-refs="${escapeMarkup((layout.evidenceRefs ?? []).join(' '))}" data-visual-geometry="${visualGeometry(spec)}"${metricNodeAttributes(node)}${region} data-semantic-container="true"`;
 }
 
 function ratio(value, max) {
@@ -302,15 +303,21 @@ function htmlBody(node) {
 }
 
 function htmlCard(node) {
-  return `<section class="semantic-card semantic-card--${node.type.toLowerCase()} semantic-card--${node.visualSpec.mark}" ${visualNodeAttributes(node)}><header><h2>${escapeMarkup(node.title)}</h2>${node.subtitle ? `<p>${escapeMarkup(node.subtitle)}</p>` : ''}</header>${htmlBody(node)}</section>`;
+  const roleClass = node.attentionRole ? ` semantic-card--role-${node.attentionRole}` : '';
+  const spanStyle = node.regionSpan === 'full' ? ' style="grid-column:1/-1"' : '';
+  return `<section class="semantic-card semantic-card--${node.type.toLowerCase()} semantic-card--${node.visualSpec.mark}${roleClass}"${spanStyle} ${visualNodeAttributes(node)}><header><h2>${escapeMarkup(node.title)}</h2>${node.subtitle ? `<p>${escapeMarkup(node.subtitle)}</p>` : ''}</header>${htmlBody(node)}</section>`;
 }
 
-const CSS = `:root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#172235;background:#f7f8fc}.semantic-shell{max-width:1360px;margin:0 auto;padding:38px 28px 56px}.semantic-shell h1{font-size:30px;margin:0}.semantic-shell>p{color:#60708a;margin:8px 0 28px}.typed-claims{display:grid;gap:8px;margin:0 0 18px}.typed-claim{display:inline-flex;width:max-content;max-width:100%;padding:9px 12px;border-radius:10px;background:#fff3d8;color:#6e4b00;font-size:13px;font-weight:700}.semantic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:18px}.semantic-card{background:#fff;border:1px solid #e5e9f2;border-radius:18px;padding:20px;box-shadow:0 10px 28px rgba(38,55,92,.08)}.semantic-card header{border-bottom:1px solid #edf0f5;padding-bottom:12px}.semantic-card h2{font-size:16px;margin:0}.semantic-card p{font-size:12px;color:#66758c;margin:6px 0 0}.semantic-card ol{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}.semantic-card li{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:end;position:relative;padding-bottom:9px}.semantic-card li span{font-size:13px}.semantic-card li b{font-size:13px}.semantic-card li em{font-size:11px;color:#7b86a0;font-style:normal;margin-right:5px}.semantic-card li small{grid-column:1/-1;color:#728098;font-size:11px}.visual-bar{display:block;width:var(--value);height:5px;background:#5470df;border-radius:9px}.visual-plot{margin-top:16px}.trend-plot{display:block;width:100%;height:124px;background:#f8faff;border-radius:12px;border:1px solid #edf1fa}.plot-baseline{stroke:#d5dced;stroke-width:1}.trend-line{fill:none;stroke:#5470df;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.visual-plot--trend .semantic-trajectory{margin-top:12px}.visual-plot--distribution .distribution-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(48px,1fr));gap:8px;align-items:end}.distribution-member{display:block!important;padding:0!important}.distribution-member>div{min-height:126px;display:flex;flex-direction:column;justify-content:end;gap:4px;padding:8px 5px;background:#f4f7ff;border-radius:10px}.distribution-member span{font-size:11px;text-align:center;color:#60708a}.distribution-member b{font-size:12px;text-align:center}.distribution-member .visual-bar{width:100%;height:calc(var(--value) * .82);min-height:5px;background:#73a1e8}.visual-ranking{gap:12px!important}.visual-ranking li .visual-bar,.breakdown-bars li .visual-bar,.relationship-row li .visual-bar{background:#5577d8}.paired-ranking{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.ranking-end{border:1px solid #e4eaf4;border-radius:14px;padding:14px;background:#fbfcff}.ranking-end h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#71809b}.ranking-end--high{border-top:4px solid #2a987a}.ranking-end--low{border-top:4px solid #cf6b73}.ranking-end ol{margin-top:14px}.metric-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:18px}.metric-tile{min-height:94px;display:flex;flex-direction:column;justify-content:space-between;padding:13px;border-radius:13px;background:#f4f7fc;border:1px solid #e5eaf4}.metric-tile span{font-size:12px;color:#687993}.metric-tile strong{font-size:22px;letter-spacing:-.03em}.metric-tile small{font-size:11px;color:#8390a5}.visual-profile{margin-top:14px;display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:center}.radar-plot{width:220px;height:220px;background:#f8faff;border-radius:50%}.radar-ring{fill:none;stroke:#dce3f0}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}.radar-dimensions{display:grid;gap:8px}.radar-dimension{font-size:12px;color:#63728a}.radar-dimension b{display:block;color:#172235;font-size:14px}.relationship-bars li .visual-bar{background:#7d91b6}.relationship-row--gap .visual-bar{background:#ce7474}.relationship-row--target .visual-bar{background:#9caac0}.breakdown-bars li .visual-bar{background:#5c8fcf}.semantic-list li{padding-bottom:12px}.semantic-card--value .semantic-list li .visual-bar{display:none}`;
+const CSS = `:root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#172235;background:#f7f8fc}.semantic-shell{max-width:1360px;margin:0 auto;padding:38px 28px 56px}.semantic-shell h1{font-size:30px;margin:0}.semantic-shell>p{color:#60708a;margin:8px 0 28px}.typed-claims{display:grid;gap:8px;margin:0 0 18px}.typed-claim{display:inline-flex;width:max-content;max-width:100%;padding:9px 12px;border-radius:10px;background:#fff3d8;color:#6e4b00;font-size:13px;font-weight:700}.semantic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:18px}.semantic-card{background:#fff;border:1px solid #e5e9f2;border-radius:18px;padding:20px;box-shadow:0 10px 28px rgba(38,55,92,.08)}.semantic-card header{border-bottom:1px solid #edf0f5;padding-bottom:12px}.semantic-card h2{font-size:16px;margin:0}.semantic-card p{font-size:12px;color:#66758c;margin:6px 0 0}.semantic-card ol{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}.semantic-card li{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:end;position:relative;padding-bottom:9px}.semantic-card li span{font-size:13px}.semantic-card li b{font-size:13px}.semantic-card li em{font-size:11px;color:#7b86a0;font-style:normal;margin-right:5px}.semantic-card li small{grid-column:1/-1;color:#728098;font-size:11px}.visual-bar{display:block;width:var(--value);height:5px;background:#5470df;border-radius:9px}.visual-plot{margin-top:16px}.trend-plot{display:block;width:100%;height:124px;background:#f8faff;border-radius:12px;border:1px solid #edf1fa}.plot-baseline{stroke:#d5dced;stroke-width:1}.trend-line{fill:none;stroke:#5470df;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.visual-plot--trend .semantic-trajectory{margin-top:12px}.visual-plot--distribution .distribution-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(48px,1fr));gap:8px;align-items:end}.distribution-member{display:block!important;padding:0!important}.distribution-member>div{min-height:126px;display:flex;flex-direction:column;justify-content:end;gap:4px;padding:8px 5px;background:#f4f7ff;border-radius:10px}.distribution-member span{font-size:11px;text-align:center;color:#60708a}.distribution-member b{font-size:12px;text-align:center}.distribution-member .visual-bar{width:100%;height:calc(var(--value) * .82);min-height:5px;background:#73a1e8}.visual-ranking{gap:12px!important}.visual-ranking li .visual-bar,.breakdown-bars li .visual-bar,.relationship-row li .visual-bar{background:#5577d8}.paired-ranking{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.ranking-end{border:1px solid #e4eaf4;border-radius:14px;padding:14px;background:#fbfcff}.ranking-end h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#71809b}.ranking-end--high{border-top:4px solid #2a987a}.ranking-end--low{border-top:4px solid #cf6b73}.ranking-end ol{margin-top:14px}.metric-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:18px}.metric-tile{min-height:94px;display:flex;flex-direction:column;justify-content:space-between;padding:13px;border-radius:13px;background:#f4f7fc;border:1px solid #e5eaf4}.metric-tile span{font-size:12px;color:#687993}.metric-tile strong{font-size:22px;letter-spacing:-.03em}.metric-tile small{font-size:11px;color:#8390a5}.visual-profile{margin-top:14px;display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:center}.radar-plot{width:220px;height:220px;background:#f8faff;border-radius:50%}.radar-ring{fill:none;stroke:#dce3f0}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}.radar-dimensions{display:grid;gap:8px}.radar-dimension{font-size:12px;color:#63728a}.radar-dimension b{display:block;color:#172235;font-size:14px}.relationship-bars li .visual-bar{background:#7d91b6}.relationship-row--gap .visual-bar{background:#ce7474}.relationship-row--target .visual-bar{background:#9caac0}.breakdown-bars li .visual-bar{background:#5c8fcf}.semantic-list li{padding-bottom:12px}.semantic-grid--hero_support{grid-template-columns:repeat(2,minmax(0,1fr))}.semantic-grid--asymmetric{grid-template-columns:69fr 31fr}.semantic-card--role-anchor{border-color:#c3cfe8;box-shadow:0 16px 40px rgba(38,55,92,.14)}.semantic-card--role-anchor h2{font-size:19px}.semantic-card--value .semantic-list li .visual-bar{display:none}`;
 
 export function renderSemanticHtml(data, composition, options = {}) {
   const nodes = resolvedNodes(data, composition, options);
+  const pageComposition = composition?.pageComposition ?? null;
   const claims = visibleClaims(data, options).map((claim, index) => renderTypedClaim(claim, 'html', index)).join('');
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Decision dashboard</title><style>${CSS}</style></head><body><main class="semantic-shell"><h1>Decision dashboard</h1><p>Source-backed context for the next decision.</p>${claims ? `<div class="typed-claims">${claims}</div>` : ''}<div class="semantic-grid">${nodes.map(htmlCard).join('')}</div></main></body></html>`;
+  const gridAttrs = pageComposition
+    ? ` class="semantic-grid semantic-grid--${escapeMarkup(pageComposition.pattern)}" data-page-pattern="${escapeMarkup(pageComposition.pattern)}" data-page-archetype="${escapeMarkup(pageComposition.archetype)}"`
+    : ' class="semantic-grid"';
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Decision dashboard</title><style>${CSS}</style></head><body><main class="semantic-shell"><h1>Decision dashboard</h1><p>Source-backed context for the next decision.</p>${claims ? `<div class="typed-claims">${claims}</div>` : ''}<div${gridAttrs}>${nodes.map(htmlCard).join('')}</div></main></body></html>`;
 }
 
 function cardHeight(node) {
@@ -334,9 +341,50 @@ function cardLayout(nodes) {
   }));
 }
 
-function svgTextItem(node, item, index, x, y, className = 'label', mark = null) {
+const REGION_SPAN_WIDTHS = { full: 1344, standard: 664, wide: 912, narrow: 416 };
+
+function regionPlacements(nodes) {
+  const placements = [];
+  placements.push({ node: nodes[0], x: 48, width: REGION_SPAN_WIDTHS.full });
+  const rest = nodes.slice(1);
+  for (let index = 0; index < rest.length; index += 2) {
+    const pair = rest.slice(index, index + 2);
+    const asymmetricPair = pair.length === 2 && (pair[0].regionSpan === 'wide' || pair[1].regionSpan === 'narrow');
+    if (asymmetricPair) {
+      placements.push({ node: pair[0], x: 48, width: REGION_SPAN_WIDTHS.wide });
+      placements.push({ node: pair[1], x: 48 + REGION_SPAN_WIDTHS.wide + 16, width: REGION_SPAN_WIDTHS.narrow });
+    } else {
+      placements.push({ node: pair[0], x: 48, width: pair[0].regionSpan === 'wide' ? REGION_SPAN_WIDTHS.wide : pair[0].regionSpan === 'narrow' ? REGION_SPAN_WIDTHS.narrow : REGION_SPAN_WIDTHS.standard });
+      if (pair[1]) {
+        const secondWidth = pair[1].regionSpan === 'wide' ? REGION_SPAN_WIDTHS.wide : pair[1].regionSpan === 'narrow' ? REGION_SPAN_WIDTHS.narrow : REGION_SPAN_WIDTHS.standard;
+        placements.push({ node: pair[1], x: 48 + placements[placements.length - 1].width + 16, width: secondWidth });
+      }
+    }
+  }
+  return placements;
+}
+
+function regionCardLayout(nodes) {
+  const placements = regionPlacements(nodes);
+  const rows = [];
+  for (const placement of placements) {
+    const previous = rows.at(-1)?.at(-1);
+    if (previous && placement.x !== 48 && previous.x === 48) rows[rows.length - 1].push(placement);
+    else rows.push([placement]);
+  }
+  const layouts = [];
+  let y = 110;
+  for (const row of rows) {
+    const height = Math.max(...row.map((placement) => cardHeight(placement.node)));
+    for (const placement of row) layouts.push({ node: placement.node, x: placement.x, y, width: placement.width, height: cardHeight(placement.node) });
+    y += height + 30;
+  }
+  return layouts;
+}
+
+function svgTextItem(node, item, index, x, y, className = 'label', mark = null, valueX = x + 540) {
   const attributes = itemAttributes(node, item, index, mark);
-  return `<g ${attributes}><text x="${x}" y="${y}" class="${className}">${escapeMarkup(item.label)}</text><text x="${x + 540}" y="${y}" text-anchor="end" class="value">${escapeMarkup(item.value)}</text>${item.detail ? `<text x="${x}" y="${y + 15}" class="detail">${escapeMarkup(item.detail)}</text>` : ''}</g>`;
+  return `<g ${attributes}><text x="${x}" y="${y}" class="${className}">${escapeMarkup(item.label)}</text><text x="${valueX}" y="${y}" text-anchor="end" class="value">${escapeMarkup(item.value)}</text>${item.detail ? `<text x="${x}" y="${y + 15}" class="detail">${escapeMarkup(item.detail)}</text>` : ''}</g>`;
 }
 
 function svgTrend(node, x, y, width) {
@@ -350,7 +398,7 @@ function svgTrend(node, x, y, width) {
     const [pointX, pointY] = points.split(' ')[index].split(',');
     return `<circle cx="${pointX}" cy="${pointY}" r="4" class="trend-point"/>`;
   }).join('');
-  const rows = node.items.map((item, index) => svgTextItem(node, item, index, x + 22, y + 180 + index * 28)).join('');
+  const rows = node.items.map((item, index) => svgTextItem(node, item, index, x + 22, y + 180 + index * 28, 'label', null, x + width - 28)).join('');
   return `<g data-visual-geometry="trajectory"><line x1="${x + 28}" y1="${y + 122}" x2="${x + width - 28}" y2="${y + 122}" class="plot-baseline"/><polyline data-visual-geometry="trajectory" data-point-count="${node.items.length}" points="${points}" class="trend-line"/>${dots}${rows}</g>`;
 }
 
@@ -410,7 +458,7 @@ function svgRadar(node, x, y, width) {
     const angle = -Math.PI / 2 + (Math.PI * 2 * index) / count;
     return `<line x1="${cx}" y1="${cy}" x2="${(cx + Math.cos(angle) * radius).toFixed(1)}" y2="${(cy + Math.sin(angle) * radius).toFixed(1)}" class="radar-axis"/>`;
   }).join('');
-  const labels = node.items.map((item, index) => svgTextItem(node, item, index, x + 22, y + 228 + index * 25)).join('');
+  const labels = node.items.map((item, index) => svgTextItem(node, item, index, x + 22, y + 228 + index * 25, 'label', null, x + width - 28)).join('');
   return `<g data-visual-geometry="radar-polygon"><circle cx="${cx}" cy="${cy}" r="${radius}" class="radar-ring"/>${axes}<polygon points="${points}" data-visual-geometry="radar-polygon" class="radar-polygon"/>${labels}</g>`;
 }
 
@@ -425,7 +473,7 @@ function svgBars(node, x, y, width, className = 'bar') {
 }
 
 function svgList(node, x, y, width) {
-  const rows = node.items.map((item, index) => svgTextItem(node, item, index, x + 22, y + 110 + index * 30)).join('');
+  const rows = node.items.map((item, index) => svgTextItem(node, item, index, x + 22, y + 110 + index * 30, 'label', null, x + width - 22)).join('');
   return `<g data-visual-geometry="${visualGeometry(node.visualSpec)}">${rows}</g>`;
 }
 
@@ -448,9 +496,11 @@ function svgCard(layout) {
 
 export function renderSemanticSvg(data, composition, options = {}) {
   const nodes = resolvedNodes(data, composition, options);
-  const layouts = cardLayout(nodes);
+  const pageComposition = composition?.pageComposition ?? null;
+  const layouts = pageComposition && nodes.length >= 3 ? regionCardLayout(nodes) : cardLayout(nodes);
   const claims = visibleClaims(data, options).map((claim, index) => renderTypedClaim(claim, 'svg', index)).join('');
   const last = layouts.at(-1);
   const height = Math.max(520, (last?.y ?? 110) + (last?.height ?? 284) + 60);
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 ${height}" role="img"><style>.card{fill:#fff;stroke:#e5e9f2}.title{font:700 18px Inter,Arial;fill:#172235}.subtitle{font:12px Inter,Arial;fill:#66758c}.label{font:13px Inter,Arial;fill:#34445d}.value{font:700 13px Inter,Arial;fill:#172235}.small-label{font:11px Inter,Arial;fill:#63728a}.small-value{font:700 12px Inter,Arial;fill:#172235}.rank{font:700 11px Inter,Arial;fill:#7b86a0}.plot-baseline{stroke:#d5dced;stroke-width:1}.plot-track{stroke:none}.trend-line{fill:none;stroke:#526bd8;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.distribution-bar{fill:#73a1e8}.ranking-bar{fill:#5577d8}.gap-bar{fill:#7d91b6}.breakdown-bar{fill:#5c8fcf}.metric-tile{fill:#f4f7fc;stroke:#e5eaf4}.metric-value{font:700 22px Inter,Arial;fill:#172235}.radar-ring{fill:none;stroke:#dce3f0}.radar-axis{stroke:#e2e7f1;stroke-width:1}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}</style><rect width="1440" height="${height}" fill="#f7f8fc"/><text x="48" y="52" class="title" font-size="28">Decision dashboard</text><text x="48" y="78" class="subtitle">Source-backed context for the next decision.</text>${claims}${layouts.map(svgCard).join('')}</svg>`;
+  const pageAttrs = pageComposition ? ` data-page-pattern="${escapeMarkup(pageComposition.pattern)}" data-page-archetype="${escapeMarkup(pageComposition.archetype)}"` : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 ${height}" role="img"${pageAttrs}><style>.card{fill:#fff;stroke:#e5e9f2}.title{font:700 18px Inter,Arial;fill:#172235}.subtitle{font:12px Inter,Arial;fill:#66758c}.label{font:13px Inter,Arial;fill:#34445d}.value{font:700 13px Inter,Arial;fill:#172235}.small-label{font:11px Inter,Arial;fill:#63728a}.small-value{font:700 12px Inter,Arial;fill:#172235}.rank{font:700 11px Inter,Arial;fill:#7b86a0}.plot-baseline{stroke:#d5dced;stroke-width:1}.plot-track{stroke:none}.trend-line{fill:none;stroke:#526bd8;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.distribution-bar{fill:#73a1e8}.ranking-bar{fill:#5577d8}.gap-bar{fill:#7d91b6}.breakdown-bar{fill:#5c8fcf}.metric-tile{fill:#f4f7fc;stroke:#e5eaf4}.metric-value{font:700 22px Inter,Arial;fill:#172235}.radar-ring{fill:none;stroke:#dce3f0}.radar-axis{stroke:#e2e7f1;stroke-width:1}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}</style><rect width="1440" height="${height}" fill="#f7f8fc"/><text x="48" y="52" class="title" font-size="28">Decision dashboard</text><text x="48" y="78" class="subtitle">Source-backed context for the next decision.</text>${claims}${layouts.map(svgCard).join('')}</svg>`;
 }

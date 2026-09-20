@@ -22,6 +22,27 @@ function spanBand(width) {
   return 'narrow';
 }
 
+const HEAD_RE = /<head>[\s\S]*?<\/head>/gi;
+const STYLE_RE = /<style[\s\S]*?<\/style>/gi;
+const METADATA_RE = /<metadata[\s\S]*?<\/metadata>/gi;
+const COMMENT_RE = /<!--[\s\S]*?-->/g;
+const TAG_RE = /<[^>]+>/g;
+
+// Visible-text scan for the delivered-artifact copy firewall: machine-readable
+// metadata (head provenance, style rules, SVG metadata, comments, and every
+// attribute value such as data-attention-role or data-page-archetype) is
+// stripped before matching so legal data-* vocabulary cannot trip a copy test.
+export function visibleTextOf({ html = '', svg = '' }) {
+  return `${html}\n${svg}`
+    .replace(HEAD_RE, ' ')
+    .replace(STYLE_RE, ' ')
+    .replace(METADATA_RE, ' ')
+    .replace(COMMENT_RE, ' ')
+    .replace(TAG_RE, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function extractCompositionSignature({ html, svg }) {
   const sections = [...html.matchAll(SECTION_RE)];
   const svgCards = [...svg.matchAll(SVG_CARD_RE)];
@@ -53,7 +74,8 @@ export function extractCompositionSignature({ html, svg }) {
       structure: getAttr(attrs, 'data-structure'),
       geometryKind: getAttr(attrs, 'data-visual-geometry'),
       layoutPattern: getAttr(attrs, 'data-layout-pattern'),
-      attentionRole: getAttr(attrs, 'data-metric-priority'),
+      attentionRole: getAttr(attrs, 'data-attention-role') ?? getAttr(attrs, 'data-metric-priority'),
+      regionSpan: getAttr(attrs, 'data-region-span'),
       spanBand: geometry?.spanBand ?? 'unmatched',
       documentOrder: index,
       visualOrder: geometry?.svgOrder ?? index,
@@ -70,8 +92,12 @@ export function extractCompositionSignature({ html, svg }) {
     .filter((region) => region.visualY === minY)
     .map((region) => region.family);
   const spanSet = new Set(regions.map((region) => region.spanBand));
+  const pagePattern = getAttr(html, 'data-page-pattern');
+  const pageArchetype = getAttr(html, 'data-page-archetype') ?? getAttr(svg, 'data-page-archetype');
 
   return {
+    pagePattern,
+    pageArchetype,
     regions: regions.map((region) => ({ ...region })),
     regionCount: regions.length,
     dominantIndex,
@@ -93,8 +119,22 @@ export function loadBearingDimensions(signature) {
     familyDocumentOrder: signature.familyDocumentOrder.join('|'),
     firstRowFamilies: signature.firstRowFamilies.join('|'),
     spanBands: signature.spanBands.join('|'),
-    rankedFamilies: signature.rankedFamilies.join('|')
+    rankedFamilies: signature.rankedFamilies.join('|'),
+    pagePattern: signature.pagePattern ?? 'none',
+    attentionRoles: signature.attentionRoles.join('|')
   };
+}
+
+// Copy-blind skeleton: region shapes and their page geometry only, with every
+// business title, value, and label removed. Used for the human blackout check
+// that Monitor and Prioritize page grammars are distinguishable without text.
+export function blackoutSkeleton(signature) {
+  const rows = [...new Set(signature.regions.map((region) => region.visualY))].sort((a, b) => a - b);
+  const ordered = [...signature.regions].sort((a, b) => a.visualOrder - b.visualOrder);
+  const lines = ordered.map((region) =>
+    `row${rows.indexOf(region.visualY) + 1} ${region.attentionRole ?? 'plain'} ${region.spanBand.padEnd(6)} ${region.family}`
+  );
+  return [`page=${signature.pagePattern ?? 'uniform'} archetype=${signature.pageArchetype ?? 'none'}`, ...lines].join('\n');
 }
 
 export function loadBearingDifference(left, right) {

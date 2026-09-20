@@ -402,8 +402,18 @@ export function visualSpecErrors(spec = {}) {
   return errors;
 }
 
+export function applyRegionItemOrder(items, strategy) {
+  const list = Array.isArray(items) ? items : [];
+  if (list.length < 2 || (strategy !== 'gap_desc' && strategy !== 'rank_asc')) return [...list];
+  const direction = strategy === 'gap_desc' ? -1 : 1;
+  return list
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => direction * (numericValue(a.item.value) - numericValue(b.item.value)) || a.index - b.index)
+    .map((entry) => entry.item);
+}
+
 function itemsForSelection(sourceNode, selection) {
-  const items = Array.isArray(sourceNode?.items) ? sourceNode.items : [];
+  const items = applyRegionItemOrder(sourceNode?.items, selection?.itemOrderStrategy);
   if (['summary', 'top_summary'].includes(selection?.presentation)) return items.slice(0, 1);
   if (selection?.presentation === 'peak_summary') {
     return items.length === 0 ? [] : [items.reduce((peak, item) => numericValue(item.value) > numericValue(peak.value) ? item : peak, items[0])];
