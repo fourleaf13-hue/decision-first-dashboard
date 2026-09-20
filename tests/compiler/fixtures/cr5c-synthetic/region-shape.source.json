@@ -1,0 +1,39 @@
+{
+  "fixtureName": "SYNTHETIC_REGION_SHAPE_MINIMAL",
+  "signals": [
+    { "metric": "service_count", "label": "Services reporting", "value": "12" },
+    { "metric": "requests_today", "label": "Requests today", "value": "3.4M" },
+    { "metric": "regions_covered", "label": "Regions covered", "value": "4" }
+  ],
+  "semanticNodes": [
+    {
+      "title": "Platform status",
+      "items": [
+        { "label": "Services reporting", "value": "12" },
+        { "label": "Requests today", "value": "3.4M" },
+        { "label": "Regions covered", "value": "4" }
+      ]
+    },
+    {
+      "title": "Response latency across services",
+      "items": [
+        { "label": "API", "value": 180 },
+        { "label": "Search", "value": 140 },
+        { "label": "Checkout", "value": 96 },
+        { "label": "Media", "value": 64 },
+        { "label": "Reports", "value": 45 }
+      ]
+    },
+    {
+      "title": "Requests across the week",
+      "items": [
+        { "label": "Mon", "value": 46 },
+        { "label": "Tue", "value": 52 },
+        { "label": "Wed", "value": 61 },
+        { "label": "Thu", "value": 58 },
+        { "label": "Fri", "value": 66 }
+      ]
+    }
+  ],
+  "relationships": []
+}

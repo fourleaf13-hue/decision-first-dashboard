@@ -288,6 +288,7 @@
         "label": { "type": "string", "minLength": 1, "maxLength": 80 },
         "value": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 80 }, { "type": "number" }] },
         "detail": { "type": "string", "maxLength": 120 },
+        "metric": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
         "role": { "enum": ["actual", "target", "gap", "point", "member", "contributor", "rank", "detail", "dimension"] },
         "comparability": { "$ref": "#/definitions/comparability" },
         "provenance": { "const": "source" }

@@ -1,0 +1,35 @@
+{
+  "fixtureName": "SYNTHETIC_SPAN_CHECK_SUBSET",
+  "signals": [
+    { "metric": "score_top", "label": "Top score", "value": "96" },
+    { "metric": "score_spread", "label": "Score spread", "value": "61" },
+    { "metric": "score_floor", "label": "Floor score", "value": "35" }
+  ],
+  "semanticNodes": [
+    {
+      "title": "Initiative score ranking",
+      "comparability": {
+        "unit": "score_points",
+        "comparisonGroup": "initiative_rank",
+        "comparabilityDomain": "score",
+        "normalization": "raw"
+      },
+      "items": [
+        { "label": "Alpha", "value": 96 },
+        { "label": "Beta", "value": 88 },
+        { "label": "Gamma", "value": 74 },
+        { "label": "Delta", "value": 61 },
+        { "label": "Epsilon", "value": 49 },
+        { "label": "Zeta", "value": 35 }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "id": "initiative_rank",
+      "relationType": "comparison",
+      "subjectRefs": ["initiative_rank"],
+      "comparison": { "metricIdentity": "score" }
+    }
+  ]
+}

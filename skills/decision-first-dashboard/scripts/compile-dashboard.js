@@ -7,6 +7,8 @@ import {
   buildDeliveredClaims,
   composeAdaptiveComposition,
   coverageFor,
+  deriveMetricTiers,
+  METRIC_TIER_GEOMETRY_RATIO,
   semanticItemsForPresentation,
   semanticStructureFor,
   verifyDeliveredArtifact
@@ -204,6 +206,61 @@ export function compileDecisionDashboard(
     };
   }
 
+  const metricTiers = deriveMetricTiers({
+    decisionState: effectiveBundle.decisionState,
+    metrics: effectiveRoutingManifest.metrics ?? []
+  });
+  const tierErrors = [];
+  const relevanceMetrics = [];
+  for (const node of composition.composition.nodes) {
+    const sourceNode = (effectiveBundle.decisionState?.semanticNodes ?? []).find((entry) => entry?.id === node.id);
+    if (sourceNode?.type !== 'MetricCluster') continue;
+    const items = Array.isArray(sourceNode.items) ? sourceNode.items : [];
+    if (!items.some((item) => typeof item?.metric === 'string' && item.metric.length > 0)) continue;
+    const itemTiers = items.map((item, index) => {
+      const tierEntry = typeof item?.metric === 'string' ? metricTiers.get(item.metric) : undefined;
+      if (!tierEntry) {
+        tierErrors.push({
+          code: 'METRIC_TIER_ROUTE_UNRESOLVED',
+          path: `/semanticNodes/${node.id}/items/${index}/metric`,
+          message: `${node.id} item ${item?.label ?? index} links metric ${item?.metric ?? '<missing>'} which has no routed metric entry.`
+        });
+        return null;
+      }
+      return { ...tierEntry, label: item.label };
+    });
+    if (itemTiers.some((entry) => entry === null)) continue;
+    const tierValues = new Set(itemTiers.map((entry) => entry.tier));
+    if (tierValues.size < 2) {
+      tierErrors.push({
+        code: 'METRIC_TIER_UNIFORM_WALL',
+        path: `/semanticNodes/${node.id}/items`,
+        message: `${node.id} routes every linked metric to the same tier; a state summary must mix lead and secondary metrics instead of rendering a uniform KPI wall.`
+      });
+      continue;
+    }
+    node.metricTiers = itemTiers;
+    relevanceMetrics.push(...itemTiers.map((entry) => ({ ...entry, node: node.id })));
+  }
+  if (tierErrors.length > 0) {
+    return {
+      result: {
+        valid: false,
+        stage: 'composition',
+        transition: 'FIX_METRIC_ROUTING',
+        errors: tierErrors,
+        worthinessSummary: worthiness.summary,
+        intakeSummary: intake.summary,
+        routingSummary: routing.summary,
+        coverageManifest: composition.coverageManifest
+      },
+      svg: null,
+      html: null,
+      manifest: null,
+      outputMode: null
+    };
+  }
+
   const hasSemanticState = Array.isArray(effectiveBundle.decisionState?.semanticNodes) && effectiveBundle.decisionState.semanticNodes.length > 0;
   const visualGrammar = hasSemanticState
     ? buildInternalVisualSpecs(
@@ -295,7 +352,21 @@ export function compileDecisionDashboard(
     coverage: composition.coverageManifest,
     decisionLog: composition.composition.decisionLog,
     modifiers: composition.composition.modifiers,
-    ...(composition.composition.pageComposition ? { pageComposition: composition.composition.pageComposition } : {})
+    ...(composition.composition.pageComposition ? { pageComposition: composition.composition.pageComposition } : {}),
+    ...(relevanceMetrics.length > 0
+      ? {
+        relevance: {
+          mechanism: 'routed_metric_roles',
+          geometryRatio: METRIC_TIER_GEOMETRY_RATIO,
+          metrics: relevanceMetrics,
+          regions: (composition.composition.pageComposition?.regions ?? []).map((region) => ({
+            nodeId: region.nodeId,
+            attentionRole: region.attentionRole,
+            roleBasis: region.roleBasis
+          }))
+        }
+      }
+      : {})
   };
   const manifestPayload = {
     ...finalizeOutputManifest(provenance, html, svg),

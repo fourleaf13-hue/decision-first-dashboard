@@ -1,0 +1,117 @@
+{
+  "fixtureName": "RECONSTRUCTED_HORIZON_CAPACITY_REGRESSION",
+  "reconstruction": {
+    "status": "reconstructed",
+    "isOriginalBaseline": false,
+    "note": "Reconstructed from the Horizon - Capacity Analytics screenshot supplied by the user on 2026-09-20. The original input bundle is not on this machine, so this must never be cited as an original baseline."
+  },
+  "integrity": {
+    "displayOnlyOmissions": {
+      "marker": "DISPLAY_ONLY_NOT_GROUNDED",
+      "policy": "Only values legible in the screenshot are stored. The Utilization % line on the by-year chart could not be read at exact precision and is omitted; nothing may be inferred about it from the After.",
+      "omittedSeries": {
+        "utilizationLineByYear": "unreadable at precision"
+      }
+    },
+    "truncatedLabels": {
+      "marker": "SOURCE_LABEL_INCOMPLETE",
+      "policy": "Project names are truncated in the source screenshot. The reconstruction keeps the truncated display labels verbatim; no full names are invented and nothing is rendered all-ellipsis."
+    },
+    "budgetThreshold": {
+      "marker": "BUDGET_THRESHOLD_NOT_GROUNDED",
+      "finding": "No field definition, sidecar, or legible source statement establishes what the 100% budget level means for this dataset.",
+      "policy": "Descriptive output only. Over-100% usage gets no salience beyond what routed roles already grant and must never be encoded as red/critical/warning/attention framing."
+    },
+    "periodBasis": {
+      "marker": "PERIOD_BASIS_UNKNOWN",
+      "year2026": "UNKNOWN",
+      "finding": "The source does not state whether the 2026 point is a full year or a partial year to date.",
+      "policy": "The trend subtitle discloses that the basis is not stated. No year-over-year decline interpretation is permitted."
+    },
+    "valueAudit": {
+      "marker": "PROVENANCE_AUDIT_PASSED",
+      "projectTopValue": "415% is the top bar of the by-project chart (10 bars).",
+      "departmentHrValue": "415.39% is the HR row of the by-department table (8 rows).",
+      "finding": "Two independent source values from two different charts; no row/column misalignment in the reconstruction.",
+      "misalignment": false
+    },
+    "avgMetricBasis": {
+      "marker": "AVG_METRIC_BASIS_UNKNOWN",
+      "value": "445",
+      "finding": "The denominator of Avg Hours Logged (per person? per project? per team?) is not stated anywhere in the source.",
+      "policy": "The KPI tile detail discloses that the average basis is not stated in the source."
+    },
+    "unitPresentation": {
+      "marker": "UNITS_AS_DISPLAYED",
+      "policy": "Percent-semantics values are stored and displayed with the % suffix so title, display, and source semantics agree (415%, 115.91%). The portfolio KPI 117% matches the table total 116.86% within display rounding."
+    },
+    "polarity": {
+      "marker": "POLARITY_UNKNOWN_BY_DESIGN",
+      "subject": "budget_hours_used",
+      "establishedBySource": ["portfolio total 117%", "per-project 415% down to 147%", "per-department 415.39% down to 79.12%"],
+      "notEstablishedBySource": ["above 100% = unfavorable", "any specific project or department is the problem"],
+      "policy": "Descriptive output only. The After must not frame over-100% budget usage as alerts, breaches, or priorities without target/policy/benchmark evidence."
+    }
+  },
+  "signals": [
+    { "metric": "hours_logged", "label": "Hours Logged", "value": "84K" },
+    { "metric": "utilization", "label": "Utilization", "value": "75%" },
+    { "metric": "task_completion", "label": "Task Completion", "value": "62%" },
+    { "metric": "projects", "label": "Projects", "value": "30" },
+    { "metric": "avg_hours_logged", "label": "Avg Hours Logged", "value": "445" },
+    { "metric": "budget_hours_used", "label": "Budget Hours Used %", "value": "117%" }
+  ],
+  "semanticNodes": [
+    {
+      "title": "Capacity KPIs",
+      "items": [
+        { "metric": "hours_logged", "label": "Hours Logged", "value": "84K" },
+        { "metric": "utilization", "label": "Utilization", "value": "75%" },
+        { "metric": "task_completion", "label": "Task Completion", "value": "62%" },
+        { "metric": "projects", "label": "Projects", "value": "30" },
+        { "metric": "avg_hours_logged", "label": "Avg Hours Logged", "value": "445", "detail": "Average basis not stated in source" },
+        { "metric": "budget_hours_used", "label": "Budget Hours Used %", "value": "117%" }
+      ]
+    },
+    {
+      "title": "Billable hours by year",
+      "subtitle": "Thousands of hours. The source does not state whether 2026 is a full or partial year.",
+      "items": [
+        { "label": "2023", "value": 7.7 },
+        { "label": "2024", "value": 17.1 },
+        { "label": "2025", "value": 22 },
+        { "label": "2026", "value": 16.4 }
+      ]
+    },
+    {
+      "title": "Budget hours used % by department",
+      "subtitle": "Task completion shown per department, as displayed in the source table",
+      "items": [
+        { "label": "Operations", "value": "115.91%", "detail": "task completion 61.70%" },
+        { "label": "IT", "value": "120.93%", "detail": "task completion 54.05%" },
+        { "label": "Finance", "value": "124.52%", "detail": "task completion 67.65%" },
+        { "label": "Sales", "value": "79.12%", "detail": "task completion 46.15%" },
+        { "label": "Marketing", "value": "104.72%", "detail": "task completion 68.18%" },
+        { "label": "Consulting", "value": "151.05%", "detail": "task completion 72.22%" },
+        { "label": "HR", "value": "415.39%", "detail": "task completion 62.50%" },
+        { "label": "Total", "value": "116.86%", "detail": "task completion 62.01%" }
+      ]
+    },
+    {
+      "title": "Budget hours used % by project",
+      "items": [
+        { "label": "Reinvent Seaml…", "value": "415%" },
+        { "label": "Orchestrate Re…", "value": "387%" },
+        { "label": "Expedite Front-…", "value": "382%" },
+        { "label": "Exploit Compell…", "value": "326%" },
+        { "label": "Expedite Magn…", "value": "282%" },
+        { "label": "E-Enable Vertic…", "value": "200%" },
+        { "label": "Maximize Front…", "value": "198%" },
+        { "label": "Matrix User-Ce…", "value": "195%" },
+        { "label": "Engage Distrib…", "value": "149%" },
+        { "label": "Envisioneer Ubi…", "value": "147%" }
+      ]
+    }
+  ],
+  "relationships": []
+}

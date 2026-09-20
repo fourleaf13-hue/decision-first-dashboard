@@ -356,6 +356,30 @@ export function buildDeliveredClaims(bundle) {
 
 export const REGION_ATTENTION_ROLES = Object.freeze(['anchor', 'primary', 'supporting', 'detail']);
 
+// Single decision-relevance mechanism: routed roles decide attention for both
+// consumers — summary metric tiers here, region roles in derivePageComposition.
+export const METRIC_TIER_GEOMETRY_RATIO = 1.5;
+
+export function deriveMetricTiers({ decisionState = null, metrics = [] } = {}) {
+  const routes = Array.isArray(metrics) ? metrics : [];
+  const presentation = decisionState?.presentation ?? null;
+  const leadIds = new Set([
+    ...(Array.isArray(presentation?.primaryMetrics) ? presentation.primaryMetrics : []),
+    ...routes.filter((route) => route?.role === 'exception' && route?.active === true).map((route) => route.metric)
+  ]);
+  const tiers = new Map();
+  for (const route of routes) {
+    if (typeof route?.metric !== 'string' || route.metric.length === 0) continue;
+    const isLead = leadIds.has(route.metric) || route.role === 'primary_signal' || (route.role === 'exception' && route.active === true);
+    tiers.set(route.metric, {
+      metric: route.metric,
+      tier: isLead ? 'lead' : 'secondary',
+      selectionBasis: `routed_role:${route.role}`
+    });
+  }
+  return tiers;
+}
+
 const MONITOR_EXCEPTION_ORDER = ['ExceptionList', 'Trend', 'MetricCluster', 'Relationship', 'Distribution', 'Breakdown', 'Ranking', 'Drilldown'];
 const MONITOR_DESCRIPTIVE_ORDER = ['MetricCluster', 'Relationship', 'Trend', 'Distribution', 'Breakdown', 'Ranking', 'ExceptionList', 'Drilldown'];
 const PRIORITIZE_ORDER = ['Relationship', 'Trend', 'MetricCluster', 'Distribution', 'Breakdown', 'Ranking', 'ExceptionList', 'Drilldown'];
@@ -405,12 +429,30 @@ export function derivePageComposition({ nodes = [], compositionIntent = null, se
 
   const regions = ordered.map((node, index) => {
     let attentionRole;
-    if (index === 0) attentionRole = 'anchor';
-    else if (structureForSelected(node) === 'reachable-detail') attentionRole = 'detail';
-    else if (index === 1 && archetype === 'prioritize_readonly') attentionRole = 'primary';
-    else if (index === 1 && exceptionLed && (node.type === 'Trend' || isStateReading(node.type))) attentionRole = 'primary';
-    else if (index === 1 && !exceptionLed && archetype === 'monitor' && isStateReading(node.type)) attentionRole = 'primary';
-    else attentionRole = 'supporting';
+    let roleBasis;
+    if (index === 0) {
+      attentionRole = 'anchor';
+      roleBasis = archetype === 'prioritize_readonly'
+        ? 'grounded_ordering_basis_candidate'
+        : exceptionLed
+          ? 'grounded_exception_anchor'
+          : 'monitor_state_reading';
+    } else if (structureForSelected(node) === 'reachable-detail') {
+      attentionRole = 'detail';
+      roleBasis = 'reachable_detail_structure';
+    } else if (index === 1 && archetype === 'prioritize_readonly') {
+      attentionRole = 'primary';
+      roleBasis = 'prioritize_reading_order';
+    } else if (index === 1 && exceptionLed && (node.type === 'Trend' || isStateReading(node.type))) {
+      attentionRole = 'primary';
+      roleBasis = 'exception_follow_up_reading';
+    } else if (index === 1 && !exceptionLed && archetype === 'monitor' && isStateReading(node.type)) {
+      attentionRole = 'primary';
+      roleBasis = 'monitor_state_reading_follow_up';
+    } else {
+      attentionRole = 'supporting';
+      roleBasis = archetype === 'prioritize_readonly' ? 'prioritize_reading_order' : 'monitor_reading_order';
+    }
     const span = attentionRole === 'anchor'
       ? 'full'
       : pattern === 'asymmetric'
@@ -420,9 +462,16 @@ export function derivePageComposition({ nodes = [], compositionIntent = null, se
       nodeId: node.id,
       attentionRole,
       span,
+      roleBasis,
       itemOrderStrategy: attentionRole === 'anchor' ? itemOrderStrategy : null
     };
   });
+
+  // A trailing odd supporting region would otherwise strand half a row of
+  // whitespace; the reading path gains nothing from an empty column.
+  if (pattern === 'hero_support' && regions.length >= 4 && (regions.length - 1) % 2 === 1) {
+    regions[regions.length - 1] = { ...regions.at(-1), span: 'full' };
+  }
 
   return {
     archetype,
@@ -736,7 +785,7 @@ function visualStructurePresent(artifact, node) {
     if (spec.mark === 'line') return /<polyline[^>]*data-visual-geometry="trajectory"/.test(region);
     if (spec.mark === 'radar') return /<polygon[^>]*data-visual-geometry="radar-polygon"/.test(region);
     if (spec.mark === 'paired_bar') return /data-ranking-end="high"/.test(region) && /data-ranking-end="low"/.test(region);
-    if (spec.mark === 'metric_tile') return /data-visual-geometry="metric-tiles"/.test(region) && /class="metric-tile"/.test(region);
+    if (spec.mark === 'metric_tile') return /data-visual-geometry="metric-tiles"/.test(region) && /class="metric-tile["\s]/.test(region);
     if (['bar', 'gap_bar'].includes(spec.mark)) return /data-visual-mark-item="bar"/.test(region);
     return true;
   });
