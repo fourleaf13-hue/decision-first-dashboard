@@ -1,10 +1,11 @@
-const RELATION_TYPES = Object.freeze(['distribution', 'comparison', 'decomposition', 'diagnostic_attribution', 'temporal']);
+const RELATION_TYPES = Object.freeze(['distribution', 'comparison', 'decomposition', 'diagnostic_attribution', 'temporal', 'additive_path']);
 
 const TYPED_METADATA = Object.freeze({
   comparison: { key: 'comparison', identityField: 'metricIdentity' },
   distribution: { key: 'distribution', identityField: 'dimension' },
   decomposition: { key: 'decomposition', identityField: 'whole' },
-  diagnostic_attribution: { key: 'diagnosticAttribution', identityField: 'outcomeRef' }
+  diagnostic_attribution: { key: 'diagnosticAttribution', identityField: 'outcomeRef' },
+  additive_path: { key: 'additivePath', identityField: 'startRef' }
 });
 
 const EXPECTED_RELATION_TYPE = Object.freeze({
@@ -94,17 +95,33 @@ export function validateRelationships(decisionState, { evidenceIds = null } = {}
       }
     }
 
+    const memberIds = new Set([
+      ...subjectRefs,
+      ...nodes.filter((node) => subjectRefs.includes(node?.id)).flatMap((node) => (node.items ?? []).map((item) => item?.label))
+    ].filter(Boolean));
+
     const memberRefs = Array.isArray(relationship?.memberRefs) ? relationship.memberRefs : [];
-    if (memberRefs.length > 0) {
-      const memberIds = new Set([
-        ...subjectRefs,
-        ...nodes.filter((node) => subjectRefs.includes(node?.id)).flatMap((node) => (node.items ?? []).map((item) => item?.label))
-      ].filter(Boolean));
-      memberRefs.forEach((memberRef, refIndex) => {
-        if (!memberIds.has(memberRef)) {
-          errors.push({ code: 'RELATIONSHIP_MEMBER_NOT_FOUND', path: `${base}/memberRefs/${refIndex}`, message: `relationship ${id ?? index} references member ${memberRef}, which does not resolve to a subject node or one of its items.` });
+    memberRefs.forEach((memberRef, refIndex) => {
+      if (!memberIds.has(memberRef)) {
+        errors.push({ code: 'RELATIONSHIP_MEMBER_NOT_FOUND', path: `${base}/memberRefs/${refIndex}`, message: `relationship ${id ?? index} references member ${memberRef}, which does not resolve to a subject node or one of its items.` });
+      }
+    });
+
+    if (relationship?.relationType === 'additive_path') {
+      const pathRefs = [
+        [`startRef`, relationship?.additivePath?.startRef],
+        [`endRef`, relationship?.additivePath?.endRef],
+        ...(Array.isArray(relationship?.additivePath?.members) ? relationship.additivePath.members : [])
+          .map((member, memberIndex) => [`members/${memberIndex}/memberRef`, member?.memberRef])
+      ];
+      for (const [refPath, ref] of pathRefs) {
+        if (typeof ref === 'string' && !memberIds.has(ref)) {
+          errors.push({ code: 'RELATIONSHIP_MEMBER_NOT_FOUND', path: `${base}/additivePath/${refPath}`, message: `additive path relationship ${id ?? index} references ${ref}, which does not resolve to a subject node or one of its items.` });
         }
-      });
+      }
+      if (memberRefs.length === 0) {
+        errors.push({ code: 'RELATIONSHIP_TYPED_METADATA_REQUIRED', path: `${base}/memberRefs`, message: 'additive_path relationships require grounded memberRefs for every signed contributor.' });
+      }
     }
 
     if (evidenceIds) {

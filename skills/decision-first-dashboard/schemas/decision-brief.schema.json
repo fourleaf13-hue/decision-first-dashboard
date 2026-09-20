@@ -73,6 +73,7 @@
             "current_plus_reference",
             "full_distribution",
             "both_ends",
+            "full_ranking",
             "target_and_gap",
             "contributors",
             "full_breakdown"

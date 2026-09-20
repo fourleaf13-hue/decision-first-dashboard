@@ -23,6 +23,7 @@ import {
   injectSvgProvenance
 } from './provenance.js';
 import { buildInternalVisualSpecs } from './visual-grammar.js';
+import { routeVisualEncoding } from './encoding-router.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 
@@ -169,6 +170,17 @@ export function compileDecisionDashboard(
     ? { ...bundle, decisionState: routing.decisionState }
     : bundle;
   const effectiveRoutingManifest = routing.manifest ?? routingManifest;
+  // Visual Encoding Router: fail-closed eligibility for opt-in encodings
+  // declared in the routing manifest. Ineligible requests fall back to the
+  // full presentation and are logged; nothing here changes composition tiers.
+  const encodingRouting = routeVisualEncoding({
+    decisionState: effectiveBundle.decisionState,
+    compositionNodes: effectiveRoutingManifest.compositionNodes ?? [],
+    contextRequirements: decisionBrief.contextRequirements ?? [],
+    orderingBasis: compositionIntent.orderingBasis ?? null
+  });
+  const routedCompositionNodes = encodingRouting.nodes;
+  const routedDecisionLog = [...(effectiveRoutingManifest.decisionLog ?? []), ...encodingRouting.decisionLog];
   const compositionModifiers = {
     audience: decisionBrief.audience?.value ?? null,
     cadence: decisionBrief.cadence?.value ?? null,
@@ -180,8 +192,8 @@ export function compileDecisionDashboard(
   };
   const composition = composeAdaptiveComposition({
     contextRequirements: decisionBrief.contextRequirements ?? [],
-    nodes: effectiveRoutingManifest.compositionNodes ?? [],
-    decisionLog: effectiveRoutingManifest.decisionLog ?? [],
+    nodes: routedCompositionNodes,
+    decisionLog: routedDecisionLog,
     modifiers: compositionModifiers,
     compositionIntent,
     semanticNodeIds: (effectiveBundle.decisionState?.semanticNodes ?? []).map((node) => node?.id)
@@ -269,7 +281,8 @@ export function compileDecisionDashboard(
       {
         contextRequirements: decisionBrief.contextRequirements ?? [],
         modifiers: composition.composition.modifiers,
-        decisionLog: composition.composition.decisionLog
+        decisionLog: composition.composition.decisionLog,
+        orderingBasis: compositionIntent.orderingBasis ?? null
       }
     )
     : { valid: true, specs: [], errors: [] };
@@ -348,6 +361,9 @@ export function compileDecisionDashboard(
         ...(semanticStructureFor(node) ? { structure: semanticStructureFor(node) } : {}),
         ...(node.attentionRole ? { attentionRole: node.attentionRole, regionSpan: node.regionSpan } : {}),
         ...(node.itemOrderStrategy ? { itemOrderStrategy: node.itemOrderStrategy } : {}),
+        ...(encodingRouting.encodingDecisions.has(node.id)
+          ? { encoding: encodingRouting.encodingDecisions.get(node.id) }
+          : {}),
         visualSpec: visualSpecs.get(node.id)
       };
     }),

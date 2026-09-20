@@ -101,7 +101,9 @@
             "compact_list",
             "reachable_detail",
             "radar",
-            "comparison"
+            "comparison",
+            "bullet_target",
+            "waterfall"
           ]
         },
         "compactPresentation": {

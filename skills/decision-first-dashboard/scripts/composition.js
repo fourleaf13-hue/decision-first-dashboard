@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { applyRegionItemOrder, evaluateProfileComparability, visualSpecErrors } from './visual-grammar.js';
 import { verifyDeliveredGeometry } from './geometry-verifier.js';
+import { verifyDeliveredEncodingGeometry } from './encoding-geometry-verifier.js';
 
 const PRESENTATION_COVERAGE = {
   Trend: {
@@ -15,6 +16,7 @@ const PRESENTATION_COVERAGE = {
   },
   Breakdown: {
     full_breakdown: ['decomposition', 'gap_attribution'],
+    waterfall: ['decomposition', 'gap_attribution'],
     summary: ['current_value']
   },
   Ranking: {
@@ -25,6 +27,7 @@ const PRESENTATION_COVERAGE = {
   },
   Relationship: {
     full_chart: ['relative_comparison', 'target_reference', 'gap_attribution'],
+    bullet_target: ['relative_comparison', 'target_reference', 'gap_attribution'],
     summary: ['current_value']
   },
   ExceptionList: {
@@ -56,6 +59,7 @@ const PRESENTATION_STRUCTURE = {
   },
   Breakdown: {
     full_breakdown: 'decomposition',
+    waterfall: 'additive-path',
     summary: 'current-value'
   },
   Ranking: {
@@ -66,6 +70,7 @@ const PRESENTATION_STRUCTURE = {
   },
   Relationship: {
     full_chart: 'target-gap',
+    bullet_target: 'target-bullet',
     summary: 'current-value'
   },
   ExceptionList: {
@@ -97,7 +102,21 @@ const DECISION_REASON_CODES = new Set([
   'FIRST_VIEW_BUDGET',
   'SOURCE_STRUCTURE_REQUIRED',
   'PROFILE_COMPARABILITY_FAILED',
-  'PROFILE_COMPARABILITY_CONFIRMED'
+  'PROFILE_COMPARABILITY_CONFIRMED',
+  'BULLET_INELIGIBLE_TARGET_NOT_GROUNDED',
+  'BULLET_INELIGIBLE_ACTUAL_NOT_GROUNDED',
+  'BULLET_INELIGIBLE_REQUIREMENT_UNCONFIRMED',
+  'BULLET_INELIGIBLE_RELATIONSHIP_NOT_GROUNDED',
+  'BULLET_INELIGIBLE_COMPARABILITY_FAILED',
+  'BULLET_INELIGIBLE_GAP_NOT_TRACEABLE',
+  'WATERFALL_INELIGIBLE_PATH_NOT_DECLARED',
+  'WATERFALL_INELIGIBLE_START_UNGROUNDED',
+  'WATERFALL_INELIGIBLE_END_UNGROUNDED',
+  'WATERFALL_INELIGIBLE_MEMBER_NOT_GROUNDED',
+  'WATERFALL_INELIGIBLE_MEMBER_SIGN_UNGROUNDED',
+  'WATERFALL_INELIGIBLE_UNIT_MISMATCH',
+  'WATERFALL_INELIGIBLE_ADDITIVE_CONTRACT_FAILED',
+  'RANKING_EXTREMES_NOT_GROUNDED'
 ]);
 
 const COMPOSITION_DECISIONS = new Set(['promote', 'retain_full', 'collapse_to_drilldown', 'drop']);
@@ -625,13 +644,14 @@ function verifySemanticItems(artifact, node, errors, artifactLabel) {
     'ordered-trajectory': 'point',
     'ordered-distribution': 'member',
     'ranked-order': 'rank',
-    'decomposition': 'component'
+    'decomposition': 'component',
+    'additive-path': 'component'
   }[structure];
   if (roleRequired && roles.some((role) => role !== roleRequired)) {
     addError(errors, 'DELIVERED_STRUCTURE_CONTENT_MISMATCH', `/nodes/${node.id}/structure`, `${node.id} contains non-${roleRequired} items in its ${structure} presentation.`);
   }
-  if (structure === 'target-gap' && !['actual', 'target', 'gap'].every((role) => roles.includes(role))) {
-    addError(errors, 'DELIVERED_STRUCTURE_CONTENT_MISMATCH', `/nodes/${node.id}/structure`, `${node.id} target-gap presentation must contain actual, target, and gap roles.`);
+  if (['target-gap', 'target-bullet'].includes(structure) && !['actual', 'target', 'gap'].every((role) => roles.includes(role))) {
+    addError(errors, 'DELIVERED_STRUCTURE_CONTENT_MISMATCH', `/nodes/${node.id}/structure`, `${node.id} ${structure} presentation must contain actual, target, and gap roles.`);
   }
   if (structure === 'ranked-order') {
     const ranks = itemTags.map((tag) => Number.parseInt(tagAttributes(tag)['data-rank'], 10));
@@ -734,6 +754,8 @@ function visualGeometryFor(spec) {
   if (spec.mark === 'radar') return 'radar-polygon';
   if (spec.mark === 'metric_tile') return 'metric-tiles';
   if (spec.mark === 'gap_bar') return 'gap-bars';
+  if (spec.mark === 'bullet') return 'bullet-target';
+  if (spec.mark === 'waterfall') return 'waterfall-segments';
   if (spec.mark === 'detail_list') return 'detail-list';
   if (spec.mark === 'list') return 'list';
   if (spec.structure === 'ordered-distribution') return 'distribution-bars';
@@ -786,6 +808,8 @@ function visualStructurePresent(artifact, node) {
     if (spec.mark === 'radar') return /<polygon[^>]*data-visual-geometry="radar-polygon"/.test(region);
     if (spec.mark === 'paired_bar') return /data-ranking-end="high"/.test(region) && /data-ranking-end="low"/.test(region);
     if (spec.mark === 'metric_tile') return /data-visual-geometry="metric-tiles"/.test(region) && /class="metric-tile["\s]/.test(region);
+    if (spec.mark === 'bullet') return /data-visual-mark-item="bullet-actual"/.test(region) && /data-visual-marker="target"/.test(region) && /data-visual-annotation="gap"/.test(region);
+    if (spec.mark === 'waterfall') return /data-visual-mark-item="waterfall-segment"/.test(region) && /data-waterfall-endpoint="start"/.test(region) && /data-waterfall-endpoint="end"/.test(region);
     if (['bar', 'gap_bar'].includes(spec.mark)) return /data-visual-mark-item="bar"/.test(region);
     return true;
   });
@@ -904,6 +928,9 @@ export function verifyDeliveredArtifact({ html = '', svg = '', manifest = {} } =
   verifyClaims(deliveryManifest, html, svg, errors);
   verifyVisualSpecs(deliveryManifest, nodes, html, svg, errors);
   for (const geometryError of verifyDeliveredGeometry({ html, svg, delivery: deliveryManifest })) {
+    addError(errors, geometryError.code, geometryError.path, geometryError.message);
+  }
+  for (const geometryError of verifyDeliveredEncodingGeometry({ html, svg, delivery: deliveryManifest })) {
     addError(errors, geometryError.code, geometryError.path, geometryError.message);
   }
 

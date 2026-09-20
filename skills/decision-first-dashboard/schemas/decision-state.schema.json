@@ -107,7 +107,7 @@
       "required": ["id", "relationType", "subjectRefs", "provenance"],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9_~.-]{1,64}$" },
-        "relationType": { "enum": ["distribution", "comparison", "decomposition", "diagnostic_attribution", "temporal"] },
+        "relationType": { "enum": ["distribution", "comparison", "decomposition", "diagnostic_attribution", "temporal", "additive_path"] },
         "subjectRefs": {
           "type": "array",
           "minItems": 1,
@@ -129,7 +129,32 @@
         "comparison": { "$ref": "#/definitions/comparisonRelationship" },
         "distribution": { "$ref": "#/definitions/distributionRelationship" },
         "decomposition": { "$ref": "#/definitions/decompositionRelationship" },
-        "diagnosticAttribution": { "$ref": "#/definitions/diagnosticAttributionRelationship" }
+        "diagnosticAttribution": { "$ref": "#/definitions/diagnosticAttributionRelationship" },
+        "additivePath": { "$ref": "#/definitions/additivePathRelationship" }
+      }
+    },
+    "additivePathRelationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startRef", "endRef", "members"],
+      "properties": {
+        "startRef": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "endRef": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "members": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 24,
+          "items": { "$ref": "#/definitions/additivePathMember" }
+        }
+      }
+    },
+    "additivePathMember": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memberRef", "sign"],
+      "properties": {
+        "memberRef": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "sign": { "enum": ["plus", "minus"] }
       }
     },
     "comparisonRelationship": {
@@ -290,6 +315,7 @@
         "detail": { "type": "string", "maxLength": 120 },
         "metric": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
         "role": { "enum": ["actual", "target", "gap", "point", "member", "contributor", "rank", "detail", "dimension"] },
+        "rank": { "type": "integer", "minimum": 1, "maximum": 24 },
         "comparability": { "$ref": "#/definitions/comparability" },
         "provenance": { "const": "source" }
       }

@@ -1,4 +1,8 @@
 import { resolveNodeRelationship } from './relationship-grammar.js';
+import {
+  BULLET_GAP_CONTRACT_TOLERANCE,
+  contractWithinTolerance
+} from './encoding-contracts.js';
 
 const PRESENTATION_VISUALS = {
   Trend: {
@@ -13,6 +17,7 @@ const PRESENTATION_VISUALS = {
   },
   Breakdown: {
     full_breakdown: { mark: 'bar', orientation: 'horizontal', encoding: { x: 'value', y: 'component' }, scale: 'local', domain: 'node', layout: 'full_width', structure: 'decomposition' },
+    waterfall: { mark: 'waterfall', orientation: 'horizontal', encoding: { x: 'signed_delta', y: 'component' }, scale: 'local', domain: 'node', layout: 'full_width', structure: 'additive-path' },
     summary: { mark: 'value', orientation: 'horizontal', encoding: { text: 'current_value' }, scale: 'none', domain: 'item', layout: 'compact', structure: 'current-value' }
   },
   Ranking: {
@@ -23,6 +28,7 @@ const PRESENTATION_VISUALS = {
   },
   Relationship: {
     full_chart: { mark: 'gap_bar', orientation: 'horizontal', encoding: { x: 'value', y: 'relation_role' }, scale: 'shared', domain: 'node', layout: 'full_width', structure: 'target-gap' },
+    bullet_target: { mark: 'bullet', orientation: 'horizontal', encoding: { x: 'value', marker: 'target', annotation: 'gap' }, scale: 'shared', domain: 'node', layout: 'full_width', structure: 'target-bullet' },
     summary: { mark: 'value', orientation: 'horizontal', encoding: { text: 'current_value' }, scale: 'none', domain: 'item', layout: 'compact', structure: 'current-value' }
   },
   ExceptionList: {
@@ -399,6 +405,45 @@ export function visualSpecErrors(spec = {}) {
     const hasReference = (typeof spec.layout.requirementRef === 'string' && spec.layout.requirementRef.length > 0) || (typeof spec.layout.modifierRef === 'string' && spec.layout.modifierRef.length > 0) || (Array.isArray(spec.layout.evidenceRefs) && spec.layout.evidenceRefs.length > 0);
     if (!hasReference) errors.push({ code: 'VISUAL_SPEC_LAYOUT_UNATTRIBUTED', path: '/visualSpec/layout', message: 'visual layout requires a resolvable requirement, modifier, or evidence reference.' });
   }
+  if (config?.mark === 'bullet') {
+    const bullet = spec.bullet;
+    const bulletValid = bullet && typeof bullet === 'object' && !Array.isArray(bullet) &&
+      bullet.mapType === 'linear' &&
+      Array.isArray(bullet.valueDomain) && bullet.valueDomain.length === 2 &&
+      Number.isFinite(bullet.valueDomain[0]) && bullet.valueDomain[0] === 0 &&
+      Number.isFinite(bullet.valueDomain[1]) && bullet.valueDomain[1] > 0 &&
+      [bullet.actual, bullet.target, bullet.gap].every((value) => Number.isFinite(value)) &&
+      bullet.valueDomain[1] >= Math.max(bullet.actual, bullet.target) &&
+      ['below', 'above', 'at'].includes(bullet.direction);
+    if (!bulletValid) errors.push({ code: 'BULLET_SPEC_DECLARATION_INVALID', path: '/visualSpec/bullet', message: 'a bullet visual spec requires a linear [0, high] declaration covering finite actual, target, and gap values with a grounded direction.' });
+  }
+  if (config?.mark === 'waterfall') {
+    const waterfall = spec.waterfall;
+    const waterfallValid = waterfall && typeof waterfall === 'object' && !Array.isArray(waterfall) &&
+      waterfall.mapType === 'linear' &&
+      Array.isArray(waterfall.valueDomain) && waterfall.valueDomain.length === 2 &&
+      waterfall.valueDomain[0] === 0 && Number.isFinite(waterfall.valueDomain[1]) && waterfall.valueDomain[1] > 0 &&
+      Number.isFinite(waterfall.startValue) && Number.isFinite(waterfall.endValue) &&
+      typeof waterfall.relationshipRef === 'string' && waterfall.relationshipRef.length > 0 &&
+      Array.isArray(waterfall.segments) && waterfall.segments.length > 0 &&
+      waterfall.segments.every((segment) => segment && Number.isFinite(segment.value) &&
+        (segment.sign === 'plus' || segment.sign === 'minus') &&
+        Number.isFinite(segment.cumulativeBefore) && Number.isFinite(segment.cumulativeAfter) &&
+        Math.abs(segment.cumulativeAfter - (segment.cumulativeBefore + (segment.sign === 'minus' ? -segment.value : segment.value))) < 1e-6) &&
+      Math.abs(waterfall.segments.at(-1).cumulativeAfter - waterfall.endValue) < 1e-6 &&
+      waterfall.segments.every((segment) => segment.cumulativeBefore >= 0 && segment.cumulativeBefore <= waterfall.valueDomain[1] &&
+        segment.cumulativeAfter >= 0 && segment.cumulativeAfter <= waterfall.valueDomain[1]);
+    if (!waterfallValid) errors.push({ code: 'WATERFALL_SPEC_DECLARATION_INVALID', path: '/visualSpec/waterfall', message: 'a waterfall visual spec requires a grounded additive_path declaration whose signed segments reconcile start to end inside the value domain.' });
+  }
+  if (spec.ranking !== undefined) {
+    const ranking = spec.ranking;
+    const rankingValid = ranking && typeof ranking === 'object' && !Array.isArray(ranking) &&
+      typeof ranking.basis === 'string' && ranking.basis.length > 0 &&
+      ranking.direction === 'delivered_order' &&
+      Array.isArray(ranking.candidateValues) && ranking.candidateValues.length > 0 &&
+      ranking.candidateValues.every((value) => Number.isFinite(value));
+    if (!rankingValid) errors.push({ code: 'RANKING_SPEC_DECLARATION_INVALID', path: '/visualSpec/ranking', message: 'a ranking visual spec requires a grounded basis, delivered-order direction, and finite candidate values.' });
+  }
   return errors;
 }
 
@@ -436,6 +481,10 @@ export function sharedComparisonScaleId(relationshipRef) {
 
 function sharedScaleEligible(entry) {
   const membership = entry.spec.comparability?.membership ?? {};
+  // A bullet carries its own canonical target-scale declaration; upgrading it
+  // into a group-wide relationship scale would replace the map its geometry
+  // was drawn from.
+  if (entry.spec.bullet) return false;
   return !entry.isRadar
     && ['shared', 'local'].includes(entry.config.scale)
     && membership.basis === 'declared'
@@ -570,6 +619,121 @@ function applySharedComparisonScales(entries, relationships, nodeIndexById) {
   return errors;
 }
 
+function bulletDeclarationFor(node, errors) {
+  const items = Array.isArray(node.items) ? node.items : [];
+  const actual = items.find((item) => item?.role === 'actual');
+  const target = items.find((item) => item?.role === 'target');
+  const gap = items.find((item) => item?.role === 'gap');
+  if (!actual || !target || !gap) {
+    errors.push(specError('BULLET_SPEC_DECLARATION_FAILED', node, 'a bullet_target visual spec requires source-grounded actual, target, and gap items.'));
+    return null;
+  }
+  const actualValue = numericValue(actual.value);
+  const targetValue = numericValue(target.value);
+  const gapValue = numericValue(gap.value);
+  if (!contractWithinTolerance(Math.abs(targetValue - actualValue), Math.abs(gapValue), BULLET_GAP_CONTRACT_TOLERANCE)) {
+    errors.push(specError('BULLET_SPEC_DECLARATION_FAILED', node, 'the bullet gap annotation is not traceable to target minus actual within the frozen tolerance.'));
+    return null;
+  }
+  const high = Math.max(actualValue, targetValue);
+  if (!(high > 0)) {
+    errors.push(specError('BULLET_SPEC_DECLARATION_FAILED', node, 'a bullet requires a positive shared value domain.'));
+    return null;
+  }
+  return Object.freeze({
+    mapType: 'linear',
+    valueDomain: Object.freeze([0, high]),
+    actual: actualValue,
+    target: targetValue,
+    gap: gapValue,
+    direction: actualValue < targetValue ? 'below' : actualValue > targetValue ? 'above' : 'at'
+  });
+}
+
+function waterfallDeclarationFor(node, sourceNodes, context, errors) {
+  const path = (context.relationships ?? []).find((relationship) =>
+    relationship?.relationType === 'additive_path' &&
+    Array.isArray(relationship.subjectRefs) &&
+    relationship.subjectRefs.includes(node.id)
+  );
+  if (!path || !Array.isArray(path.basisRefs) || path.basisRefs.length === 0 || !path.additivePath) {
+    errors.push(specError('WATERFALL_SPEC_PATH_MISSING', node, 'a waterfall visual spec requires a grounded additive_path relationship with evidence basisRefs.'));
+    return null;
+  }
+  const labelIndex = new Map();
+  for (const nodeId of path.subjectRefs) {
+    for (const item of sourceNodes.get(nodeId)?.items ?? []) {
+      if (typeof item?.label === 'string' && !labelIndex.has(item.label)) labelIndex.set(item.label, item);
+    }
+  }
+  const start = labelIndex.get(path.additivePath.startRef);
+  const end = labelIndex.get(path.additivePath.endRef);
+  if (!start || !end) {
+    errors.push(specError('WATERFALL_SPEC_PATH_MISSING', node, 'additive_path startRef/endRef must resolve to source items of the subject nodes.'));
+    return null;
+  }
+  const members = Array.isArray(path.additivePath.members) ? path.additivePath.members : [];
+  const delivered = Array.isArray(node.items) ? node.items : [];
+  if (members.length !== delivered.length || members.some((member, index) => member?.memberRef !== delivered[index]?.label)) {
+    errors.push(specError('WATERFALL_SPEC_MEMBERS_NOT_ALIGNED', node, 'waterfall segments must equal the typed additive_path members in declared order.'));
+    return null;
+  }
+  const segments = [];
+  let running = numericValue(start.value);
+  for (const [index, member] of members.entries()) {
+    const item = labelIndex.get(member.memberRef);
+    const sign = member.sign === 'plus' ? 1 : member.sign === 'minus' ? -1 : null;
+    if (!item || sign === null) {
+      errors.push(specError('WATERFALL_SPEC_MEMBERS_NOT_ALIGNED', node, `waterfall member ${member?.memberRef ?? index} is not grounded with a declared sign.`));
+      return null;
+    }
+    const value = numericValue(item.value);
+    const cumulativeBefore = running;
+    running += sign * value;
+    segments.push(Object.freeze({
+      memberRef: member.memberRef,
+      sign: member.sign,
+      value,
+      cumulativeBefore,
+      cumulativeAfter: running
+    }));
+  }
+  const startValue = numericValue(start.value);
+  const endValue = numericValue(end.value);
+  if (!contractWithinTolerance(running, endValue)) {
+    errors.push(specError('WATERFALL_SPEC_ADDITIVE_CONTRACT_FAILED', node, 'the declared additive path does not reconcile start plus signed members to end within the frozen tolerance.'));
+    return null;
+  }
+  const high = Math.max(startValue, endValue, ...segments.map((segment) => Math.max(segment.cumulativeBefore, segment.cumulativeAfter)));
+  if (!(high > 0)) {
+    errors.push(specError('WATERFALL_SPEC_ADDITIVE_CONTRACT_FAILED', node, 'a waterfall requires a positive shared value domain.'));
+    return null;
+  }
+  return Object.freeze({
+    mapType: 'linear',
+    relationshipRef: path.id,
+    valueDomain: Object.freeze([0, high]),
+    startRef: path.additivePath.startRef,
+    endRef: path.additivePath.endRef,
+    startDisplay: String(start.value),
+    endDisplay: String(end.value),
+    startValue,
+    endValue,
+    segments: Object.freeze(segments)
+  });
+}
+
+function rankingDeclarationFor(node, options) {
+  const basisKind = options.orderingBasis?.kind;
+  const items = Array.isArray(node.items) ? node.items : [];
+  const ordinalOrder = items.length >= 2 && items.every((item, index) => Number.isInteger(item?.rank) && item.rank === index + 1);
+  return Object.freeze({
+    basis: basisKind ? `composition_intent:${basisKind}` : ordinalOrder ? 'source_rank_ordinals' : 'source_order',
+    direction: 'delivered_order',
+    candidateValues: Object.freeze(items.map((item) => numericValue(item.value)))
+  });
+}
+
 export function buildInternalVisualSpecs(data = {}, composition = {}, options = {}) {
   const source = new Map((data.semanticNodes ?? []).map((node) => [node.id, node]));
   const nodes = Array.isArray(composition?.nodes) ? composition.nodes : [];
@@ -657,6 +821,17 @@ export function buildInternalVisualSpecs(data = {}, composition = {}, options = 
       layout: layoutResult.layout,
       structure: config.structure
     };
+    if (config.mark === 'bullet') {
+      const declaration = bulletDeclarationFor(node, errors);
+      if (declaration) spec.bullet = declaration;
+    }
+    if (config.mark === 'waterfall') {
+      const declaration = waterfallDeclarationFor(node, source, context, errors);
+      if (declaration) spec.waterfall = declaration;
+    }
+    if (node.type === 'Ranking' && ['both_ends', 'full_ranking'].includes(node.presentation)) {
+      spec.ranking = rankingDeclarationFor(node, options);
+    }
     const specErrors = visualSpecErrors(spec);
     for (const error of specErrors) errors.push(specError(error.code, node, error.message));
     specs.push(spec);

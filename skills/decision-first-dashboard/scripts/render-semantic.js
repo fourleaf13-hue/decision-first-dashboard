@@ -8,6 +8,7 @@ import {
   buildInternalVisualSpecs,
   numericValue
 } from './visual-grammar.js';
+import { mapFraction } from './encoding-contracts.js';
 
 function escapeMarkup(value = '') {
   return String(value)
@@ -140,6 +141,8 @@ function visualGeometry(spec) {
   if (spec.mark === 'radar') return 'radar-polygon';
   if (spec.mark === 'metric_tile') return 'metric-tiles';
   if (spec.mark === 'gap_bar') return 'gap-bars';
+  if (spec.mark === 'bullet') return 'bullet-target';
+  if (spec.mark === 'waterfall') return 'waterfall-segments';
   if (spec.mark === 'detail_list') return 'detail-list';
   if (spec.mark === 'list') return 'list';
   if (spec.structure === 'ordered-distribution') return 'distribution-bars';
@@ -309,6 +312,46 @@ function htmlBreakdown(node) {
   return `<ol class="semantic-breakdown breakdown-bars" data-structure="decomposition" data-item-count="${node.items.length}" data-visual-geometry="breakdown-bars">${node.items.map((item, index) => htmlRow(node, item, index, max, 'bar')).join('')}</ol>`;
 }
 
+function bulletPercent(bullet, value) {
+  return (mapFraction(value, bullet.valueDomain) * 100).toFixed(1);
+}
+
+function htmlBullet(node) {
+  const bullet = node.visualSpec.bullet;
+  if (!bullet) throw new Error('bullet rendering requires a declared bullet scale');
+  const rows = node.items.map((item, index) => {
+    const identity = `<span>${escapeMarkup(item.label)}</span><b>${escapeMarkup(item.value)}</b>`;
+    const detail = item.detail ? `<small>${escapeMarkup(item.detail)}</small>` : '';
+    if (item.role === 'actual') {
+      return `<li class="bullet-row bullet-row--actual" ${itemAttributes(node, item, index, 'bullet-actual')}>${identity}<i class="visual-bar bullet-actual-bar" data-visual-mark-item="bullet-actual" style="--value:${bulletPercent(bullet, numericValue(item.value))}%"></i></li>`;
+    }
+    if (item.role === 'target') {
+      return `<li class="bullet-row bullet-row--target" ${itemAttributes(node, item, index)}>${identity}<span class="bullet-target-marker" data-visual-marker="target" style="--at:${bulletPercent(bullet, numericValue(item.value))}%"></span></li>`;
+    }
+    return `<li class="bullet-row bullet-row--gap" ${itemAttributes(node, item, index)}>${identity}${detail}<span class="bullet-gap-note" data-visual-annotation="gap">${escapeMarkup(`${item.label}: ${item.value}${item.detail ? ` (${item.detail})` : ''}`)}</span></li>`;
+  }).join('');
+  return `<div class="bullet-chart" data-visual-geometry="bullet-target"><ol class="bullet-items" data-structure="target-bullet" data-item-count="${node.items.length}">${rows}</ol></div>`;
+}
+
+function waterfallGeometry(waterfall, segment) {
+  const low = Math.min(segment.cumulativeBefore, segment.cumulativeAfter);
+  const high = Math.max(segment.cumulativeBefore, segment.cumulativeAfter);
+  const offset = mapFraction(low, waterfall.valueDomain);
+  const width = mapFraction(high, waterfall.valueDomain) - offset;
+  return [offset, width];
+}
+
+function htmlWaterfall(node) {
+  const waterfall = node.visualSpec.waterfall;
+  if (!waterfall) throw new Error('waterfall rendering requires a declared additive path');
+  const endpoint = (role, ref, display, value) => `<span class="waterfall-endpoint waterfall-endpoint--${role}" data-waterfall-endpoint="${role}" style="--at:${(mapFraction(value, waterfall.valueDomain) * 100).toFixed(1)}%">${escapeMarkup(ref)} <b>${escapeMarkup(display)}</b></span>`;
+  const rows = node.items.map((item, index) => {
+    const [offset, width] = waterfallGeometry(waterfall, waterfall.segments[index]);
+    return `<li class="waterfall-row" ${itemAttributes(node, item, index)}><span>${escapeMarkup(item.label)}</span><b>${escapeMarkup(item.value)}</b>${item.detail ? `<small>${escapeMarkup(item.detail)}</small>` : ''}<div class="waterfall-plot"><i class="visual-bar waterfall-segment" data-visual-mark-item="waterfall-segment" data-segment-index="${index}" style="--offset:${(offset * 100).toFixed(1)}%;--value:${(width * 100).toFixed(1)}%"></i></div></li>`;
+  }).join('');
+  return `<div class="waterfall-chart" data-visual-geometry="waterfall-segments"><div class="waterfall-endpoints">${endpoint('start', waterfall.startRef, waterfall.startDisplay, waterfall.startValue)}${endpoint('end', waterfall.endRef, waterfall.endDisplay, waterfall.endValue)}</div><ol class="waterfall-track" data-structure="additive-path" data-item-count="${node.items.length}">${rows}</ol></div>`;
+}
+
 function htmlList(node) {
   const rows = node.items.map((item, index) => htmlRow(node, item, index, 1)).join('');
   return `<ol class="semantic-items semantic-list" data-structure="${escapeMarkup(node.structure)}" data-item-count="${node.items.length}" data-visual-geometry="${visualGeometry(node.visualSpec)}">${rows}</ol>`;
@@ -318,6 +361,8 @@ function htmlBody(node) {
   if (node.visualSpec.mark === 'line') return htmlTrend(node);
   if (node.visualSpec.mark === 'radar') return htmlRadar(node);
   if (node.visualSpec.mark === 'gap_bar') return htmlRelationship(node);
+  if (node.visualSpec.mark === 'bullet') return htmlBullet(node);
+  if (node.visualSpec.mark === 'waterfall') return htmlWaterfall(node);
   if (node.visualSpec.mark === 'metric_tile') return htmlMetricStrip(node);
   if (node.visualSpec.mark === 'paired_bar') return htmlRanking(node, true);
   if (node.visualSpec.structure === 'ordered-distribution') return htmlDistribution(node);
@@ -418,7 +463,7 @@ function svgRoleRules() {
   ].join('');
 }
 
-const CSS_BASE = `:root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#172235;background:#eef1f6}.semantic-shell{max-width:1360px;margin:0 auto;padding:44px 30px 64px}.semantic-shell h1{font-size:32px;letter-spacing:-.02em;margin:0;color:#0f1a2c}.semantic-shell>p{font-size:14px;color:#74849e;margin:8px 0 34px}.typed-claims{display:grid;gap:8px;margin:0 0 20px}.typed-claim{display:inline-flex;width:max-content;max-width:100%;padding:9px 12px;border-radius:10px;background:#fff3d8;color:#6e4b00;font-size:13px;font-weight:700}.semantic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:22px}.semantic-grid>*{min-width:0}.semantic-card{background:#fff;border:1px solid #e7ebf3;border-radius:16px;padding:var(--rp-pad,20px);box-shadow:0 1px 2px rgba(15,26,44,.04),0 10px 26px rgba(15,26,44,.07)}.semantic-card header{border-bottom:1px solid #eef1f7;padding-bottom:12px}.semantic-card h2{font-size:var(--rp-title,16px);letter-spacing:-.012em;margin:0;color:#131e30}.semantic-card p{font-size:var(--rp-meta,12px);color:#75849c;margin:6px 0 0}.semantic-card ol{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}.semantic-card li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:end;position:relative;padding-bottom:9px}.semantic-card li span{font-size:var(--rp-label,13px);color:#41516b}.semantic-card li b{font-size:var(--rp-value,13px);color:#111c2e}.semantic-card li em{font-size:11px;color:#8290a8;font-style:normal;margin-right:6px}.semantic-card li small{grid-column:1/-1;color:#7f8ca3;font-size:var(--rp-meta,11px)}.visual-bar{display:block;width:var(--value);height:6px;background:#7e97c9;border-radius:999px}.visual-plot{margin-top:18px}.trend-plot{display:block;width:100%;height:200px;background:#fbfcfe;border-radius:12px}.trend-plot--compact{height:120px}.plot-baseline{stroke:#e3e8f1;stroke-width:1}.trend-line{fill:none;stroke:#3e63c6;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.trend-point{fill:#fff;stroke:#3e63c6;stroke-width:2}.trend-point--latest{fill:#3e63c6}.trend-value{font:700 12px Inter,Arial;fill:#22314a}.trend-year{font:11px Inter,Arial;fill:#75839a}.visual-plot--distribution .distribution-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(48px,1fr));gap:8px;align-items:end}.distribution-member{display:block!important;padding:0!important}.distribution-member>div{min-height:126px;display:flex;flex-direction:column;justify-content:end;gap:4px;padding:8px 5px;background:#f6f8fd;border-radius:10px}.distribution-member span{font-size:11px;text-align:center;color:#66758e}.distribution-member b{font-size:12px;text-align:center}.distribution-member .visual-bar{width:100%;height:calc(var(--value) * .82);min-height:5px;background:#8fabdb}.visual-ranking{gap:12px!important}.visual-ranking li .visual-bar,.breakdown-bars li .visual-bar,.relationship-row li .visual-bar{background:#7e97c9}.paired-ranking{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.ranking-end{border:1px solid #e7ebf3;border-radius:14px;padding:14px;background:#fbfcfe}.ranking-end h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#7d8aa1}.ranking-end--high{border-top:4px solid #3e63c6}.ranking-end--low{border-top:4px solid #a4b0c5}.ranking-end ol{margin-top:14px}.metric-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:18px;background:#f8fafd;border-radius:14px;padding:10px}.metric-tile{min-height:94px;display:flex;flex-direction:column;justify-content:space-between;padding:13px;border-radius:12px}.metric-tile span{font-size:12px;font-weight:600;color:#687993}.metric-tile strong{font-size:22px;letter-spacing:-.02em;color:#101b2d}.metric-tile--lead{grid-column:span 2;background:#eef3fd;border:1px solid #c9d6f2}.metric-tile--lead strong{font-size:${LEAD_VALUE_FONT_PX}px}.metric-tile small{font-size:11px;color:#8390a5}.subset-note{margin:12px 0 0;font-size:11px;color:#8390a5;text-align:right}.visual-profile{margin-top:14px;display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:center}.radar-plot{width:220px;height:220px;background:#f8faff;border-radius:50%}.radar-ring{fill:none;stroke:#dce3f0}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}.radar-dimensions{display:grid;gap:8px}.radar-dimension{font-size:12px;color:#63728a}.radar-dimension b{display:block;color:#172235;font-size:14px}.relationship-bars li .visual-bar{background:#8d9db8}.relationship-row--gap .visual-bar{background:#94a1b8}.relationship-row--target .visual-bar{background:#aeb9cc}.breakdown-bars li .visual-bar{background:#7e97c9}.semantic-list li{padding-bottom:12px}.semantic-grid--hero_support{grid-template-columns:repeat(2,minmax(0,1fr))}.semantic-grid--asymmetric{grid-template-columns:69fr 31fr}.semantic-card--value .semantic-list li .visual-bar{display:none}`;
+const CSS_BASE = `:root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#172235;background:#eef1f6}.semantic-shell{max-width:1360px;margin:0 auto;padding:44px 30px 64px}.semantic-shell h1{font-size:32px;letter-spacing:-.02em;margin:0;color:#0f1a2c}.semantic-shell>p{font-size:14px;color:#74849e;margin:8px 0 34px}.typed-claims{display:grid;gap:8px;margin:0 0 20px}.typed-claim{display:inline-flex;width:max-content;max-width:100%;padding:9px 12px;border-radius:10px;background:#fff3d8;color:#6e4b00;font-size:13px;font-weight:700}.semantic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:22px}.semantic-grid>*{min-width:0}.semantic-card{background:#fff;border:1px solid #e7ebf3;border-radius:16px;padding:var(--rp-pad,20px);box-shadow:0 1px 2px rgba(15,26,44,.04),0 10px 26px rgba(15,26,44,.07)}.semantic-card header{border-bottom:1px solid #eef1f7;padding-bottom:12px}.semantic-card h2{font-size:var(--rp-title,16px);letter-spacing:-.012em;margin:0;color:#131e30}.semantic-card p{font-size:var(--rp-meta,12px);color:#75849c;margin:6px 0 0}.semantic-card ol{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}.semantic-card li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:end;position:relative;padding-bottom:9px}.semantic-card li span{font-size:var(--rp-label,13px);color:#41516b}.semantic-card li b{font-size:var(--rp-value,13px);color:#111c2e}.semantic-card li em{font-size:11px;color:#8290a8;font-style:normal;margin-right:6px}.semantic-card li small{grid-column:1/-1;color:#7f8ca3;font-size:var(--rp-meta,11px)}.visual-bar{display:block;width:var(--value);height:6px;background:#7e97c9;border-radius:999px}.visual-plot{margin-top:18px}.trend-plot{display:block;width:100%;height:200px;background:#fbfcfe;border-radius:12px}.trend-plot--compact{height:120px}.plot-baseline{stroke:#e3e8f1;stroke-width:1}.trend-line{fill:none;stroke:#3e63c6;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.trend-point{fill:#fff;stroke:#3e63c6;stroke-width:2}.trend-point--latest{fill:#3e63c6}.trend-value{font:700 12px Inter,Arial;fill:#22314a}.trend-year{font:11px Inter,Arial;fill:#75839a}.visual-plot--distribution .distribution-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(48px,1fr));gap:8px;align-items:end}.distribution-member{display:block!important;padding:0!important}.distribution-member>div{min-height:126px;display:flex;flex-direction:column;justify-content:end;gap:4px;padding:8px 5px;background:#f6f8fd;border-radius:10px}.distribution-member span{font-size:11px;text-align:center;color:#66758e}.distribution-member b{font-size:12px;text-align:center}.distribution-member .visual-bar{width:100%;height:calc(var(--value) * .82);min-height:5px;background:#8fabdb}.visual-ranking{gap:12px!important}.visual-ranking li .visual-bar,.breakdown-bars li .visual-bar,.relationship-row li .visual-bar{background:#7e97c9}.paired-ranking{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.ranking-end{border:1px solid #e7ebf3;border-radius:14px;padding:14px;background:#fbfcfe}.ranking-end h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#7d8aa1}.ranking-end--high{border-top:4px solid #3e63c6}.ranking-end--low{border-top:4px solid #a4b0c5}.ranking-end ol{margin-top:14px}.metric-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:18px;background:#f8fafd;border-radius:14px;padding:10px}.metric-tile{min-height:94px;display:flex;flex-direction:column;justify-content:space-between;padding:13px;border-radius:12px}.metric-tile span{font-size:12px;font-weight:600;color:#687993}.metric-tile strong{font-size:22px;letter-spacing:-.02em;color:#101b2d}.metric-tile--lead{grid-column:span 2;background:#eef3fd;border:1px solid #c9d6f2}.metric-tile--lead strong{font-size:${LEAD_VALUE_FONT_PX}px}.metric-tile small{font-size:11px;color:#8390a5}.subset-note{margin:12px 0 0;font-size:11px;color:#8390a5;text-align:right}.visual-profile{margin-top:14px;display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:center}.radar-plot{width:220px;height:220px;background:#f8faff;border-radius:50%}.radar-ring{fill:none;stroke:#dce3f0}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}.radar-dimensions{display:grid;gap:8px}.radar-dimension{font-size:12px;color:#63728a}.radar-dimension b{display:block;color:#172235;font-size:14px}.relationship-bars li .visual-bar{background:#8d9db8}.relationship-row--gap .visual-bar{background:#94a1b8}.relationship-row--target .visual-bar{background:#aeb9cc}.breakdown-bars li .visual-bar{background:#7e97c9}.semantic-list li{padding-bottom:12px}.semantic-grid--hero_support{grid-template-columns:repeat(2,minmax(0,1fr))}.semantic-grid--asymmetric{grid-template-columns:69fr 31fr}.semantic-card--value .semantic-list li .visual-bar{display:none}.bullet-chart{margin-top:18px}.bullet-items{gap:16px!important}.bullet-row--actual .bullet-actual-bar{margin-top:16px;height:10px;background:#7e97c9}.bullet-row--target{min-height:24px}.bullet-target-marker{position:absolute;left:var(--at);top:2px;width:3px;height:22px;background:#3e63c6;border-radius:2px;transform:translateX(-50%)}.bullet-gap-note{grid-column:1/-1;margin-top:4px;font-size:var(--rp-meta,12px);color:#5f6f89}.waterfall-chart{margin-top:18px}.waterfall-endpoints{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:#75839a;margin-bottom:8px}.waterfall-endpoint b{color:#172235}.waterfall-track{gap:12px!important}.waterfall-plot{grid-column:1/-1;position:relative;height:10px;margin-top:6px;background:#f2f5fb;border-radius:999px}.waterfall-segment{position:absolute;left:var(--offset);width:var(--value);height:10px;background:#7e97c9;border-radius:3px}`;
 
 const CSS = `${CSS_BASE}${roleRules('wide')}@media(max-width:900px){.semantic-grid,.semantic-grid--hero_support,.semantic-grid--asymmetric{grid-template-columns:1fr}${roleRules('tablet')}}@media(max-width:620px){.semantic-shell{padding:28px 14px 48px}.semantic-shell h1{font-size:26px}.metric-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.visual-profile{grid-template-columns:1fr}.paired-ranking{grid-template-columns:1fr}${roleRules('narrow')}}`;
 
@@ -605,6 +650,41 @@ function svgBars(node, x, y, width, className = 'bar') {
   return `<g data-visual-geometry="${visualGeometry(node.visualSpec)}">${plotTrack(node, x + 22, x + 22 + width - 190, y + 118)}${rows}</g>`;
 }
 
+function encodingTrack(node, x1, x2, y) {
+  return `<line data-encoding-track="true" data-semantic-node="${escapeMarkup(node.id)}" x1="${x1.toFixed(1)}" y1="${y.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y.toFixed(1)}" class="plot-track"/>`;
+}
+
+function svgBullet(node, x, y, width) {
+  const bullet = node.visualSpec.bullet;
+  if (!bullet) throw new Error('bullet rendering requires a declared bullet scale');
+  const trackX = x + 22;
+  const trackW = width - 190;
+  const at = (value) => trackX + mapFraction(value, bullet.valueDomain) * trackW;
+  const rows = node.items.map((item, index) => svgTextItem(node, item, index, x + 22, y + 100 + index * 24, 'label', null, x + width - 22)).join('');
+  const actualWidth = Math.max(1, mapFraction(bullet.actual, bullet.valueDomain) * trackW);
+  return `<g data-visual-geometry="bullet-target">${rows}${encodingTrack(node, trackX, trackX + trackW, y + 168)}<rect data-visual-mark-item="bullet-actual" x="${trackX.toFixed(1)}" y="${y + 160}" width="${actualWidth.toFixed(1)}" height="10" rx="5" class="bullet-actual-bar"/><rect data-visual-marker="target" x="${(at(bullet.target) - 1.5).toFixed(1)}" y="${y + 154}" width="3" height="22" class="bullet-target-marker"/><text x="${trackX}" y="${y + 196}" class="small-label" data-visual-annotation="gap">${escapeMarkup(node.items.filter((item) => item.role === 'gap').map((item) => `${item.label}: ${item.value}${item.detail ? ` (${item.detail})` : ''}`).join(' '))}</text></g>`;
+}
+
+function svgWaterfall(node, x, y, width) {
+  const waterfall = node.visualSpec.waterfall;
+  if (!waterfall) throw new Error('waterfall rendering requires a declared additive path');
+  const trackX = x + 22;
+  const trackW = width - 190;
+  const at = (value) => trackX + mapFraction(value, waterfall.valueDomain) * trackW;
+  const rows = node.items.map((item, index) => {
+    const segment = waterfall.segments[index];
+    const rowY = y + 106 + index * 30;
+    const low = Math.min(segment.cumulativeBefore, segment.cumulativeAfter);
+    const high = Math.max(segment.cumulativeBefore, segment.cumulativeAfter);
+    const segX = at(low);
+    const segW = Math.max(1, at(high) - segX);
+    return `<g ${itemAttributes(node, item, index, 'waterfall-segment')}><text x="${x + 22}" y="${rowY}" class="label">${escapeMarkup(item.label)}</text><text x="${x + width - 22}" y="${rowY}" text-anchor="end" class="value">${escapeMarkup(item.value)}</text><rect data-visual-mark-item="waterfall-segment" data-segment-index="${index}" x="${segX.toFixed(1)}" y="${rowY + 8}" width="${segW.toFixed(1)}" height="9" rx="3" class="waterfall-segment-bar"/></g>`;
+  }).join('');
+  const baseY = y + 106 + node.items.length * 30;
+  const endpoint = (role, value, ref, display) => `<g data-waterfall-endpoint="${role}"><line x1="${at(value).toFixed(1)}" y1="${(baseY + 4).toFixed(1)}" x2="${at(value).toFixed(1)}" y2="${(baseY + 22).toFixed(1)}" class="waterfall-endpoint-tick"/><text x="${at(value).toFixed(1)}" y="${(baseY + 38).toFixed(1)}" text-anchor="middle" class="small-label">${escapeMarkup(ref)} ${escapeMarkup(display)}</text></g>`;
+  return `<g data-visual-geometry="waterfall-segments">${rows}${encodingTrack(node, trackX, trackX + trackW, baseY + 13)}${endpoint('start', waterfall.startValue, waterfall.startRef, waterfall.startDisplay)}${endpoint('end', waterfall.endValue, waterfall.endRef, waterfall.endDisplay)}</g>`;
+}
+
 function svgList(node, x, y, width) {
   const rows = node.items.map((item, index) => svgTextItem(node, item, index, x + 22, y + 110 + index * 30, 'label', null, x + width - 22)).join('');
   return `<g data-visual-geometry="${visualGeometry(node.visualSpec)}">${rows}</g>`;
@@ -613,6 +693,8 @@ function svgList(node, x, y, width) {
 function svgBody(node, x, y, width) {
   if (node.visualSpec.mark === 'line') return svgTrend(node, x, y, width);
   if (node.visualSpec.mark === 'radar') return svgRadar(node, x, y, width);
+  if (node.visualSpec.mark === 'bullet') return svgBullet(node, x, y, width);
+  if (node.visualSpec.mark === 'waterfall') return svgWaterfall(node, x, y, width);
   if (node.visualSpec.mark === 'metric_tile') return svgMetricStrip(node, x, y, width);
   if (node.visualSpec.mark === 'paired_bar') return svgRanking(node, x, y, width, true);
   if (node.visualSpec.mark === 'gap_bar') return svgBars(node, x, y, width, 'gap-bar');
@@ -637,5 +719,5 @@ export function renderSemanticSvg(data, composition, options = {}) {
   const height = Math.max(520, (last?.y ?? 110) + (last?.height ?? 284) + 60);
   const pageAttrs = pageComposition ? ` data-page-pattern="${escapeMarkup(pageComposition.pattern)}" data-page-archetype="${escapeMarkup(pageComposition.archetype)}"` : '';
   const header = pageHeaderText(options);
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 ${height}" role="img"${pageAttrs}><style>.card{fill:#fff;stroke:#e7ebf3}.title{font:700 18px Inter,Arial;fill:#131e30}.subtitle{font:12px Inter,Arial;fill:#75849c}.label{font:13px Inter,Arial;fill:#3d4d67}.value{font:700 13px Inter,Arial;fill:#111c2e}.small-label{font:11px Inter,Arial;fill:#75839a}.small-value{font:700 12px Inter,Arial;fill:#172235}.rank{font:700 11px Inter,Arial;fill:#8290a8}.detail{font:11px Inter,Arial;fill:#7f8ca3}.plot-baseline{stroke:#e3e8f1;stroke-width:1}.plot-track{stroke:none}.trend-line{fill:none;stroke:#3e63c6;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.trend-point{fill:#fff;stroke:#3e63c6;stroke-width:2}.trend-point--latest{fill:#3e63c6}.trend-value{font:700 12px Inter,Arial;fill:#22314a}.trend-year{font:11px Inter,Arial;fill:#75839a}.distribution-bar{fill:#8fabdb}.ranking-bar{fill:#7e97c9}.gap-bar{fill:#8d9db8}.breakdown-bar{fill:#7e97c9}.metric-strip-plate{fill:#f8fafd;stroke:none}.metric-tile{fill:none;stroke:none}.metric-tile--lead{fill:#eef3fd;stroke:#c9d6f2}.metric-value{font:700 22px Inter,Arial;fill:#101b2d}.metric-value--lead{font:700 ${LEAD_VALUE_FONT_PX}px Inter,Arial;fill:#101b2d}.radar-ring{fill:none;stroke:#dce3f0}.radar-axis{stroke:#e2e7f1;stroke-width:1}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}text.title[x="48"][font-size="28"]{font:700 28px Inter,Arial;letter-spacing:-.02em;fill:#0f1a2c}text.subtitle[x="48"]{font-size:13px;fill:#74849e}${svgRoleRules()}</style><rect width="1440" height="${height}" fill="#eef1f6"/><text x="48" y="52" class="title" font-size="28">${escapeMarkup(header.title)}</text><text x="48" y="78" class="subtitle">${escapeMarkup(header.subtitle)}</text>${claims}${layouts.map(svgCard).join('')}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 ${height}" role="img"${pageAttrs}><style>.card{fill:#fff;stroke:#e7ebf3}.title{font:700 18px Inter,Arial;fill:#131e30}.subtitle{font:12px Inter,Arial;fill:#75849c}.label{font:13px Inter,Arial;fill:#3d4d67}.value{font:700 13px Inter,Arial;fill:#111c2e}.small-label{font:11px Inter,Arial;fill:#75839a}.small-value{font:700 12px Inter,Arial;fill:#172235}.rank{font:700 11px Inter,Arial;fill:#8290a8}.detail{font:11px Inter,Arial;fill:#7f8ca3}.plot-baseline{stroke:#e3e8f1;stroke-width:1}.plot-track{stroke:none}.bullet-actual-bar{fill:#7e97c9}.bullet-target-marker{fill:#3e63c6}.waterfall-segment-bar{fill:#7e97c9}.waterfall-endpoint-tick{stroke:#3e63c6;stroke-width:2}.trend-line{fill:none;stroke:#3e63c6;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.trend-point{fill:#fff;stroke:#3e63c6;stroke-width:2}.trend-point--latest{fill:#3e63c6}.trend-value{font:700 12px Inter,Arial;fill:#22314a}.trend-year{font:11px Inter,Arial;fill:#75839a}.distribution-bar{fill:#8fabdb}.ranking-bar{fill:#7e97c9}.gap-bar{fill:#8d9db8}.breakdown-bar{fill:#7e97c9}.metric-strip-plate{fill:#f8fafd;stroke:none}.metric-tile{fill:none;stroke:none}.metric-tile--lead{fill:#eef3fd;stroke:#c9d6f2}.metric-value{font:700 22px Inter,Arial;fill:#101b2d}.metric-value--lead{font:700 ${LEAD_VALUE_FONT_PX}px Inter,Arial;fill:#101b2d}.radar-ring{fill:none;stroke:#dce3f0}.radar-axis{stroke:#e2e7f1;stroke-width:1}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}text.title[x="48"][font-size="28"]{font:700 28px Inter,Arial;letter-spacing:-.02em;fill:#0f1a2c}text.subtitle[x="48"]{font-size:13px;fill:#74849e}${svgRoleRules()}</style><rect width="1440" height="${height}" fill="#eef1f6"/><text x="48" y="52" class="title" font-size="28">${escapeMarkup(header.title)}</text><text x="48" y="78" class="subtitle">${escapeMarkup(header.subtitle)}</text>${claims}${layouts.map(svgCard).join('')}</svg>`;
 }
