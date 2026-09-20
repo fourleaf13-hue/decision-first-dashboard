@@ -13,6 +13,7 @@ import {
 } from './composition.js';
 import { evaluateWorthinessAssessment } from './worthiness.js';
 import { evaluateDecisionBrief } from './intake.js';
+import { evaluateCompositionIntent } from './composition-intent.js';
 import {
   buildCanonicalProvenance,
   finalizeOutputManifest,
@@ -116,6 +117,28 @@ export function compileDecisionDashboard(
       outputMode: null
     };
   }
+
+  const compositionIntentEvaluation = evaluateCompositionIntent(decisionBrief, bundle);
+  if (compositionIntentEvaluation.transition !== 'PASS') {
+    return {
+      result: {
+        valid: false,
+        stage: 'composition_intent',
+        transition: 'ASK_COMPOSITION_INTENT',
+        errors: [],
+        reasonCode: compositionIntentEvaluation.reasonCode,
+        askQuestion: compositionIntentEvaluation.question,
+        compositionIntent: compositionIntentEvaluation.intent,
+        worthinessSummary: worthiness.summary,
+        intakeSummary: intake.summary
+      },
+      svg: null,
+      html: null,
+      manifest: null,
+      outputMode: null
+    };
+  }
+  const compositionIntent = compositionIntentEvaluation.intent;
 
   const routing = validateMetricRouting(routingManifest, bundle?.decisionState, {
     metricWorthiness: worthinessAssessment.metricWorthiness,
@@ -271,6 +294,7 @@ export function compileDecisionDashboard(
   };
   const manifestPayload = {
     ...finalizeOutputManifest(provenance, html, svg),
+    compositionIntent,
     delivery: deliveredManifest
   };
   const delivery = verifyDeliveredArtifact({ html, svg, manifest: manifestPayload });
@@ -303,6 +327,7 @@ export function compileDecisionDashboard(
     effectiveDecisionState: effectiveBundle.decisionState,
     result: {
       ...compiled.result,
+      compositionIntent,
       worthinessSummary: worthiness.summary,
       intakeSummary: intake.summary,
       routingSummary: routing.summary,

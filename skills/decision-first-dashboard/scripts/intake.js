@@ -13,7 +13,7 @@ function add(errors, code, path, message) {
 
 function semanticErrors(brief) {
   const errors = [];
-  for (const slotName of ['decision', 'action', 'exception', 'diagnosis', 'audience', 'cadence']) {
+  for (const slotName of ['decision', 'action', 'questionShape', 'actionShape', 'exception', 'diagnosis', 'audience', 'cadence']) {
     const slot = brief?.[slotName];
     if (!slot) continue;
     if (slot.status === 'confirmed' && typeof slot.value !== 'string') {

@@ -54,7 +54,9 @@ function makeGroundedFixture(dir, fileName, nodeSelections, intents) {
   requiredRelationshipPaths(decisionState).forEach((relationshipPath) => add(relationshipPath, relationshipPath));
   const brief = {
     decision: { status: 'confirmed', value: intents.decision },
-    action: { status: 'confirmed', value: intents.action }
+    action: { status: 'confirmed', value: intents.action },
+    questionShape: { status: 'confirmed', value: intents.questionShape },
+    actionShape: { status: 'confirmed', value: intents.actionShape }
   };
   const routing = {
     decision: intents.decision,
@@ -77,11 +79,15 @@ function makeGroundedFixture(dir, fileName, nodeSelections, intents) {
 
 const MONITOR_INTENT = {
   decision: 'Are we operating within the declared bounds this week?',
-  action: 'Review the current state; escalate only when a declared bound is crossed'
+  action: 'Review the current state; escalate only when a declared bound is crossed',
+  questionShape: 'state',
+  actionShape: 'observe'
 };
 const PRIORITIZE_INTENT = {
   decision: 'Which candidate should the team handle first this cycle?',
-  action: 'Commit the next work slot to the top-ranked candidate'
+  action: 'Commit the next work slot to the top-ranked candidate',
+  questionShape: 'priority',
+  actionShape: 'rank'
 };
 
 const HEALTH_NODES = [
@@ -97,6 +103,17 @@ const HEALTH_REQUIREMENTS = [
   { id: 'ctx_product_ranking', type: 'ranking_span', subject: 'product_roi', minimumCoverage: 'both_ends', status: 'inferred' }
 ];
 
+const CEO_NODES = [
+  { id: 'revenue_target', type: 'Relationship', presentation: 'full_chart' },
+  { id: 'gap_attribution', type: 'Breakdown', presentation: 'full_breakdown' },
+  { id: 'top_accounts', type: 'Ranking', presentation: 'both_ends' }
+];
+const CEO_REQUIREMENTS = [
+  { id: 'ctx_revenue_target', type: 'target_reference', subject: 'revenue_target', minimumCoverage: 'target_and_gap', status: 'inferred' },
+  { id: 'ctx_gap_attribution', type: 'gap_attribution', subject: 'gap_attribution', minimumCoverage: 'full_breakdown', status: 'inferred' },
+  { id: 'ctx_top_accounts', type: 'contributor_comparison', subject: 'top_accounts', minimumCoverage: 'contributors', status: 'inferred' }
+];
+
 function compile(dir, fileName, selections, intents, requirements) {
   const fixture = makeGroundedFixture(dir, fileName, selections, intents);
   fixture.brief.contextRequirements = requirements;
@@ -105,9 +122,12 @@ function compile(dir, fileName, selections, intents, requirements) {
 }
 
 test('CR2-A same source + different confirmed decision must produce a load-bearing composition difference', () => {
-  const monitor = compile(adaptiveDir, 'bakery.source.json', HEALTH_NODES, MONITOR_INTENT, HEALTH_REQUIREMENTS);
+  // The CEO source carries a grounded target/gap structure, so BOTH the
+  // monitor and the prioritize intents classify and compile; the comparison
+  // below therefore measures delivered composition, not gate behavior.
+  const monitor = compile(adaptiveDir, 'ceo-sales.source.json', CEO_NODES, MONITOR_INTENT, CEO_REQUIREMENTS);
   assert.equal(monitor.compiled.result.valid, true, `monitor compile failed: ${JSON.stringify(monitor.compiled.result.errors)}`);
-  const prioritize = compile(adaptiveDir, 'bakery.source.json', HEALTH_NODES, PRIORITIZE_INTENT, HEALTH_REQUIREMENTS);
+  const prioritize = compile(adaptiveDir, 'ceo-sales.source.json', CEO_NODES, PRIORITIZE_INTENT, CEO_REQUIREMENTS);
   assert.equal(prioritize.compiled.result.valid, true, `prioritize compile failed: ${JSON.stringify(prioritize.compiled.result.errors)}`);
 
   const sigMonitor = extractCompositionSignature({ html: monitor.compiled.html, svg: monitor.compiled.svg });
@@ -202,7 +222,7 @@ test('CR2-D2 prioritize intent WITHOUT grounded ordering basis must never sort b
 
   let classification;
   const evidence = {};
-  const askTransitions = ['ASK_METRIC_WORTHINESS_QUESTION', 'ASK_DECISION_BRIEF_QUESTION', 'FIX_METRIC_ROUTING'];
+  const askTransitions = ['ASK_COMPOSITION_INTENT', 'ASK_METRIC_WORTHINESS_QUESTION', 'ASK_DECISION_BRIEF_QUESTION', 'FIX_METRIC_ROUTING'];
   if (!result.compiled.result.valid && askTransitions.includes(result.compiled.result.transition)) {
     classification = 'SAFE_FAIL_CLOSED';
     evidence.transition = result.compiled.result.transition;

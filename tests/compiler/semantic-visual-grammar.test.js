@@ -152,6 +152,8 @@ function compileVisualFixture() {
   const brief = {
     decision: { status: 'confirmed', value: 'Choose the next operating focus' },
     action: { status: 'confirmed', value: 'Prioritize the next operating action' },
+    questionShape: { status: 'confirmed', value: 'state' },
+    actionShape: { status: 'confirmed', value: 'observe' },
     contextRequirements: [
       { id: 'ctx_annual_temporal', type: 'temporal_reference', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
       { id: 'ctx_monthly_distribution', type: 'distribution_shape', subject: 'monthly_orders', minimumCoverage: 'full_distribution', status: 'inferred' },

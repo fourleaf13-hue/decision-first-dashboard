@@ -12,6 +12,8 @@ function brief() {
   return {
     decision: { status: 'confirmed', value: decision },
     action: { status: 'confirmed', value: action },
+    questionShape: { status: 'confirmed', value: 'state' },
+    actionShape: { status: 'confirmed', value: 'observe' },
     contextRequirements: [
       { id: 'ctx_monthly_distribution', type: 'distribution_shape', subject: 'monthly_orders', minimumCoverage: 'full_distribution', status: 'inferred' }
     ]

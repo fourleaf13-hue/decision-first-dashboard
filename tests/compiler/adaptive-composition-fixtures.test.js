@@ -56,7 +56,9 @@ function makeGroundedFixture(fileName, nodeSelections) {
   requiredRelationshipPaths(decisionState).forEach((relationshipPath) => add(relationshipPath, relationshipPath));
   const brief = {
     decision: { status: 'confirmed', value: 'Choose the next operating focus' },
-    action: { status: 'confirmed', value: 'Review the evidence before allocating the next action' }
+    action: { status: 'confirmed', value: 'Review the evidence before allocating the next action' },
+    questionShape: { status: 'confirmed', value: 'state' },
+    actionShape: { status: 'confirmed', value: 'observe' }
   };
   const routing = {
     decision: brief.decision.value,

@@ -180,6 +180,8 @@ The Decision Brief is internal design context. It is not automatically source ev
 
 The structured brief must match `schemas/decision-brief.schema.json`. `scripts/intake.js` requires both Decision and Action to have `status: "confirmed"`. Otherwise the pipeline returns `ASK_DECISION_BRIEF_QUESTION` and produces no dashboard artifact.
 
+The brief also carries structured intent slots `questionShape` and `actionShape` (same slot format). `state`+`observe` classifies a MONITOR archetype and `priority`+`rank` classifies a PRIORITIZE_READONLY archetype; anything else — missing, inferred, or an unsupported combination — returns `ASK_COMPOSITION_INTENT` with a ready-to-ask question and produces no artifact. Archetypes are compiler-owned: routing manifests cannot set them, and free-form decision/action prose never overrides the structured slots. A `priority`+`rank` intent additionally requires a grounded ordering basis (source-declared explicit ranks, or a grounded actual/target/gap structure); without one the pipeline asks for the basis instead of ever ordering candidates by raw values.
+
 ### 3. Extract verified facts only
 
 Capture only source-supported metrics, deltas, states, events, targets, thresholds, and score rules. Never invent scores, targets, thresholds, customer states, events, workflows, actions, or causal claims. Direction is not the same as health.
@@ -272,7 +274,7 @@ node scripts/worthiness.js <worthiness-assessment.json>
 node scripts/intake.js <decision-brief.json>
 ```
 
-`FIX_WORTHINESS_ASSESSMENT`, `ASK_WORTHINESS_QUESTION`, `REDIRECT_NON_DASHBOARD`, `FIX_DECISION_BRIEF`, or `ASK_DECISION_BRIEF_QUESTION` produces no final SVG/HTML. Only `ALLOW_ROUTING` may enter Metric Router validation.
+`FIX_WORTHINESS_ASSESSMENT`, `ASK_WORTHINESS_QUESTION`, `REDIRECT_NON_DASHBOARD`, `FIX_DECISION_BRIEF`, `ASK_DECISION_BRIEF_QUESTION`, or `ASK_COMPOSITION_INTENT` produces no final SVG/HTML. Only `ALLOW_ROUTING` may enter Metric Router validation.
 
 On final `PASS`, the CLI writes:
 
@@ -346,6 +348,7 @@ package reports `stalenessRisk: true` and is rejected by formal acceptance.
 - `BUILD_DECISION_BRIEF` → continue to Decision Brief, not final render;
 - `FIX_DECISION_BRIEF` → repair malformed intake state;
 - `ASK_DECISION_BRIEF_QUESTION` → ask one high-information question for unresolved Decision/Action;
+- `ASK_COMPOSITION_INTENT` → ask the returned `askQuestion` string verbatim; never surface internal reason codes, slot names, or archetype names in user-facing text;
 - `ALLOW_ROUTING` → continue to Metric Router;
 - `FIX_METRIC_ROUTING` → repair routing; do not bypass it;
 - `RETURN_TO_EVIDENCE_EXTRACTION` → repair evidence/claims;
