@@ -5,6 +5,8 @@
   "required": ["decision", "action"],
   "properties": {
     "questionCount": { "type": "integer", "minimum": 0, "maximum": 5 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "subtitle": { "type": "string", "minLength": 1, "maxLength": 120 },
     "decision": { "$ref": "#/definitions/slot" },
     "action": { "$ref": "#/definitions/slot" },
     "questionShape": { "$ref": "#/definitions/questionShapeSlot" },

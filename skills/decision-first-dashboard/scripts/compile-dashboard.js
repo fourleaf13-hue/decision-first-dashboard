@@ -302,7 +302,11 @@ export function compileDecisionDashboard(
     visualSpecs: visualGrammar.specs,
     contextRequirements: decisionBrief.contextRequirements ?? [],
     modifiers: composition.composition.modifiers,
-    decisionLog: composition.composition.decisionLog
+    decisionLog: composition.composition.decisionLog,
+    pageHeader: {
+      title: typeof decisionBrief.title === 'string' ? decisionBrief.title : null,
+      subtitle: typeof decisionBrief.subtitle === 'string' ? decisionBrief.subtitle : null
+    }
   });
   if (!compiled.result.valid || compiled.result.transition !== 'PASS') {
     return {

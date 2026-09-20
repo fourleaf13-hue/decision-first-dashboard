@@ -31,7 +31,8 @@ export function compileGroundedBundle(
     visualSpecs = undefined,
     contextRequirements = undefined,
     modifiers = undefined,
-    decisionLog = undefined
+    decisionLog = undefined,
+    pageHeader = undefined
   } = {}
 ) {
   const data = bundle?.decisionState;
@@ -64,7 +65,8 @@ export function compileGroundedBundle(
         visualSpecs,
         contextRequirements,
         modifiers,
-        decisionLog
+        decisionLog,
+        pageHeader
       }),
       html: renderHtml(data, {
         composition,
@@ -73,7 +75,8 @@ export function compileGroundedBundle(
         visualSpecs,
         contextRequirements,
         modifiers,
-        decisionLog
+        decisionLog,
+        pageHeader
       }),
       outputMode: data.mode === 'composite' ? 'composite' : 'no-score'
     };

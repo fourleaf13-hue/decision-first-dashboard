@@ -24,7 +24,7 @@ const worthiness = JSON.parse(fs.readFileSync(path.join(root, 'fixtures/worthine
 const firewallTerms = /\b(monitor|prioritize_readonly|anchor|primary|grounded_gap|grounded_rank|compositionIntent|orderingBasis|questionShape|actionShape|primary_signal|metric router|responseChange\.kind|semanticItem\.role)\b/i;
 const alertFramingTerms = /\b(alert|alerts|attention|problem|problems|bad|critical|exception|exceptions|warning|breach|breaches|severity)\b/i;
 
-function groundedCase(dir, fileName, { selections, decision, action, requirements = [], metrics, presentation = null, decorateState = null }) {
+function groundedCase(dir, fileName, { selections, decision, action, requirements = [], metrics, presentation = null, header = null, decorateState = null }) {
   const bytes = fs.readFileSync(path.join(dir, fileName));
   const source = JSON.parse(bytes.toString('utf8'));
   const decisionState = {
@@ -75,6 +75,8 @@ function groundedCase(dir, fileName, { selections, decision, action, requirement
     action: { status: 'confirmed', value: action },
     questionShape: { status: 'confirmed', value: 'state' },
     actionShape: { status: 'confirmed', value: 'observe' },
+    ...(header?.title ? { title: header.title } : {}),
+    ...(header?.subtitle ? { subtitle: header.subtitle } : {}),
     contextRequirements: requirements
   };
   const routing = {
@@ -427,4 +429,35 @@ test('M-4 the capacity page is a state-led monitor: one dominant anchor region, 
   assert.equal(spans.at(-1), 'full', 'a trailing odd supporting region takes the full row instead of stranding whitespace');
   // F: no grounded exception must exist and none may be invented
   assert.doesNotMatch(compiled.html, /data-semantic-role="exception"/);
+});
+
+// ---------------------------------------------------------------- page header (CR-5d.1)
+
+test('HDR-1 a business-facing brief title/subtitle replaces the framework defaults in both channels', () => {
+  const compiled = compileCapacity({
+    header: { title: 'Capacity overview', subtitle: 'Current delivery capacity state for the review.' }
+  });
+  assert.match(compiled.html, /<h1>Capacity overview<\/h1><p>Current delivery capacity state for the review\.<\/p>/);
+  assert.match(compiled.html, /<title>Capacity overview<\/title>/);
+  assert.match(compiled.svg, /<text x="48" y="52" class="title" font-size="28">Capacity overview<\/text>/);
+  assert.match(compiled.svg, /<text x="48" y="78" class="subtitle">Current delivery capacity state for the review\.<\/text>/);
+  assert.doesNotMatch(compiled.html, /Decision dashboard|Source-backed context for the next decision/);
+  assert.doesNotMatch(compiled.svg, /Decision dashboard|Source-backed context for the next decision/);
+});
+
+test('HDR-2 no header in the brief keeps the generic defaults (no fixture-specific page copy in production)', () => {
+  const compiled = compileCapacity();
+  assert.match(compiled.html, /<h1>Decision dashboard<\/h1><p>Source-backed context for the next decision\.<\/p>/);
+  assert.match(compiled.svg, /class="title" font-size="28">Decision dashboard<\/text>/);
+  assert.match(compiled.svg, /class="subtitle">Source-backed context for the next decision\.<\/text>/);
+});
+
+test('HDR-3 header copy is grounded like everything else: it passes the visible-copy firewall', () => {
+  const compiled = compileCapacity({
+    header: { title: 'Workforce overview', subtitle: 'Headcount, turnover and training state for the period.' }
+  });
+  const visible = visibleTextOf({ html: compiled.html, svg: compiled.svg });
+  assert.match(visible, /Workforce overview/);
+  assert.equal(firewallTerms.test(visible), false, `firewall hits: ${visible.match(new RegExp(firewallTerms.source, 'gi'))}`);
+  assert.equal(alertFramingTerms.test(visible), false);
 });
