@@ -408,6 +408,9 @@ test('VP-4 responsive collapse flattens span geometry while the role ladder stay
   }
   // the role classes stay attached to markup; geometry collapse never moves roles
   assert.equal((compiled.html.match(/<section class="[^"]*semantic-card--role-/g) ?? []).length, 5, 'every delivered region keeps its role class in markup');
+  // min-content of a long grounded value must never widen the page past the viewport
+  assert.match(css, /\.semantic-grid>\*\{min-width:0\}/, 'grid items may shrink below min-content');
+  assert.match(css, /\.semantic-card li\{display:grid;grid-template-columns:minmax\(0,1fr\) auto/, 'label track may shrink; value track stays content-sized');
   for (const section of compiled.html.matchAll(/<section[^>]*>/g)) {
     if (section[0].includes('style="grid-column:1/-1"')) {
       assert.match(section[0], /data-attention-role="anchor"/, 'only the anchor may hold a full-row span');
