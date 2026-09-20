@@ -1,0 +1,17 @@
+{
+  "signals": [
+    { "label": "Total orders", "value": "246" },
+    { "label": "Products", "value": "41" },
+    { "label": "Sugar cookie orders", "value": "81%" }
+  ],
+  "semanticNodes": [
+    { "title": "Orders across years", "items": [{ "label": "2022", "value": 7 }, { "label": "2023", "value": 22 }, { "label": "2024", "value": 84 }, { "label": "2025", "value": 68 }, { "label": "2026", "value": 51 }] },
+    { "title": "Seasonal order volume", "items": [{ "label": "Jan", "value": 8 }, { "label": "Feb", "value": 16 }, { "label": "Mar", "value": 25 }, { "label": "Apr", "value": 13 }, { "label": "May", "value": 18 }, { "label": "Jun", "value": 22 }, { "label": "Jul", "value": 12 }, { "label": "Aug", "value": 17 }, { "label": "Sep", "value": 9 }, { "label": "Oct", "value": 12 }, { "label": "Nov", "value": 31 }, { "label": "Dec", "value": 40 }] },
+    { "title": "Sugar Cookie demand drivers", "comparability": { "unit": "number", "comparisonGroup": "demand_drivers", "comparabilityDomain": "orders", "normalization": "raw" }, "items": [{ "label": "Holiday / Seasonal", "value": 33 }, { "label": "No Theme", "value": 36 }, { "label": "Miscellaneous", "value": 25 }, { "label": "Sports & Pop Culture", "value": 24 }] },
+    { "title": "Highest and lowest ROI products", "comparability": { "unit": "percent", "comparisonGroup": "product_roi", "comparabilityDomain": "roi", "normalization": "raw" }, "items": [{ "label": "Sugar Cookies", "value": "1150%", "detail": "$6.10 cost / $79.00 price" }, { "label": "Salted Caramel Chocolate", "value": "97%", "detail": "$7.60 cost / $15.00 price" }] }
+  ],
+  "relationships": [
+    { "id": "demand_drivers", "relationType": "comparison", "subjectRefs": ["demand_drivers"], "comparison": { "metricIdentity": "orders" } },
+    { "id": "product_roi", "relationType": "comparison", "subjectRefs": ["product_roi"], "comparison": { "metricIdentity": "roi" } }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "signals": [
+    { "label": "Active regions", "value": "18" },
+    { "label": "Requests today", "value": "1.2M" },
+    { "label": "Declared bounds", "value": "6" }
+  ],
+  "semanticNodes": [
+    { "title": "Regions crossing declared bounds", "items": [{ "label": "EU read latency", "value": "142 ms", "detail": "declared bound 120 ms" }, { "label": "APAC queue depth", "value": "9.4k", "detail": "declared bound 8k" }, { "label": "SA error rate", "value": "0.9%", "detail": "declared bound 0.5%" }] },
+    { "title": "Requests across quarters", "items": [{ "label": "Q1", "value": 42 }, { "label": "Q2", "value": 88 }, { "label": "Q3", "value": 91 }, { "label": "Q4", "value": 74 }, { "label": "Q5", "value": 63 }] },
+    { "title": "Latency distribution", "items": [{ "label": "p50", "value": 21 }, { "label": "p75", "value": 34 }, { "label": "p90", "value": 58 }, { "label": "p95", "value": 77 }, { "label": "p99", "value": 130 }] }
+  ],
+  "relationships": []
+}
