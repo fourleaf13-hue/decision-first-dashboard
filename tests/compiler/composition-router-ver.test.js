@@ -294,26 +294,56 @@ test('VER-2 waterfall: a grounded additive_path renders a reconciling segment ch
 
   assert.match(compiled.html, /data-waterfall-endpoint="start"/);
   assert.match(compiled.html, /data-waterfall-endpoint="end"/);
-  assert.equal((compiled.html.match(/<i class="visual-bar waterfall-segment" data-visual-mark-item="waterfall-segment"/g) ?? []).length, 3);
+  assert.equal((compiled.html.match(/<i class="waterfall-bar waterfall-segment" data-visual-mark-item="waterfall-segment"/g) ?? []).length, 3);
+  assert.equal((compiled.html.match(/data-visual-connector="true"/g) ?? []).length, 4);
+  assert.equal((compiled.html.match(/class="waterfall-bar waterfall-total-bar"/g) ?? []).length, 2);
+  assert.doesNotMatch(compiled.html, /class="visual-bar waterfall-segment"/);
   assert.equal((compiled.svg.match(/<rect data-visual-mark-item="waterfall-segment" data-segment-index=/g) ?? []).length, 3);
+  assert.equal((compiled.svg.match(/<line data-visual-connector="true"/g) ?? []).length, 4);
+  assert.equal((compiled.svg.match(/<rect data-waterfall-total=/g) ?? []).length, 2);
+  assert.match(compiled.svg, /<line data-encoding-axis="true" data-semantic-node="gap_attribution"/);
   assert.match(compiled.svg, /data-encoding-track="true" data-semantic-node="gap_attribution"/);
 });
 
-test('VER-2 waterfall: mutated segment geometry and endpoint ticks fail the delivered verifier', () => {
+test('VER-2 waterfall: W1-W4 mutations of the delivered bridge fail the verifier in HTML and in SVG', () => {
   const compiled = assertCompiled(ceoCase({ selections: FULL_PAGE }));
   const delivery = compiled.manifest;
+  const deliveredErrors = ({ html, svg }) => verifyDeliveredArtifact({ html, svg, manifest: delivery }).errors;
 
-  const htmlMutated = compiled.html.replace(/(data-segment-index="0" style="--offset:)[0-9.]+%/, '$150.0%');
-  assert.notEqual(htmlMutated, compiled.html, 'mutation target not found in HTML');
-  mismatches(verifyDeliveredArtifact({ html: htmlMutated, svg: compiled.svg, manifest: delivery }).errors, '/segments/0');
+  // W1 — move a floating segment's start (its bottom edge in HTML, its
+  // bottom-anchored offset; in SVG the rect y marks the junction edge for a
+  // minus segment).
+  const w1Html = compiled.html.replace(/(data-segment-index="0" style="--offset:)[0-9.]+%/, '$150.0%');
+  assert.notEqual(w1Html, compiled.html, 'W1 target not found in HTML');
+  mismatches(deliveredErrors({ html: w1Html, svg: compiled.svg }), '/segments/0');
+  const w1Svg = compiled.svg.replace(/(<rect data-visual-mark-item="waterfall-segment" data-segment-index="0" x="[0-9.]+" y=")[0-9.]+/, '$1999.9');
+  assert.notEqual(w1Svg, compiled.svg, 'W1 target not found in SVG');
+  mismatches(deliveredErrors({ html: compiled.html, svg: w1Svg }), '/segments/0');
 
-  const svgMutated = compiled.svg.replace(/(<rect data-visual-mark-item="waterfall-segment" data-segment-index="1" x=")[0-9.]+/, '$1999.9');
-  assert.notEqual(svgMutated, compiled.svg, 'mutation target not found in SVG');
-  mismatches(verifyDeliveredArtifact({ html: compiled.html, svg: svgMutated, manifest: delivery }).errors, '/segments/1');
+  // W2 — move a segment's end (its drawn height/width).
+  const w2Html = compiled.html.replace(/(data-segment-index="1" style="--offset:[0-9.]+%;--value:)[0-9.]+%/, '$140.0%');
+  assert.notEqual(w2Html, compiled.html, 'W2 target not found in HTML');
+  mismatches(deliveredErrors({ html: w2Html, svg: compiled.svg }), '/segments/1');
+  const w2Svg = compiled.svg.replace(/(<rect data-visual-mark-item="waterfall-segment" data-segment-index="1"[^>]*height=")[0-9.]+/, '$199.9');
+  assert.notEqual(w2Svg, compiled.svg, 'W2 target not found in SVG');
+  mismatches(deliveredErrors({ html: compiled.html, svg: w2Svg }), '/segments/1');
 
-  const endpointMutated = compiled.html.replace(/(data-waterfall-endpoint="start" style="--at:)[0-9.]+%/, '$160.0%');
-  assert.notEqual(endpointMutated, compiled.html, 'mutation target not found in HTML');
-  mismatches(verifyDeliveredArtifact({ html: endpointMutated, svg: compiled.svg, manifest: delivery }).errors, 'start endpoint');
+  // W3 — break staircase continuity: slide a junction connector away from the
+  // cumulative level it must bridge (bars untouched).
+  const w3Html = compiled.html.replace(/(data-connector-index="1" style="--at:)[0-9.]+%/, '$145.0%');
+  assert.notEqual(w3Html, compiled.html, 'W3 target not found in HTML');
+  mismatches(deliveredErrors({ html: w3Html, svg: compiled.svg }), '/segments/1');
+  const w3Svg = compiled.svg.replace(/(<line data-visual-connector="true" data-connector-index="2" x1="[0-9.]+" y1=")[0-9.]+/, '$1999.9');
+  assert.notEqual(w3Svg, compiled.svg, 'W3 target not found in SVG');
+  mismatches(deliveredErrors({ html: compiled.html, svg: w3Svg }), '/segments/2');
+
+  // W4 — move the final actual total (the end anchored bar).
+  const w4Html = compiled.html.replace(/(data-waterfall-total="end" style="--height:)[0-9.]+%/, '$160.0%');
+  assert.notEqual(w4Html, compiled.html, 'W4 target not found in HTML');
+  mismatches(deliveredErrors({ html: w4Html, svg: compiled.svg }), 'end total');
+  const w4Svg = compiled.svg.replace(/(<rect data-waterfall-total="end" x="[0-9.]+" y=")[0-9.]+/, '$1999.9');
+  assert.notEqual(w4Svg, compiled.svg, 'W4 target not found in SVG');
+  mismatches(deliveredErrors({ html: compiled.html, svg: w4Svg }), 'end total');
 });
 
 test('VER-2 waterfall: a declared path that does not reconcile falls back to full_breakdown with a logged reason', () => {
@@ -533,13 +563,39 @@ test('VER-4 §16 the manifest carries an encoding decision trace for every deliv
   }
 });
 
-test('VER-4 copy firewall: the bullet states the relative position without evaluative language', () => {
+test('VER-4 copy firewall: the bullet states the relative position once, without evaluative language', () => {
   const compiled = assertCompiled(ceoCase({ selections: FULL_PAGE }));
-  assert.match(compiled.html, /Gap: \$1\.02M/);
-  assert.match(compiled.svg, /Gap: \$1\.02M/);
   for (const [label, artifact] of [['html', compiled.html], ['svg', compiled.svg]]) {
+    assert.match(artifact, /\$1\.02M below target/, `${label} must state the gap as one neutral relative-position note`);
+    // The same gap amount must never be rendered twice ("Gap $1.02M" plus
+    // "Gap: $1.02M" was the duplicated-copy failure mode).
+    assert.equal((artifact.match(/\$1\.02M/g) ?? []).length, 1, `${label} must carry exactly one delivered gap amount`);
+    assert.doesNotMatch(artifact, /Gap:?\s*\$1\.02M/, `${label} must not duplicate the gap label beside the amount`);
     assert.doesNotMatch(artifact, /\b(missed|fails|failed|failing|bad|poor|underperform\w*|disappoint\w*)\b/i, `${label} must stay descriptive without an evaluation contract`);
   }
+});
+
+// Desktop and true-390 render the SAME delivered artifact: the continuity
+// assertions above are geometry-of-the-artifact checks, so the contract at
+// 390px holds as long as no breakpoint CSS hides or swaps bridge primitives.
+test('VER-1.1 narrow viewport: bullet and waterfall bridge primitives survive every breakpoint', () => {
+  const compiled = assertCompiled(ceoCase({ selections: FULL_PAGE }));
+  const style = /<style>([\s\S]*?)<\/style>/.exec(compiled.html)[1];
+  const mediaBlocks = style.match(/@media[^{]*\{[\s\S]*?\}\}/g) ?? [];
+  assert.ok(mediaBlocks.length > 0, 'the delivered page must carry breakpoint CSS');
+  for (const block of mediaBlocks) {
+    assert.doesNotMatch(block, /\.bullet-track\s*\{[^}]*display:none/, 'breakpoints must not drop the shared bullet track');
+    assert.doesNotMatch(block, /\.bullet-target-marker\s*\{[^}]*display:none/, 'breakpoints must not drop the target marker');
+    assert.doesNotMatch(block, /\.waterfall-plot|\.waterfall-connector|\.waterfall-total-bar|\.waterfall-segment/, 'breakpoints must not restyle away the delivered bridge');
+    assert.doesNotMatch(block, /display:none/, 'no encoding primitive may be display:none at a breakpoint');
+  }
+  // One delivered bridge for the whole document, at every width.
+  assert.equal((compiled.html.match(/class="waterfall-bridge"/g) ?? []).length, 1);
+  assert.equal((compiled.html.match(/class="bullet-track" data-encoding-track="true"/g) ?? []).length, 1);
+  // The identity run of the verifier over the same artifact proves the
+  // continuity assertions are artifact-scoped, not viewport-scoped.
+  assert.deepEqual(verifyDeliveredArtifact({ html: compiled.html, svg: compiled.svg, manifest: compiled.manifest }).errors
+    .filter((error) => error.code.startsWith('DELIVERED_ENCODING')), []);
 });
 
 test('VER-4 §20 responsive presentation restyles geometry but never re-selects an encoding', () => {
