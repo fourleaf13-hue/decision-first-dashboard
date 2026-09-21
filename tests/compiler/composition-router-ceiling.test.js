@@ -17,7 +17,9 @@
 //   PA-5  Workforce survival: the anchor ceiling equals base geometry, so the
 //         ceiling is not a global KPI shrink;
 //   PA-6  encoding geometry is untouched (SaaS trend/breakdown data ink);
-//   PA-7  no new severity/status color or badge enters via ceiling tokens.
+//   PA-7  no new severity/status color or badge enters via ceiling tokens;
+//   PA-3B (STEP 2.2 correction) boundary pair for the strict PA-3 relation;
+//   PA-3b (STEP 2.3) band lower bound: flattened < secondary < region lead.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -213,7 +215,7 @@ test('PA-1 the manifest exposes the effective presentation trace and both channe
   }
   assert.match(compiled.svg, /g\[data-attention-role="supporting"\] \.metric-value--lead\{font-size:15px\}/, 'svg lead numerals must clamp to the supporting ceiling');
   assert.match(compiled.svg, /g\[data-attention-role="supporting"\] \.metric-value\{font-size:13px\}/, 'svg secondary numerals must clamp to the supporting ceiling');
-  assert.match(compiled.svg, /g\[data-attention-role="supporting"\] \.metric-tile--lead\{fill:none;stroke:none\}/, 'svg lead tile chrome must flatten under the supporting ceiling');
+  assert.match(compiled.svg, /g\[data-attention-role="supporting"\] \.metric-tile--lead\{fill:none;stroke:#e7ebf3\}/, 'svg lead tile chrome must flatten under the supporting ceiling');
 });
 
 // ---------------------------------------------------------------- PA-2 generic plumbing
@@ -313,7 +315,7 @@ test('PA-6 the ceiling repair leaves SaaS encoding data ink byte-identical', () 
 // ---------------------------------------------------------------- PA-7 token firewall
 
 test('PA-7 ceiling tokens use only the declared neutral set; no severity channel opens', () => {
-  const declared = new Set(['#b9c9ea', '#fbfcfe', '#eceff6', '#eef3fd', '#c9d6f2', '#e7ebf3']);
+  const declared = new Set(['#b9c9ea', '#fbfcfe', '#eceff6', '#eef3fd', '#c9d6f2', '#e7ebf3', '#f8fafd', '#eef1f7']);
   const css = styleBlock(saas().html);
   for (const [, role, body] of [...css.matchAll(ROLE_RULE_RE)]) {
     for (const hex of body.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []) {
@@ -358,4 +360,103 @@ test('PA-3B equality is rejected and the nearest valid token step is accepted on
   // Boundary B (nearest valid step) -> MUST PASS.
   assert.deepEqual(violations(css), [], 'the delivered nearest-valid step must pass with zero violations');
   assert.deepEqual(violations(css.replace(/--rp-tile-lead:13px/g, '--rp-tile-lead:14px')), [], 'detail one declared step below supporting must pass');
+});
+
+// ---------------------------------------------------------------- PA-3b band lower bound (STEP 2.3)
+// The prominence band is strict on BOTH ends: flattened < secondary < region
+// lead. Right side was PA-3 (ceiling); left side is PA-3b: every declared-tier
+// tile must be instantiated as a peer semantic unit - a non-zero bounded
+// surface - and must stay strictly below its region lead on every enabled
+// surface channel. Flattening the secondary to bare text is the defect this
+// catches (STRICTNESS-DRIFT sister incident: a one-sided contract covered only
+// half the hierarchy).
+const SURFACE_BG_RANK = Object.freeze({ '#eef3fd': 2, '#f8fafd': 1, none: 0 });
+const SURFACE_BORDER_RANK = Object.freeze({ '#c9d6f2': 3, '#e7ebf3': 2, '#eef1f7': 1, none: 0, transparent: 0 });
+
+function surfaceTokens(rule) {
+  const grab = (name) => {
+    const m = new RegExp(`--${name}:(#[0-9a-z]+|none|transparent)`).exec(rule);
+    return m ? m[1] : null;
+  };
+  return {
+    leadBg: grab('rp-tile-lead-bg'),
+    leadBorder: grab('rp-tile-lead-border'),
+    secBg: grab('rp-tile-secondary-bg'),
+    secBorder: grab('rp-tile-secondary-border')
+  };
+}
+
+function bandViolations(css) {
+  const errors = [];
+  const sets = roleRuleSets(css);
+  for (const [bp, rules] of Object.entries(sets)) {
+    for (const role of ['anchor', 'primary', 'supporting', 'detail']) {
+      const t = surfaceTokens(rules[role]);
+      const where = `${bp}/${role}`;
+      if (t.leadBg === null || t.leadBorder === null) {
+        errors.push(`${where}: lead surface tokens missing`);
+        continue;
+      }
+      if (t.secBg === null || t.secBorder === null) {
+        errors.push(`${where}: secondary surface tokens not emitted (tile flattened to bare text)`);
+        continue;
+      }
+      if (!(t.leadBg in SURFACE_BG_RANK) || !(t.leadBorder in SURFACE_BORDER_RANK) || !(t.secBg in SURFACE_BG_RANK) || !(t.secBorder in SURFACE_BORDER_RANK)) {
+        errors.push(`${where}: undeclared surface token value`);
+        continue;
+      }
+      // Lower bound: a bounded unit needs a real border (non-zero surface).
+      if (SURFACE_BORDER_RANK[t.secBorder] < 1) {
+        errors.push(`${where}: secondary tile flattened to bare text`);
+      }
+      // Never exceed the region lead on any channel.
+      if (SURFACE_BG_RANK[t.secBg] > SURFACE_BG_RANK[t.leadBg]) {
+        errors.push(`${where}: secondary bg out-speaks its region lead`);
+      }
+      if (SURFACE_BORDER_RANK[t.secBorder] > SURFACE_BORDER_RANK[t.leadBorder]) {
+        errors.push(`${where}: secondary border out-speaks its region lead`);
+      }
+      // Strictly below on every ENABLED channel (none/transparent = disabled).
+      if (t.leadBg !== 'none' && SURFACE_BG_RANK[t.secBg] >= SURFACE_BG_RANK[t.leadBg]) {
+        errors.push(`${where}: secondary bg equals its lead on an enabled channel`);
+      }
+      if (SURFACE_BORDER_RANK[t.secBorder] >= SURFACE_BORDER_RANK[t.leadBorder]) {
+        errors.push(`${where}: secondary border equals its lead`);
+      }
+    }
+  }
+  return errors;
+}
+
+test('PA-3b the prominence band lower bound: every declared-tier tile is a bounded unit strictly below its region lead', () => {
+  const saasCompiled = saas();
+  const css = styleBlock(saasCompiled.html);
+  assert.deepEqual(bandViolations(css), [], 'band contract violated on the delivered SaaS styles');
+  assert.deepEqual(bandViolations(styleBlock(workforce().html)), [], 'band contract violated on the delivered Workforce styles');
+  // The generic secondary rule consumes the region tokens via var() only;
+  // the fallback keeps unclassified pages byte-compatible (PA-2 plumbing).
+  assert.match(css, /\.metric-tile--secondary\{background:var\(--rp-tile-secondary-bg,none\);border:1px solid var\(--rp-tile-secondary-border,transparent\)\}/);
+  // SVG artifact parity: secondary tiles carry the tier class and a bounded
+  // surface, and the flat-region override keeps them below the flattened lead.
+  assert.match(saasCompiled.svg, /class="metric-tile metric-tile--secondary"/, 'svg secondary tiles are not classified');
+  assert.match(saasCompiled.svg, /\.metric-tile--secondary\{fill:#f8fafd;stroke:#e7ebf3\}/, 'svg secondary base surface missing');
+  assert.match(saasCompiled.svg, /g\[data-attention-role="supporting"\] \.metric-tile--secondary\{fill:none;stroke:#eef1f7\}/, 'svg supporting-region secondary not bounded-but-below-lead');
+  // Boundary mutations (rule 7 pairs for the new strict relation).
+  const both = /--rp-tile-secondary-bg:[^;}]+;--rp-tile-secondary-border:[^;}]+/g;
+  const flattenA = css.replace(both, '--rp-tile-secondary-bg:none;--rp-tile-secondary-border:transparent');
+  assert.ok(bandViolations(flattenA).length > 0, 'MUTATION-A: secondary flattened to bare text escaped the verifier');
+  const equalBorderB = css.replace(/--rp-tile-secondary-border:#e7ebf3/g, '--rp-tile-secondary-border:#c9d6f2')
+    .replace(/--rp-tile-secondary-border:#eef1f7/g, '--rp-tile-secondary-border:#e7ebf3');
+  assert.ok(bandViolations(equalBorderB).length > 0, 'MUTATION-B: secondary border equal to its lead escaped the verifier');
+  const equalBgB = css.replace(/--rp-tile-secondary-bg:#f8fafd/g, '--rp-tile-secondary-bg:#eef3fd');
+  assert.ok(bandViolations(equalBgB).length > 0, 'MUTATION-B2: secondary bg equal to its lead escaped the verifier');
+  const aboveLeadC = css.replace(/--rp-tile-secondary-bg:none;--rp-tile-secondary-border:#eef1f7/g, '--rp-tile-secondary-bg:#f8fafd;--rp-tile-secondary-border:#eef1f7');
+  assert.ok(bandViolations(aboveLeadC).length > 0, 'MUTATION-B3: flat-region secondary bg out-speaking its flattened lead escaped');
+  // MUTATION-C (nearest valid values): the delivered state IS the family
+  // minimum bounded surface, one declared step below the lead on every
+  // enabled channel, so it passes with zero violations (asserted above).
+  // Anything stricter than one step would be an unapproved minimum-gap.
+  assert.equal(SURFACE_BG_RANK['#f8fafd'], SURFACE_BG_RANK['#eef3fd'] - 1, 'secondary bg is not the nearest declared step below lead bg');
+  assert.equal(SURFACE_BORDER_RANK['#e7ebf3'], SURFACE_BORDER_RANK['#c9d6f2'] - 1, 'emphasis-region secondary border is not the nearest declared step');
+  assert.equal(SURFACE_BORDER_RANK['#eef1f7'], SURFACE_BORDER_RANK['#e7ebf3'] - 1, 'flat-region secondary border is not the nearest declared step');
 });
