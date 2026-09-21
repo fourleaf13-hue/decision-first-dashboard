@@ -420,7 +420,8 @@ function htmlCard(node) {
   return `<section class="semantic-card semantic-card--${node.type.toLowerCase()} semantic-card--${node.visualSpec.mark}${roleClass}"${spanStyle} ${visualNodeAttributes(node)}><header><h2>${escapeMarkup(node.title)}</h2>${node.subtitle ? `<p>${escapeMarkup(node.subtitle)}</p>` : ''}</header>${htmlBody(node)}${subset}</section>`;
 }
 
-const LEAD_VALUE_FONT_PX = Math.round(22 * METRIC_TIER_GEOMETRY_RATIO);
+export const METRIC_VALUE_FONT_PX = 22;
+export const LEAD_VALUE_FONT_PX = Math.round(METRIC_VALUE_FONT_PX * METRIC_TIER_GEOMETRY_RATIO);
 
 const DEFAULT_PAGE_TITLE = 'Decision dashboard';
 const DEFAULT_PAGE_SUBTITLE = 'Source-backed context for the next decision.';
@@ -442,6 +443,13 @@ export const ROLE_ORDER = Object.freeze(['anchor', 'primary', 'supporting', 'det
 // neutral surface shadow. Encoding data ink (e.g. waterfall totals) is never
 // weakened to manufacture dominance; the gap between primary and supporting
 // stays at the minimal distinguishable step, and no gap is dumped mid-ladder.
+// STEP 2.2 (parent attention ceiling, model A): tileLead/tileValue/tileSurface
+// are the ceiling a local relevance tier may reach INSIDE a region of that
+// role. The relation is ordinal, not a fixed px cap: the anchor/primary
+// ceiling equals the unconstrained relevance geometry (33/22), while the
+// supporting ceiling sits strictly below the primary region's own value level
+// (tileLead < rp-value(primary), asserted by PA-3), so a supporting child can
+// rank locally but can never out-shout the page-level primary.
 export const ROLE_PRESENTATION = Object.freeze({
   visualLanguage: 'vp-1',
   hierarchyDegradation: 'none',
@@ -452,24 +460,32 @@ export const ROLE_PRESENTATION = Object.freeze({
   ]),
   ladders: Object.freeze({
     wide: Object.freeze({
-      anchor: Object.freeze({ title: 25, value: 21, label: 15, meta: 13, pad: 30 }),
-      primary: Object.freeze({ title: 19, value: 16, label: 13, meta: 12, pad: 24 }),
-      supporting: Object.freeze({ title: 17, value: 14, label: 13, meta: 11, pad: 22 }),
-      detail: Object.freeze({ title: 15, value: 13, label: 12, meta: 11, pad: 18 })
+      anchor: Object.freeze({ title: 25, value: 21, label: 15, meta: 13, pad: 30, tileLead: LEAD_VALUE_FONT_PX, tileValue: METRIC_VALUE_FONT_PX, tileSurface: 'emphasis' }),
+      primary: Object.freeze({ title: 19, value: 16, label: 13, meta: 12, pad: 24, tileLead: LEAD_VALUE_FONT_PX, tileValue: METRIC_VALUE_FONT_PX, tileSurface: 'emphasis' }),
+      supporting: Object.freeze({ title: 17, value: 14, label: 13, meta: 11, pad: 22, tileLead: 15, tileValue: 13, tileSurface: 'flat' }),
+      detail: Object.freeze({ title: 15, value: 13, label: 12, meta: 11, pad: 18, tileLead: 13, tileValue: 12, tileSurface: 'flat' })
     }),
     tablet: Object.freeze({
-      anchor: Object.freeze({ title: 24, value: 20, label: 14, meta: 12, pad: 27 }),
-      primary: Object.freeze({ title: 18, value: 16, label: 13, meta: 11, pad: 22 }),
-      supporting: Object.freeze({ title: 16, value: 14, label: 12, meta: 11, pad: 20 }),
-      detail: Object.freeze({ title: 14, value: 13, label: 12, meta: 10, pad: 16 })
+      anchor: Object.freeze({ title: 24, value: 20, label: 14, meta: 12, pad: 27, tileLead: LEAD_VALUE_FONT_PX, tileValue: METRIC_VALUE_FONT_PX, tileSurface: 'emphasis' }),
+      primary: Object.freeze({ title: 18, value: 16, label: 13, meta: 11, pad: 22, tileLead: LEAD_VALUE_FONT_PX, tileValue: METRIC_VALUE_FONT_PX, tileSurface: 'emphasis' }),
+      supporting: Object.freeze({ title: 16, value: 14, label: 12, meta: 11, pad: 20, tileLead: 15, tileValue: 13, tileSurface: 'flat' }),
+      detail: Object.freeze({ title: 14, value: 13, label: 12, meta: 10, pad: 16, tileLead: 13, tileValue: 12, tileSurface: 'flat' })
     }),
     narrow: Object.freeze({
-      anchor: Object.freeze({ title: 23, value: 20, label: 14, meta: 12, pad: 24 }),
-      primary: Object.freeze({ title: 18, value: 16, label: 13, meta: 11, pad: 18 }),
-      supporting: Object.freeze({ title: 15, value: 13, label: 12, meta: 11, pad: 16 }),
-      detail: Object.freeze({ title: 13, value: 12, label: 11, meta: 10, pad: 14 })
+      anchor: Object.freeze({ title: 23, value: 20, label: 14, meta: 12, pad: 24, tileLead: LEAD_VALUE_FONT_PX, tileValue: METRIC_VALUE_FONT_PX, tileSurface: 'emphasis' }),
+      primary: Object.freeze({ title: 18, value: 16, label: 13, meta: 11, pad: 18, tileLead: LEAD_VALUE_FONT_PX, tileValue: METRIC_VALUE_FONT_PX, tileSurface: 'emphasis' }),
+      supporting: Object.freeze({ title: 15, value: 13, label: 12, meta: 11, pad: 16, tileLead: 15, tileValue: 13, tileSurface: 'flat' }),
+      detail: Object.freeze({ title: 13, value: 12, label: 11, meta: 10, pad: 14, tileLead: 13, tileValue: 12, tileSurface: 'flat' })
     })
   })
+});
+
+// Tile surface emphasis is a prominence channel (STEP 2.2 ruling), so it is
+// ceiling-governed too. Both token pairs reuse colors already declared by the
+// base card/tile system — no new palette entries.
+const TILE_SURFACE_TOKENS = Object.freeze({
+  emphasis: '--rp-tile-lead-bg:#eef3fd;--rp-tile-lead-border:#c9d6f2',
+  flat: '--rp-tile-lead-bg:none;--rp-tile-lead-border:#e7ebf3'
 });
 
 const ROLE_CHROME = {
@@ -485,7 +501,10 @@ function roleRules(breakpointId) {
     // when breakpoints collapse every card to full width, chrome is what
     // keeps anchor and detail distinguishable without re-inventing roles.
     const chrome = ROLE_CHROME[role] ? `;${ROLE_CHROME[role]}` : '';
-    return `.semantic-card--role-${role}{--rp-title:${t.title}px;--rp-value:${t.value}px;--rp-label:${t.label}px;--rp-meta:${t.meta}px;--rp-pad:${t.pad}px${chrome}}`;
+    // Children inside the region consume the region's ceiling tokens (PA-2):
+    // local relevance ranks, the parent role caps how loud that rank can be.
+    const ceiling = `;--rp-tile-lead:${t.tileLead}px;--rp-tile-value:${t.tileValue}px;${TILE_SURFACE_TOKENS[t.tileSurface]}`;
+    return `.semantic-card--role-${role}{--rp-title:${t.title}px;--rp-value:${t.value}px;--rp-label:${t.label}px;--rp-meta:${t.meta}px;--rp-pad:${t.pad}px${ceiling}${chrome}}`;
   }).join('');
 }
 
@@ -499,16 +518,23 @@ export const SVG_ROLE_LADDER = Object.freeze({
 
 function svgRoleRules() {
   const { title, value } = SVG_ROLE_LADDER;
+  const tileLadder = ROLE_PRESENTATION.ladders.wide;
+  const tileCeiling = ROLE_ORDER.filter((role) => tileLadder[role].tileSurface === 'flat').flatMap((role) => [
+    `g[data-attention-role="${role}"] .metric-value--lead{font-size:${tileLadder[role].tileLead}px}`,
+    `g[data-attention-role="${role}"] .metric-value{font-size:${tileLadder[role].tileValue}px}`,
+    `g[data-attention-role="${role}"] .metric-tile--lead{fill:none;stroke:none}`
+  ]);
   return [
     ...ROLE_ORDER.map((role) => `g[data-attention-role="${role}"]>.title{font-size:${title[role]}px}`).join(''),
     'g[data-attention-role="detail"]>.title{fill:#42506a}',
     'g[data-attention-role="anchor"]>.card{stroke:#c9d5ec}',
     'g[data-attention-role="detail"]>.card{fill:#fbfcfe;stroke:#eceff6}',
-    ...ROLE_ORDER.map((role) => `g[data-attention-role="${role}"] .value{font-size:${value[role]}px}`).join('')
+    ...ROLE_ORDER.map((role) => `g[data-attention-role="${role}"] .value{font-size:${value[role]}px}`).join(''),
+    ...tileCeiling
   ].join('');
 }
 
-const CSS_BASE = `:root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#172235;background:#eef1f6}.semantic-shell{max-width:1360px;margin:0 auto;padding:44px 30px 64px}.semantic-shell h1{font-size:32px;letter-spacing:-.02em;margin:0;color:#0f1a2c}.semantic-shell>p{font-size:14px;color:#74849e;margin:8px 0 34px}.typed-claims{display:grid;gap:8px;margin:0 0 20px}.typed-claim{display:inline-flex;width:max-content;max-width:100%;padding:9px 12px;border-radius:10px;background:#fff3d8;color:#6e4b00;font-size:13px;font-weight:700}.semantic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:22px}.semantic-grid>*{min-width:0}.semantic-card{background:#fff;border:1px solid #e7ebf3;border-radius:16px;padding:var(--rp-pad,20px);box-shadow:0 1px 2px rgba(15,26,44,.04),0 10px 26px rgba(15,26,44,.07)}.semantic-card header{border-bottom:1px solid #eef1f7;padding-bottom:12px}.semantic-card h2{font-size:var(--rp-title,16px);letter-spacing:-.012em;margin:0;color:#131e30}.semantic-card p{font-size:var(--rp-meta,12px);color:#75849c;margin:6px 0 0}.semantic-card ol{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}.semantic-card li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:end;position:relative;padding-bottom:9px}.semantic-card li span{font-size:var(--rp-label,13px);color:#41516b}.semantic-card li b{font-size:var(--rp-value,13px);color:#111c2e}.semantic-card li em{font-size:11px;color:#8290a8;font-style:normal;margin-right:6px}.semantic-card li small{grid-column:1/-1;color:#7f8ca3;font-size:var(--rp-meta,11px)}.visual-bar{display:block;width:var(--value);height:6px;background:#7e97c9;border-radius:999px}.visual-plot{margin-top:18px}.trend-plot{display:block;width:100%;height:200px;background:#fbfcfe;border-radius:12px}.trend-plot--compact{height:120px}.plot-baseline{stroke:#e3e8f1;stroke-width:1}.trend-line{fill:none;stroke:#3e63c6;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.trend-point{fill:#fff;stroke:#3e63c6;stroke-width:2}.trend-point--latest{fill:#3e63c6}.trend-value{font:700 12px Inter,Arial;fill:#22314a}.trend-year{font:11px Inter,Arial;fill:#75839a}.visual-plot--distribution .distribution-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(48px,1fr));gap:8px;align-items:end}.distribution-member{display:block!important;padding:0!important}.distribution-member>div{min-height:126px;display:flex;flex-direction:column;justify-content:end;gap:4px;padding:8px 5px;background:#f6f8fd;border-radius:10px}.distribution-member span{font-size:11px;text-align:center;color:#66758e}.distribution-member b{font-size:12px;text-align:center}.distribution-member .visual-bar{width:100%;height:calc(var(--value) * .82);min-height:5px;background:#8fabdb}.visual-ranking{gap:12px!important}.visual-ranking li .visual-bar,.breakdown-bars li .visual-bar,.relationship-row li .visual-bar{background:#7e97c9}.paired-ranking{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.ranking-end{border:1px solid #e7ebf3;border-radius:14px;padding:14px;background:#fbfcfe}.ranking-end h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#7d8aa1}.ranking-end--high{border-top:4px solid #3e63c6}.ranking-end--low{border-top:4px solid #a4b0c5}.ranking-end ol{margin-top:14px}.metric-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:18px;background:#f8fafd;border-radius:14px;padding:10px}.metric-tile{min-height:94px;display:flex;flex-direction:column;justify-content:space-between;padding:13px;border-radius:12px}.metric-tile span{font-size:12px;font-weight:600;color:#687993}.metric-tile strong{font-size:22px;letter-spacing:-.02em;color:#101b2d}.metric-tile--lead{grid-column:span 2;background:#eef3fd;border:1px solid #c9d6f2}.metric-tile--lead strong{font-size:${LEAD_VALUE_FONT_PX}px}.metric-tile small{font-size:11px;color:#8390a5}.subset-note{margin:12px 0 0;font-size:11px;color:#8390a5;text-align:right}.visual-profile{margin-top:14px;display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:center}.radar-plot{width:220px;height:220px;background:#f8faff;border-radius:50%}.radar-ring{fill:none;stroke:#dce3f0}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}.radar-dimensions{display:grid;gap:8px}.radar-dimension{font-size:12px;color:#63728a}.radar-dimension b{display:block;color:#172235;font-size:14px}.relationship-bars li .visual-bar{background:#8d9db8}.relationship-row--gap .visual-bar{background:#94a1b8}.relationship-row--target .visual-bar{background:#aeb9cc}.breakdown-bars li .visual-bar{background:#7e97c9}.semantic-list li{padding-bottom:12px}.semantic-grid--hero_support{grid-template-columns:repeat(2,minmax(0,1fr))}.semantic-grid--asymmetric{grid-template-columns:69fr 31fr}.semantic-card--value .semantic-list li .visual-bar{display:none}.bullet-chart{margin-top:18px}.bullet-legend{display:flex;justify-content:space-between;gap:12px;font-size:var(--rp-label,13px);color:#41516b}.bullet-legend b{font-size:var(--rp-value,13px);color:#111c2e}.bullet-track{position:relative;height:12px;margin-top:12px;background:#f2f5fb;border-radius:999px}.bullet-track .bullet-actual-bar{position:absolute;left:0;top:1px;height:10px;margin-top:0;background:#7e97c9;border-radius:999px}.bullet-target-marker{position:absolute;left:var(--at);top:-6px;width:3px;height:24px;background:#3e63c6;border-radius:2px;transform:translateX(-50%)}.bullet-gap-note{margin:12px 0 0;font-size:var(--rp-meta,12px);color:#5f6f89}.waterfall-chart{margin-top:18px}.waterfall-bridge{display:flex;align-items:stretch;gap:8px;height:230px}.waterfall-stage{flex:1;min-width:0;display:flex;flex-direction:column}.waterfall-plot{position:relative;flex:1}.waterfall-bar{position:absolute;left:10%;right:10%;display:block;border-radius:4px}.waterfall-total-bar{bottom:0;height:var(--height);background:#3e63c6}.waterfall-segment{bottom:var(--offset);height:var(--value);background:#7e97c9}.waterfall-connector{position:absolute;left:0;right:0;bottom:var(--at);display:block;height:0;border-top:1px dashed #9aa8bf}.waterfall-stage-label{display:block;font-size:11px;color:#66758e;text-align:center;margin-top:8px;overflow-wrap:anywhere}.waterfall-stage-value{display:block;font-size:var(--rp-value,12px);color:#111c2e;text-align:center;margin-top:2px}`;
+const CSS_BASE = `:root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#172235;background:#eef1f6}.semantic-shell{max-width:1360px;margin:0 auto;padding:44px 30px 64px}.semantic-shell h1{font-size:32px;letter-spacing:-.02em;margin:0;color:#0f1a2c}.semantic-shell>p{font-size:14px;color:#74849e;margin:8px 0 34px}.typed-claims{display:grid;gap:8px;margin:0 0 20px}.typed-claim{display:inline-flex;width:max-content;max-width:100%;padding:9px 12px;border-radius:10px;background:#fff3d8;color:#6e4b00;font-size:13px;font-weight:700}.semantic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:22px}.semantic-grid>*{min-width:0}.semantic-card{background:#fff;border:1px solid #e7ebf3;border-radius:16px;padding:var(--rp-pad,20px);box-shadow:0 1px 2px rgba(15,26,44,.04),0 10px 26px rgba(15,26,44,.07)}.semantic-card header{border-bottom:1px solid #eef1f7;padding-bottom:12px}.semantic-card h2{font-size:var(--rp-title,16px);letter-spacing:-.012em;margin:0;color:#131e30}.semantic-card p{font-size:var(--rp-meta,12px);color:#75849c;margin:6px 0 0}.semantic-card ol{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}.semantic-card li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:end;position:relative;padding-bottom:9px}.semantic-card li span{font-size:var(--rp-label,13px);color:#41516b}.semantic-card li b{font-size:var(--rp-value,13px);color:#111c2e}.semantic-card li em{font-size:11px;color:#8290a8;font-style:normal;margin-right:6px}.semantic-card li small{grid-column:1/-1;color:#7f8ca3;font-size:var(--rp-meta,11px)}.visual-bar{display:block;width:var(--value);height:6px;background:#7e97c9;border-radius:999px}.visual-plot{margin-top:18px}.trend-plot{display:block;width:100%;height:200px;background:#fbfcfe;border-radius:12px}.trend-plot--compact{height:120px}.plot-baseline{stroke:#e3e8f1;stroke-width:1}.trend-line{fill:none;stroke:#3e63c6;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}.trend-point{fill:#fff;stroke:#3e63c6;stroke-width:2}.trend-point--latest{fill:#3e63c6}.trend-value{font:700 12px Inter,Arial;fill:#22314a}.trend-year{font:11px Inter,Arial;fill:#75839a}.visual-plot--distribution .distribution-bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(48px,1fr));gap:8px;align-items:end}.distribution-member{display:block!important;padding:0!important}.distribution-member>div{min-height:126px;display:flex;flex-direction:column;justify-content:end;gap:4px;padding:8px 5px;background:#f6f8fd;border-radius:10px}.distribution-member span{font-size:11px;text-align:center;color:#66758e}.distribution-member b{font-size:12px;text-align:center}.distribution-member .visual-bar{width:100%;height:calc(var(--value) * .82);min-height:5px;background:#8fabdb}.visual-ranking{gap:12px!important}.visual-ranking li .visual-bar,.breakdown-bars li .visual-bar,.relationship-row li .visual-bar{background:#7e97c9}.paired-ranking{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.ranking-end{border:1px solid #e7ebf3;border-radius:14px;padding:14px;background:#fbfcfe}.ranking-end h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#7d8aa1}.ranking-end--high{border-top:4px solid #3e63c6}.ranking-end--low{border-top:4px solid #a4b0c5}.ranking-end ol{margin-top:14px}.metric-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:18px;background:#f8fafd;border-radius:14px;padding:10px}.metric-tile{min-height:94px;display:flex;flex-direction:column;justify-content:space-between;padding:13px;border-radius:12px}.metric-tile span{font-size:12px;font-weight:600;color:#687993}.metric-tile strong{font-size:var(--rp-tile-value,${METRIC_VALUE_FONT_PX}px);letter-spacing:-.02em;color:#101b2d}.metric-tile--lead{grid-column:span 2;background:var(--rp-tile-lead-bg,#eef3fd);border:1px solid var(--rp-tile-lead-border,#c9d6f2)}.metric-tile--lead strong{font-size:var(--rp-tile-lead,${LEAD_VALUE_FONT_PX}px)}.metric-tile small{font-size:11px;color:#8390a5}.subset-note{margin:12px 0 0;font-size:11px;color:#8390a5;text-align:right}.visual-profile{margin-top:14px;display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:center}.radar-plot{width:220px;height:220px;background:#f8faff;border-radius:50%}.radar-ring{fill:none;stroke:#dce3f0}.radar-polygon{fill:#6f87e8;fill-opacity:.2;stroke:#526bd8;stroke-width:3}.radar-dimensions{display:grid;gap:8px}.radar-dimension{font-size:12px;color:#63728a}.radar-dimension b{display:block;color:#172235;font-size:14px}.relationship-bars li .visual-bar{background:#8d9db8}.relationship-row--gap .visual-bar{background:#94a1b8}.relationship-row--target .visual-bar{background:#aeb9cc}.breakdown-bars li .visual-bar{background:#7e97c9}.semantic-list li{padding-bottom:12px}.semantic-grid--hero_support{grid-template-columns:repeat(2,minmax(0,1fr))}.semantic-grid--asymmetric{grid-template-columns:69fr 31fr}.semantic-card--value .semantic-list li .visual-bar{display:none}.bullet-chart{margin-top:18px}.bullet-legend{display:flex;justify-content:space-between;gap:12px;font-size:var(--rp-label,13px);color:#41516b}.bullet-legend b{font-size:var(--rp-value,13px);color:#111c2e}.bullet-track{position:relative;height:12px;margin-top:12px;background:#f2f5fb;border-radius:999px}.bullet-track .bullet-actual-bar{position:absolute;left:0;top:1px;height:10px;margin-top:0;background:#7e97c9;border-radius:999px}.bullet-target-marker{position:absolute;left:var(--at);top:-6px;width:3px;height:24px;background:#3e63c6;border-radius:2px;transform:translateX(-50%)}.bullet-gap-note{margin:12px 0 0;font-size:var(--rp-meta,12px);color:#5f6f89}.waterfall-chart{margin-top:18px}.waterfall-bridge{display:flex;align-items:stretch;gap:8px;height:230px}.waterfall-stage{flex:1;min-width:0;display:flex;flex-direction:column}.waterfall-plot{position:relative;flex:1}.waterfall-bar{position:absolute;left:10%;right:10%;display:block;border-radius:4px}.waterfall-total-bar{bottom:0;height:var(--height);background:#3e63c6}.waterfall-segment{bottom:var(--offset);height:var(--value);background:#7e97c9}.waterfall-connector{position:absolute;left:0;right:0;bottom:var(--at);display:block;height:0;border-top:1px dashed #9aa8bf}.waterfall-stage-label{display:block;font-size:11px;color:#66758e;text-align:center;margin-top:8px;overflow-wrap:anywhere}.waterfall-stage-value{display:block;font-size:var(--rp-value,12px);color:#111c2e;text-align:center;margin-top:2px}`;
 
 const CSS = `${CSS_BASE}${roleRules('wide')}@media(max-width:900px){.semantic-grid,.semantic-grid--hero_support,.semantic-grid--asymmetric{grid-template-columns:1fr}${roleRules('tablet')}}@media(max-width:620px){.semantic-shell{padding:28px 14px 48px}.semantic-shell h1{font-size:26px}.metric-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.visual-profile{grid-template-columns:1fr}.paired-ranking{grid-template-columns:1fr}${roleRules('narrow')}}`;
 

@@ -24,8 +24,34 @@ import {
 } from './provenance.js';
 import { buildInternalVisualSpecs } from './visual-grammar.js';
 import { routeVisualEncoding } from './encoding-router.js';
+import { ROLE_PRESENTATION, METRIC_VALUE_FONT_PX, LEAD_VALUE_FONT_PX } from './render-semantic.js';
 
 const currentFile = fileURLToPath(import.meta.url);
+
+// STEP 2.2 parent attention ceiling (model A: region-first, local modulation).
+// The manifest must expose the full derivation for every child prominence
+// token: what the local tier would render unconstrained (base), what the
+// parent region's attentionRole allows (ceiling), and the resulting effective
+// presentation. The local tier classification itself is never rewritten here;
+// tile ceiling ladder fields are declared equal across breakpoints, so the
+// wide ladder is the canonical trace source.
+function effectivePresentationTrace(parentRole, localTier) {
+  const ladder = ROLE_PRESENTATION.ladders.wide[parentRole];
+  if (!ladder) return {};
+  const base = {
+    valueTypography: localTier === 'lead' ? LEAD_VALUE_FONT_PX : METRIC_VALUE_FONT_PX,
+    surface: localTier === 'lead' ? 'emphasis' : 'flat'
+  };
+  const ceiling = {
+    valueTypography: localTier === 'lead' ? ladder.tileLead : ladder.tileValue,
+    surface: ladder.tileSurface
+  };
+  const effective = {
+    valueTypography: Math.min(base.valueTypography, ceiling.valueTypography),
+    surface: base.surface === 'flat' || ceiling.surface === 'flat' ? 'flat' : 'emphasis'
+  };
+  return { parentRole, base, ceiling, effective };
+}
 
 function normalizeIntent(value) {
   return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
@@ -252,7 +278,11 @@ export function compileDecisionDashboard(
       continue;
     }
     node.metricTiers = itemTiers;
-    relevanceMetrics.push(...itemTiers.map((entry) => ({ ...entry, node: node.id })));
+    relevanceMetrics.push(...itemTiers.map((entry) => ({
+      ...entry,
+      node: node.id,
+      ...(node.attentionRole ? effectivePresentationTrace(node.attentionRole, entry.tier) : {})
+    })));
   }
   if (tierErrors.length > 0) {
     return {
@@ -396,6 +426,11 @@ export function compileDecisionDashboard(
         relevance: {
           mechanism: 'routed_metric_roles',
           geometryRatio: METRIC_TIER_GEOMETRY_RATIO,
+          // Region owns page-level rank; local tier owns rank only inside the
+          // region. The ceiling is an ordinal, channel-wise constraint derived
+          // from the parent attentionRole's declared ladder — never a global
+          // role x tier ranking table (model B, not implemented).
+          attentionCeiling: { form: 'ordinal', comparison: 'channel-wise', model: 'region-first_local-modulation' },
           metrics: relevanceMetrics,
           regions: (composition.composition.pageComposition?.regions ?? []).map((region) => ({
             nodeId: region.nodeId,

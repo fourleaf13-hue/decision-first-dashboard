@@ -260,8 +260,10 @@ test('M-1G the frozen geometry predicate: lead value size and tile width are >= 
   const compiled = compileCapacity();
   assert.equal(compiled.manifest.delivery.relevance.geometryRatio, METRIC_TIER_GEOMETRY_RATIO);
   // HTML: lead numeric font-size must be >= ratio x the base tile size.
-  const baseFont = Number(/\.metric-tile strong\{font-size:(\d+)px/.exec(compiled.html)[1]);
-  const leadFont = Number(/\.metric-tile--lead strong\{font-size:(\d+)px/.exec(compiled.html)[1]);
+  // STEP 2.2 moved tile numerals behind ceiling tokens; the fallback is the
+  // unconstrained local relevance geometry, which M-1G measures.
+  const baseFont = Number(/\.metric-tile strong\{font-size:var\(--rp-tile-value,(\d+)px\)/.exec(compiled.html)[1]);
+  const leadFont = Number(/\.metric-tile--lead strong\{font-size:var\(--rp-tile-lead,(\d+)px\)\}/.exec(compiled.html)[1]);
   assert.ok(leadFont / baseFont >= METRIC_TIER_GEOMETRY_RATIO, `html numeric ratio ${leadFont}/${baseFont} below ${METRIC_TIER_GEOMETRY_RATIO}`);
   // SVG: same numeric rule via classes.
   const svgBaseFont = Number(/\.metric-value\{font:700 (\d+)px/.exec(compiled.svg)[1]);

@@ -313,12 +313,20 @@ test('HP-5 hierarchy delivery moved no region role or span on the three canonica
 
 test('HP-6 the ladder repair leaves the Workforce KPI lead<->secondary geometry exactly as declared', () => {
   const css = styleBlock(workforce().html);
-  const secondary = /(?:^|\})\.metric-tile strong\{font-size:([\d.]+)px/.exec(css);
-  const lead = /\.metric-tile--lead strong\{font-size:([\d.]+)px\}/.exec(css);
+  const secondary = /(?:^|\})\.metric-tile strong\{font-size:var\(--rp-tile-value,([\d.]+)px\)/.exec(css);
+  const lead = /\.metric-tile--lead strong\{font-size:var\(--rp-tile-lead,([\d.]+)px\)\}/.exec(css);
   assert.ok(secondary && lead, 'metric tile geometry contract missing from delivered CSS');
   assert.equal(Number(secondary[1]), 22, 'secondary tile value size must not move (CR-5c contract)');
   assert.equal(Number(lead[1]), 33, 'lead tile value size must not move (CR-5c contract)');
   assert.ok(Number(lead[1]) / Number(secondary[1]) >= 1.5, 'lead<->secondary gap narrowed below the declared 1.5 ratio');
+  // Workforce tiles live in the ANCHOR region: the STEP 2.2 ceiling for that
+  // role must equal the unconstrained base geometry at every breakpoint, so
+  // the survival page renders byte-identically loud.
+  const sets = roleRuleSets(css);
+  for (const [bp, rules] of Object.entries(sets)) {
+    assert.equal(tokenPx(rules.anchor, 'rp-tile-lead'), 33, `anchor tile ceiling moved at ${bp}`);
+    assert.equal(tokenPx(rules.anchor, 'rp-tile-value'), 22, `anchor tile base moved at ${bp}`);
+  }
 });
 
 // ---------------------------------------------------------------- HP-7 encoding data-ink fidelity hook
