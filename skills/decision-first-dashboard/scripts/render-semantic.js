@@ -437,6 +437,11 @@ function pageHeaderText(options) {
 // collapsing span geometry cannot silently collapse semantic hierarchy.
 export const ROLE_ORDER = Object.freeze(['anchor', 'primary', 'supporting', 'detail']);
 
+// REOPEN-STEP2 repair (F1/F2 human-review FAIL @e34e7fd): the anchor carries
+// its mass through declared ladder tokens (typography/spacing) and a deeper
+// neutral surface shadow. Encoding data ink (e.g. waterfall totals) is never
+// weakened to manufacture dominance; the gap between primary and supporting
+// stays at the minimal distinguishable step, and no gap is dumped mid-ladder.
 export const ROLE_PRESENTATION = Object.freeze({
   visualLanguage: 'vp-1',
   hierarchyDegradation: 'none',
@@ -447,20 +452,20 @@ export const ROLE_PRESENTATION = Object.freeze({
   ]),
   ladders: Object.freeze({
     wide: Object.freeze({
-      anchor: Object.freeze({ title: 23, value: 19, label: 14, meta: 13, pad: 26 }),
+      anchor: Object.freeze({ title: 25, value: 21, label: 15, meta: 13, pad: 30 }),
       primary: Object.freeze({ title: 19, value: 16, label: 13, meta: 12, pad: 24 }),
       supporting: Object.freeze({ title: 17, value: 14, label: 13, meta: 11, pad: 22 }),
       detail: Object.freeze({ title: 15, value: 13, label: 12, meta: 11, pad: 18 })
     }),
     tablet: Object.freeze({
-      anchor: Object.freeze({ title: 22, value: 19, label: 13, meta: 12, pad: 24 }),
+      anchor: Object.freeze({ title: 24, value: 20, label: 14, meta: 12, pad: 27 }),
       primary: Object.freeze({ title: 18, value: 16, label: 13, meta: 11, pad: 22 }),
       supporting: Object.freeze({ title: 16, value: 14, label: 12, meta: 11, pad: 20 }),
       detail: Object.freeze({ title: 14, value: 13, label: 12, meta: 10, pad: 16 })
     }),
     narrow: Object.freeze({
-      anchor: Object.freeze({ title: 21, value: 18, label: 13, meta: 12, pad: 20 }),
-      primary: Object.freeze({ title: 17, value: 15, label: 12, meta: 11, pad: 18 }),
+      anchor: Object.freeze({ title: 23, value: 20, label: 14, meta: 12, pad: 24 }),
+      primary: Object.freeze({ title: 18, value: 16, label: 13, meta: 11, pad: 18 }),
       supporting: Object.freeze({ title: 15, value: 13, label: 12, meta: 11, pad: 16 }),
       detail: Object.freeze({ title: 13, value: 12, label: 11, meta: 10, pad: 14 })
     })
@@ -468,7 +473,7 @@ export const ROLE_PRESENTATION = Object.freeze({
 });
 
 const ROLE_CHROME = {
-  anchor: 'border-color:#c9d5ec;box-shadow:0 1px 2px rgba(15,26,44,.05),0 20px 48px rgba(15,26,44,.11)',
+  anchor: 'border-color:#b9c9ea;box-shadow:0 2px 4px rgba(15,26,44,.07),0 24px 56px rgba(15,26,44,.16)',
   detail: 'background:#fbfcfe;border-color:#eceff6;box-shadow:none'
 };
 

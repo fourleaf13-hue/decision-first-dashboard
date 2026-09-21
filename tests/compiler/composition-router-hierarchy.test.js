@@ -8,7 +8,11 @@
 //   HP-4  Workforce tiles deliver exactly the manifest-declared tiers and the
 //         renderer invents no extra winner;
 //   HP-5  region roles/spans on the three canonical pages are untouched
-//         (hierarchy delivery must not move composition).
+//         (hierarchy delivery must not move composition);
+//   HP-6  guardrail 1: the Workforce KPI lead<->secondary geometry survives
+//         the ladder repair exactly as declared;
+//   HP-7  F2' fidelity hook: waterfall data ink is never weakened to buy
+//         anchor dominance.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -197,8 +201,8 @@ function tokenPx(body, name) {
 test('HP-1 delivered surface chrome ships at every breakpoint, not only while spans exist', () => {
   const sets = roleRuleSets(styleBlock(saas().html));
   for (const [bp, rules] of Object.entries(sets)) {
-    assert.match(rules.anchor, /border-color:#c9d5ec/, `anchor surface border missing at ${bp}`);
-    assert.match(rules.anchor, /box-shadow:0 1px 2px rgba\(15,26,44,\.05\),0 20px 48px rgba\(15,26,44,\.11\)/, `anchor elevation missing at ${bp}`);
+    assert.match(rules.anchor, /border-color:#b9c9ea/, `anchor surface border missing at ${bp}`);
+    assert.match(rules.anchor, /box-shadow:0 2px 4px rgba\(15,26,44,\.07\),0 24px 56px rgba\(15,26,44,\.16\)/, `anchor elevation missing at ${bp}`);
     assert.match(rules.detail, /background:#fbfcfe/, `detail receded surface missing at ${bp}`);
     assert.match(rules.detail, /box-shadow:none/, `detail flat shadow missing at ${bp}`);
     assert.doesNotMatch(rules.primary, /border-color|box-shadow|background:/, `primary must not carry invented chrome at ${bp}`);
@@ -210,8 +214,8 @@ test('HP-1 delivered surface chrome ships at every breakpoint, not only while sp
 
 test('HP-2 role chrome values stay inside the declared neutral token set (no severity color)', () => {
   const declaredChrome = new Set([
-    'border-color:#c9d5ec',
-    'box-shadow:0 1px 2px rgba(15,26,44,.05),0 20px 48px rgba(15,26,44,.11)',
+    'border-color:#b9c9ea',
+    'box-shadow:0 2px 4px rgba(15,26,44,.07),0 24px 56px rgba(15,26,44,.16)',
     'background:#fbfcfe',
     'border-color:#eceff6',
     'box-shadow:none'
@@ -244,6 +248,12 @@ test('HP-3 at the narrowest breakpoint the anchor keeps >=2 non-span signals and
     const spacing = tokenPx(anchor, 'rp-pad') > tokenPx(rules.primary, 'rp-pad');
     const surface = /box-shadow:/.test(anchor) && !/box-shadow:/.test(rules.primary);
     assert.ok([typography, spacing, surface].filter(Boolean).length >= 2, `anchor needs >=2 distinct non-span signals at ${bp}`);
+    // REOPEN-STEP2 repair contracts: anchor carries real mass (F2), the mid-tier
+    // gap is just wide enough to read as two tiers (F1), and no gap is dumped
+    // mid-ladder at the cost of the anchor step.
+    assert.ok(tokenPx(anchor, 'rp-title') - tokenPx(rules.primary, 'rp-title') >= 4, `anchor mass step too small at ${bp}`);
+    assert.ok(tokenPx(rules.primary, 'rp-title') - tokenPx(rules.supporting, 'rp-title') >= 2, `primary<->supporting not distinguishable at ${bp}`);
+    assert.ok(tokenPx(rules.primary, 'rp-title') - tokenPx(rules.supporting, 'rp-title') < tokenPx(anchor, 'rp-title') - tokenPx(rules.primary, 'rp-title'), `ladder gap stacked mid-tier at ${bp}`);
   }
 });
 
@@ -297,4 +307,28 @@ test('HP-5 hierarchy delivery moved no region role or span on the three canonica
     assert.deepEqual(surfaces, expected[name], `${name} region roles/spans changed`);
     assert.equal(compiled.manifest.delivery.presentation.hierarchyDegradation, 'none', `${name} declared a degradation`);
   }
+});
+
+// ---------------------------------------------------------------- HP-6 guardrail 1: untouched pages don't regress
+
+test('HP-6 the ladder repair leaves the Workforce KPI lead<->secondary geometry exactly as declared', () => {
+  const css = styleBlock(workforce().html);
+  const secondary = /(?:^|\})\.metric-tile strong\{font-size:([\d.]+)px/.exec(css);
+  const lead = /\.metric-tile--lead strong\{font-size:([\d.]+)px\}/.exec(css);
+  assert.ok(secondary && lead, 'metric tile geometry contract missing from delivered CSS');
+  assert.equal(Number(secondary[1]), 22, 'secondary tile value size must not move (CR-5c contract)');
+  assert.equal(Number(lead[1]), 33, 'lead tile value size must not move (CR-5c contract)');
+  assert.ok(Number(lead[1]) / Number(secondary[1]) >= 1.5, 'lead<->secondary gap narrowed below the declared 1.5 ratio');
+});
+
+// ---------------------------------------------------------------- HP-7 encoding data-ink fidelity hook
+
+// F2' regression hook: anchor dominance must be bought with anchor tokens,
+// never by dimming the waterfall's data ink. These encoding constants are the
+// same ones accepted in the previous round; any weakening must fail here.
+test('HP-7 waterfall data ink is untouched by the anchor-mass repair', () => {
+  const css = styleBlock(ceoEncoding().html);
+  assert.match(css, /\.waterfall-total-bar\{bottom:0;height:var\(--height\);background:#3e63c6\}/, 'waterfall total columns must keep their full-strength ink');
+  assert.match(css, /\.waterfall-segment\{bottom:var\(--offset\);height:var\(--value\);background:#7e97c9\}/, 'waterfall segments must keep their declared ink');
+  assert.match(css, /\.waterfall-bridge\{display:flex;align-items:stretch;gap:8px;height:230px\}/, 'waterfall staircase canvas height must not shrink');
 });
