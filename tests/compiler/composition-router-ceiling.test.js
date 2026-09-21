@@ -242,7 +242,9 @@ test('PA-3 the ceiling is ordinal: supporting-lead stays below the primary regio
   for (const [bp, rules] of Object.entries(sets)) {
     // Typography channel vs typography channel.
     assert.ok(tokenPx(rules.supporting, 'rp-tile-lead') < tokenPx(rules.primary, 'rp-value'), `supporting lead escapes the primary value size at ${bp}`);
-    assert.ok(tokenPx(rules.detail, 'rp-tile-lead') <= tokenPx(rules.supporting, 'rp-tile-lead'), `detail tile out-speaks supporting at ${bp}`);
+    // STRICT relational contract (PA-3B + STRICTNESS-DRIFT INCIDENT): the
+    // detail channel compares with < , never <= — equality must fail here.
+    assert.ok(tokenPx(rules.detail, 'rp-tile-lead') < tokenPx(rules.supporting, 'rp-tile-lead'), `detail tile matches or out-speaks supporting at ${bp}`);
     assert.ok(tokenPx(rules.anchor, 'rp-tile-lead') >= tokenPx(rules.primary, 'rp-tile-lead'), `anchor ceiling must never sit below primary at ${bp}`);
     // Surface channel vs surface channel (never a cross-channel proxy).
     assert.match(rules.primary, /--rp-tile-lead-bg:#eef3fd/, `primary region lost its emphasis surface at ${bp}`);
@@ -319,4 +321,41 @@ test('PA-7 ceiling tokens use only the declared neutral set; no severity channel
     }
     assert.doesNotMatch(body, /red|green|crimson|emerald|#d|#e74|#2e7/i, `severity-flavored token entered ${role}`);
   }
+});
+
+// ---------------------------------------------------------------- PA-3B strictness boundary pair
+
+// STRICTNESS-DRIFT INCIDENT ledger rule: every strict relational contract
+// (supporting < primary on each shared channel) must carry a boundary pair —
+// equality rejected, nearest valid declared token step accepted. This proves
+// the contract enforces strict ordinality only; it introduces no unapproved
+// minimum-gap requirement. Comparisons run per shared channel only
+// (typography vs typography, surface vs surface) on declared token values.
+test('PA-3B equality is rejected and the nearest valid token step is accepted on every shared channel', () => {
+  const css = styleBlock(saas().html);
+  const violations = (styleCss) => {
+    const s = roleRuleSets(styleCss);
+    const errors = [];
+    for (const [bp, rules] of Object.entries(s)) {
+      if (!(tokenPx(rules.supporting, 'rp-tile-lead') < tokenPx(rules.primary, 'rp-value'))) errors.push(`typography equality supporting==primary at ${bp}`);
+      if (!(tokenPx(rules.detail, 'rp-tile-lead') < tokenPx(rules.supporting, 'rp-tile-lead'))) errors.push(`typography equality detail==supporting at ${bp}`);
+      if (rules.supporting.includes('--rp-tile-lead-bg:#eef3fd')) errors.push(`surface equality supporting==primary at ${bp}`);
+      if (rules.detail.includes('--rp-tile-lead-bg:#eef3fd')) errors.push(`surface equality detail==supporting at ${bp}`);
+    }
+    return errors;
+  };
+  const sets = roleRuleSets(css);
+  for (const [bp, rules] of Object.entries(sets)) {
+    // Delivered state IS the nearest valid value: supporting tileLead sits
+    // exactly one declared step below the primary value size, and it still
+    // passes. Anything stricter would be an unapproved minimum-gap drift.
+    assert.equal(tokenPx(rules.primary, 'rp-value') - tokenPx(rules.supporting, 'rp-tile-lead'), 1, `supporting lead is not at the nearest valid step below primary at ${bp}`);
+  }
+  // Boundary A (equality) -> MUST FAIL on each channel.
+  assert.ok(violations(css.replace(/--rp-tile-lead:15px/g, '--rp-tile-lead:16px')).length > 0, 'typography equality supporting==primary was not rejected');
+  assert.ok(violations(css.replace(/--rp-tile-lead:13px/g, '--rp-tile-lead:15px')).length > 0, 'typography equality detail==supporting was not rejected');
+  assert.ok(violations(css.replace(/--rp-tile-lead-bg:none/g, '--rp-tile-lead-bg:#eef3fd')).length > 0, 'surface equality was not rejected');
+  // Boundary B (nearest valid step) -> MUST PASS.
+  assert.deepEqual(violations(css), [], 'the delivered nearest-valid step must pass with zero violations');
+  assert.deepEqual(violations(css.replace(/--rp-tile-lead:13px/g, '--rp-tile-lead:14px')), [], 'detail one declared step below supporting must pass');
 });
