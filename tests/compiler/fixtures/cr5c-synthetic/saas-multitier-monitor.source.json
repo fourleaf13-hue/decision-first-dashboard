@@ -1,0 +1,69 @@
+{
+  "fixtureName": "SYNTHETIC_SAAS_MULTITIER_MONITOR",
+  "synthetic": true,
+  "isOriginalBaseline": false,
+  "purpose": "Synthetic five-node Monitor page exercising all four frozen attention tiers in one composition: anchor (ExceptionList) > primary (Trend) > supporting (MetricCluster, Breakdown) > detail (Drilldown). No real customer data.",
+  "signals": [
+    { "metric": "arr", "label": "Annual Recurring Revenue", "value": "9.10M" },
+    { "metric": "net_revenue_retention", "label": "Net Revenue Retention", "value": "112%" },
+    { "metric": "gross_margin", "label": "Gross Margin", "value": "76%" },
+    { "metric": "margin_floor", "label": "Gross Margin Floor", "value": "at the confirmed limit" },
+    { "metric": "support_tickets", "label": "Open Support Tickets", "value": "23" }
+  ],
+  "exceptions": [
+    { "name": "Gross margin floor", "status": "at the confirmed limit", "provenance": "source" }
+  ],
+  "semanticNodes": [
+    {
+      "title": "Declared limit status",
+      "items": [
+        { "label": "Gross margin floor", "value": "at the confirmed limit", "metric": "margin_floor", "detail": "confirmed last review" }
+      ]
+    },
+    {
+      "title": "Annual recurring revenue by year",
+      "subtitle": "As displayed. The source does not state whether 2026 is a full or partial year.",
+      "items": [
+        { "label": "2023", "value": 5.2 },
+        { "label": "2024", "value": 6.8 },
+        { "label": "2025", "value": 8.3 },
+        { "label": "2026", "value": 9.1 }
+      ]
+    },
+    {
+      "title": "Recurring revenue KPIs",
+      "items": [
+        { "label": "Annual Recurring Revenue", "value": "9.10M", "metric": "arr", "detail": "PY 8.30M" },
+        { "label": "Net Revenue Retention", "value": "112%", "metric": "net_revenue_retention", "detail": "PY 108%" },
+        { "label": "Gross Margin", "value": "76%", "metric": "gross_margin", "detail": "PY 74%" },
+        { "label": "Open Support Tickets", "value": "23", "metric": "support_tickets", "detail": "PY 19" }
+      ]
+    },
+    {
+      "title": "Recurring revenue by segment",
+      "subtitle": "All three segments shown; the amounts sum to the 9.10M total.",
+      "items": [
+        { "label": "Enterprise", "value": 4.6 },
+        { "label": "Mid-market", "value": 3.1 },
+        { "label": "Self-serve", "value": 1.4 }
+      ]
+    },
+    {
+      "title": "Renewal motion detail",
+      "subtitle": "Counts since the 2026-01 renewal cycle opened.",
+      "items": [
+        { "label": "Renewals closed", "value": "148", "detail": "Since 2026-01" },
+        { "label": "Seats added on renewal", "value": "912", "detail": "Since 2026-01" },
+        { "label": "Seats reduced on renewal", "value": "64", "detail": "Since 2026-01" }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "id": "segment_mix",
+      "relationType": "decomposition",
+      "subjectRefs": ["segment_mix"],
+      "decomposition": { "whole": "arr", "additivity": "additive" }
+    }
+  ]
+}

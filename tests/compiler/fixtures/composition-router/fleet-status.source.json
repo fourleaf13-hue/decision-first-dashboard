@@ -1,0 +1,13 @@
+{
+  "signals": [
+    { "label": "Vehicles online", "value": "27" },
+    { "label": "Deliveries today", "value": "5.1k" },
+    { "label": "Depots reporting", "value": "3" }
+  ],
+  "semanticNodes": [
+    { "title": "Current parcels scanned by depot", "items": [{ "label": "North gate", "value": 705 }, { "label": "Harbour side", "value": 488 }, { "label": "Airport ring", "value": 361 }, { "label": "Old town", "value": 244 }] },
+    { "title": "Deliveries across the week", "items": [{ "label": "Mon", "value": 51 }, { "label": "Tue", "value": 47 }, { "label": "Wed", "value": 59 }, { "label": "Thu", "value": 63 }, { "label": "Fri", "value": 72 }, { "label": "Sat", "value": 44 }, { "label": "Sun", "value": 31 }] },
+    { "title": "Route duration spread", "items": [{ "label": "p50", "value": 18 }, { "label": "p75", "value": 27 }, { "label": "p90", "value": 41 }, { "label": "p95", "value": 58 }, { "label": "p99", "value": 83 }] }
+  ],
+  "relationships": []
+}

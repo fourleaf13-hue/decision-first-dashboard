@@ -1,0 +1,88 @@
+{
+  "fixtureName": "RECONSTRUCTED_HORIZON_REGRESSION",
+  "reconstruction": {
+    "status": "reconstructed",
+    "isOriginalBaseline": false,
+    "note": "Reconstructed from the Horizon screenshot values transcribed in the 2026-09-19 RED-phase execution brief. The original Horizon input bundle was never present on this machine, so this fixture must not be cited as an original baseline."
+  },
+  "integrity": {
+    "knownInconsistentSnapshot": {
+      "marker": "KNOWN_INCONSISTENT_SNAPSHOT",
+      "kpiPriorHeadcount": 172,
+      "trend2025Headcount": 177,
+      "policy": "Preserve both values verbatim. Reconstruction preserves what the source displayed, including contradictions. Tests must not assume prior == trend[N-1], and no task in this phase may repair the contradiction. It may later feed Presentation Integrity / Consistency Finding logic."
+    },
+    "displayOnlyDeltas": {
+      "marker": "DISPLAY_ONLY_NOT_GROUNDED",
+      "legacyScreenshotDeltas": {
+        "headcount": "+9.88%",
+        "turnover": "-8.99%",
+        "appraisal": "-1.63%",
+        "training": "+2.34%"
+      },
+      "derivedFromVisibleRoundedValues": {
+        "headcount": "+9.88%",
+        "training": "+2.34%",
+        "turnover": "-8.62%",
+        "appraisal": "-1.65%"
+      },
+      "policy": "The legacy screenshot deltas are display outputs, likely computed from higher-precision underlying values unavailable to us. The fixture stores current/prior only; delta is compiler-derived. Tests must not expect the legacy screenshot delta strings."
+    },
+    "adversarialPolarity": {
+      "marker": "POLARITY_UNKNOWN_BY_DESIGN",
+      "subject": "turnover_rate",
+      "establishedBySource": ["1.74% -> 1.59%", "direction = decrease"],
+      "notEstablishedBySource": ["decrease = favorable", "decrease = unfavorable"],
+      "policy": "Neither 'Turnover improved' nor 'Turnover needs attention' is justified without source-backed polarity, target, policy, benchmark, or severity. Legal results are descriptive output or ASK. Do not later 'fix' this fixture by adding HR-domain polarity knowledge."
+    },
+    "nonEvidentialIntent": {
+      "marker": "NON_EVIDENTIAL_INTENT",
+      "decision": "快速准备管理层汇报",
+      "action": "只突出需要关注的异常",
+      "policy": "Intent defines what the user wants to decide and may drive structural demand. It may not prove which KPI is anomalous, which direction is good or bad, or which KPI deserves attention. If evidence cannot support the requested judgment, the legal results are ASK or descriptive downgrade."
+    }
+  },
+  "source": {
+    "signals": [
+      { "metric": "headcount", "label": "Total Headcount", "value": "189" },
+      { "metric": "turnover_rate", "label": "Turnover Rate", "value": "1.59%" },
+      { "metric": "avg_appraisal", "label": "Avg Appraisal", "value": "3.58" },
+      { "metric": "training_completion", "label": "Training Completion", "value": "79.17%" }
+    ],
+    "semanticNodes": [
+      {
+        "id": "horizon_kpis",
+        "title": "Workforce KPIs",
+        "items": [
+          { "label": "Total Headcount", "value": "189", "detail": "prior 172" },
+          { "label": "Turnover Rate", "value": "1.59%", "detail": "prior 1.74%" },
+          { "label": "Avg Appraisal", "value": "3.58", "detail": "prior 3.64" },
+          { "label": "Training Completion", "value": "79.17%", "detail": "prior 77.36%" }
+        ]
+      },
+      {
+        "id": "headcount_trend",
+        "title": "Headcount trend",
+        "items": [
+          { "label": "2023", "value": 144 },
+          { "label": "2024", "value": 167 },
+          { "label": "2025", "value": 177 },
+          { "label": "2026", "value": 189 }
+        ]
+      },
+      {
+        "id": "department_headcount",
+        "title": "Department headcount",
+        "items": [
+          { "label": "Consulting", "value": 34 },
+          { "label": "Marketing", "value": 33 },
+          { "label": "IT", "value": 33 },
+          { "label": "Finance", "value": 26 },
+          { "label": "Sales", "value": 25 },
+          { "label": "HR", "value": 20 },
+          { "label": "Operations", "value": 18 }
+        ]
+      }
+    ]
+  }
+}

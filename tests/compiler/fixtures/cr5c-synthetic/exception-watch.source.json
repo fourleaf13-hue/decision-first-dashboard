@@ -1,0 +1,41 @@
+{
+  "fixtureName": "SYNTHETIC_EXCEPTION_WATCH",
+  "signals": [
+    { "metric": "queue_depth", "label": "Queue Depth", "value": "120" },
+    { "metric": "active_batches", "label": "Active Batches", "value": "18" },
+    { "metric": "review_load", "label": "Review Load", "value": "92%" },
+    { "metric": "batch_ceiling", "label": "Batch Ceiling", "value": "over the confirmed limit" },
+    { "metric": "cycle_days", "label": "Cycle Days", "value": "4" }
+  ],
+  "exceptions": [
+    { "name": "Batch ceiling", "status": "over the confirmed limit", "provenance": "source" }
+  ],
+  "semanticNodes": [
+    {
+      "title": "Declared limit status",
+      "items": [
+        { "label": "Batch ceiling", "value": "over the confirmed limit", "detail": "confirmed last review" }
+      ]
+    },
+    {
+      "title": "Throughput status",
+      "items": [
+        { "metric": "queue_depth", "label": "Queue Depth", "value": "120" },
+        { "metric": "active_batches", "label": "Active Batches", "value": "18" },
+        { "metric": "batch_ceiling", "label": "Batch Ceiling", "value": "over the confirmed limit" },
+        { "metric": "cycle_days", "label": "Cycle Days", "value": "4" }
+      ]
+    },
+    {
+      "title": "Batches across the week",
+      "items": [
+        { "label": "Mon", "value": 12 },
+        { "label": "Tue", "value": 15 },
+        { "label": "Wed", "value": 11 },
+        { "label": "Thu", "value": 17 },
+        { "label": "Fri", "value": 14 }
+      ]
+    }
+  ],
+  "relationships": []
+}

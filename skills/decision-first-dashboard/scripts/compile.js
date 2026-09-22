@@ -23,7 +23,17 @@ function semanticDeliveryFailure(code, pathValue, message) {
 
 export function compileGroundedBundle(
   bundle,
-  { baseDir = process.cwd(), composition = undefined, claims = undefined, requireSemantic = false } = {}
+  {
+    baseDir = process.cwd(),
+    composition = undefined,
+    claims = undefined,
+    requireSemantic = false,
+    visualSpecs = undefined,
+    contextRequirements = undefined,
+    modifiers = undefined,
+    decisionLog = undefined,
+    pageHeader = undefined
+  } = {}
 ) {
   const data = bundle?.decisionState;
   if (requireSemantic && (!Array.isArray(data?.semanticNodes) || data.semanticNodes.length === 0)) {
@@ -48,8 +58,26 @@ export function compileGroundedBundle(
   try {
     return {
       result,
-      svg: renderSvg(data, { composition, claims: deliveredClaims, requireSemantic }),
-      html: renderHtml(data, { composition, claims: deliveredClaims, requireSemantic }),
+      svg: renderSvg(data, {
+        composition,
+        claims: deliveredClaims,
+        requireSemantic,
+        visualSpecs,
+        contextRequirements,
+        modifiers,
+        decisionLog,
+        pageHeader
+      }),
+      html: renderHtml(data, {
+        composition,
+        claims: deliveredClaims,
+        requireSemantic,
+        visualSpecs,
+        contextRequirements,
+        modifiers,
+        decisionLog,
+        pageHeader
+      }),
       outputMode: data.mode === 'composite' ? 'composite' : 'no-score'
     };
   } catch (error) {

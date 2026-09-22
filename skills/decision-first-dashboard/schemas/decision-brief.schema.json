@@ -5,8 +5,12 @@
   "required": ["decision", "action"],
   "properties": {
     "questionCount": { "type": "integer", "minimum": 0, "maximum": 5 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "subtitle": { "type": "string", "minLength": 1, "maxLength": 120 },
     "decision": { "$ref": "#/definitions/slot" },
     "action": { "$ref": "#/definitions/slot" },
+    "questionShape": { "$ref": "#/definitions/questionShapeSlot" },
+    "actionShape": { "$ref": "#/definitions/actionShapeSlot" },
     "exception": { "$ref": "#/definitions/slot" },
     "diagnosis": { "$ref": "#/definitions/slot" },
     "audience": { "$ref": "#/definitions/slot" },
@@ -25,6 +29,24 @@
       "properties": {
         "status": { "enum": ["confirmed", "inferred", "absent"] },
         "value": { "type": "string", "minLength": 1, "maxLength": 240 }
+      }
+    },
+    "questionShapeSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["confirmed", "inferred", "absent"] },
+        "value": { "enum": ["state", "priority", "cause", "comparison", "allocation", "exploration"] }
+      }
+    },
+    "actionShapeSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["confirmed", "inferred", "absent"] },
+        "value": { "enum": ["observe", "rank", "investigate", "choose", "allocate", "explore"] }
       }
     },
     "contextRequirement": {
@@ -51,6 +73,7 @@
             "current_plus_reference",
             "full_distribution",
             "both_ends",
+            "full_ranking",
             "target_and_gap",
             "contributors",
             "full_breakdown"

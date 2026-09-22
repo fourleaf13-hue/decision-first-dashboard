@@ -6,5 +6,13 @@
   "action": {
     "status": "confirmed",
     "value": "Prioritize retention, growth, or conversion intervention"
+  },
+  "questionShape": {
+    "status": "confirmed",
+    "value": "state"
+  },
+  "actionShape": {
+    "status": "confirmed",
+    "value": "observe"
   }
 }

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/compiler/*.test.js",
+    "test:red-lane": "node scripts/run-red-lane.mjs",
     "package:claude-skill": "node scripts/stage-claude-skill.mjs",
     "preflight:skill": "node skills/decision-first-dashboard/scripts/preflight.js",
     "preflight:runtime-provenance": "node skills/decision-first-dashboard/scripts/runtime-provenance-preflight.js",

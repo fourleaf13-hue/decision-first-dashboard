@@ -1,0 +1,15 @@
+{
+  "signals": [
+    { "label": "Open initiatives", "value": "3" },
+    { "label": "Teams involved", "value": "4" },
+    { "label": "Cycle length", "value": "2 weeks" }
+  ],
+  "semanticNodes": [
+    { "title": "Initiatives in declared priority order", "comparability": { "unit": "number", "comparisonGroup": "initiative_rank", "comparabilityDomain": "rank_position", "normalization": "raw" }, "items": [{ "label": "Warehouse routing", "value": 2, "role": "rank" }, { "label": "Returns portal", "value": 1, "role": "rank" }, { "label": "Fleet telemetry", "value": 3, "role": "rank" }] },
+    { "title": "Initiative throughput across quarters", "items": [{ "label": "Q1", "value": 12 }, { "label": "Q2", "value": 15 }, { "label": "Q3", "value": 19 }, { "label": "Q4", "value": 17 }] },
+    { "title": "Cycle time distribution", "items": [{ "label": "p50", "value": 9 }, { "label": "p75", "value": 14 }, { "label": "p90", "value": 21 }, { "label": "p95", "value": 26 }, { "label": "p99", "value": 40 }] }
+  ],
+  "relationships": [
+    { "id": "initiative_rank", "relationType": "comparison", "subjectRefs": ["initiative_rank"], "comparison": { "metricIdentity": "rank_position" } }
+  ]
+}

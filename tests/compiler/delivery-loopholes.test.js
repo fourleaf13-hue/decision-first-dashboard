@@ -45,8 +45,17 @@ function semanticState(itemCount = 12) {
     semanticNodes: [
       { id: 'monthly_orders', type: 'Distribution', title: 'Monthly orders', items },
       { id: 'annual_orders', type: 'Trend', title: 'Annual orders', items: items.slice(0, 4) },
-      { id: 'product_roi', type: 'Ranking', title: 'Product ROI', items: items.slice(0, 4) },
+      {
+        id: 'product_roi',
+        type: 'Ranking',
+        title: 'Product ROI',
+        comparability: { unit: 'number', comparisonGroup: 'product_roi', comparabilityDomain: 'orders', normalization: 'raw' },
+        items: items.slice(0, 4)
+      },
       { id: 'revenue_target', type: 'Relationship', title: 'Revenue against target', items: items.slice(0, 3) }
+    ],
+    relationships: [
+      { id: 'product_roi', relationType: 'comparison', subjectRefs: ['product_roi'], provenance: 'source', comparison: { metricIdentity: 'orders' } }
     ]
   };
 }

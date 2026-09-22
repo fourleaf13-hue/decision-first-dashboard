@@ -134,7 +134,9 @@ function brief(questionCount = 0) {
   return {
     questionCount,
     decision: { status: 'confirmed', value: DECISION },
-    action: { status: 'confirmed', value: ACTION }
+    action: { status: 'confirmed', value: ACTION },
+    questionShape: { status: 'confirmed', value: 'state' },
+    actionShape: { status: 'confirmed', value: 'observe' }
   };
 }
 

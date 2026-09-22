@@ -1,0 +1,60 @@
+{
+  "signals": [
+    {
+      "label": "Open candidates",
+      "value": "3"
+    },
+    {
+      "label": "Team capacity",
+      "value": "1 slot"
+    },
+    {
+      "label": "Review cadence",
+      "value": "weekly"
+    }
+  ],
+  "semanticNodes": [
+    {
+      "title": "Candidate initiatives",
+      "items": [
+        {
+          "label": "Candidate B",
+          "value": 120,
+          "role": "rank"
+        },
+        {
+          "label": "Candidate A",
+          "value": 900,
+          "role": "rank"
+        },
+        {
+          "label": "Candidate C",
+          "value": 40,
+          "role": "rank"
+        }
+      ]
+    },
+    {
+      "title": "Capacity across quarters",
+      "items": [
+        {
+          "label": "Q1",
+          "value": 3
+        },
+        {
+          "label": "Q2",
+          "value": 3
+        },
+        {
+          "label": "Q3",
+          "value": 2
+        },
+        {
+          "label": "Q4",
+          "value": 3
+        }
+      ]
+    }
+  ],
+  "relationships": []
+}

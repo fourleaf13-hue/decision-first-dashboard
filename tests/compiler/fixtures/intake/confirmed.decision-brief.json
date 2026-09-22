@@ -6,5 +6,13 @@
   "action": {
     "status": "confirmed",
     "value": "Prioritize the next business follow-up"
+  },
+  "questionShape": {
+    "status": "confirmed",
+    "value": "state"
+  },
+  "actionShape": {
+    "status": "confirmed",
+    "value": "observe"
   }
 }

@@ -1,0 +1,31 @@
+{
+  "signals": [
+    { "label": "Revenue", "value": "$4.98M" },
+    { "label": "Target", "value": "$6.00M" },
+    { "label": "Target gap", "value": "$1.02M" }
+  ],
+  "semanticNodes": [
+    { "title": "Revenue against annual target", "items": [{ "label": "Actual revenue", "value": "$4.98M", "role": "actual" }, { "label": "Annual target", "value": "$6.00M", "role": "target" }, { "label": "Gap", "value": "$1.02M", "role": "gap" }] },
+    { "title": "What explains the target gap", "items": [{ "label": "New business shortfall", "value": "$0.55M" }, { "label": "Expansion shortfall", "value": "$0.31M" }, { "label": "Churn impact", "value": "$0.16M" }] },
+    { "title": "Accounts with the largest impact", "comparability": { "unit": "currency", "comparisonGroup": "top_accounts", "comparabilityDomain": "revenue_impact", "normalization": "raw" }, "items": [{ "label": "Northstar Health", "value": "$0.24M", "rank": 1 }, { "label": "Copper Labs", "value": "$0.18M", "rank": 2 }, { "label": "Pilgrim Retail", "value": "$0.13M", "rank": 3 }] }
+  ],
+  "relationships": [
+    { "id": "top_accounts", "relationType": "comparison", "subjectRefs": ["top_accounts"], "comparison": { "metricIdentity": "revenue_impact" } },
+    {
+      "id": "gap_path",
+      "relationType": "additive_path",
+      "subjectRefs": ["revenue_target", "gap_attribution"],
+      "memberRefs": ["New business shortfall", "Expansion shortfall", "Churn impact"],
+      "basisRefs": ["ev_9", "ev_11", "ev_16", "ev_18", "ev_20"],
+      "additivePath": {
+        "startRef": "Annual target",
+        "endRef": "Actual revenue",
+        "members": [
+          { "memberRef": "New business shortfall", "sign": "minus" },
+          { "memberRef": "Expansion shortfall", "sign": "minus" },
+          { "memberRef": "Churn impact", "sign": "minus" }
+        ]
+      }
+    }
+  ]
+}

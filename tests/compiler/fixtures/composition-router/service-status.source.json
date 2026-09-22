@@ -1,0 +1,13 @@
+{
+  "signals": [
+    { "label": "Services reporting", "value": "12" },
+    { "label": "Requests today", "value": "3.4M" },
+    { "label": "Regions covered", "value": "4" }
+  ],
+  "semanticNodes": [
+    { "title": "Current request load by service", "items": [{ "label": "Checkout", "value": 640 }, { "label": "Catalog", "value": 512 }, { "label": "Search", "value": 430 }, { "label": "Accounts", "value": 298 }] },
+    { "title": "Requests across the week", "items": [{ "label": "Mon", "value": 46 }, { "label": "Tue", "value": 52 }, { "label": "Wed", "value": 61 }, { "label": "Thu", "value": 58 }, { "label": "Fri", "value": 66 }, { "label": "Sat", "value": 40 }, { "label": "Sun", "value": 35 }] },
+    { "title": "Response time distribution", "items": [{ "label": "p50", "value": 24 }, { "label": "p75", "value": 39 }, { "label": "p90", "value": 55 }, { "label": "p95", "value": 71 }, { "label": "p99", "value": 96 }] }
+  ],
+  "relationships": []
+}

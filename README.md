@@ -137,6 +137,17 @@ An ambiguous prompt such as “redesign this dashboard” is **not render permis
 
 The canonical compiler also writes `output.manifest.json` and stamps the HTML/SVG with machine-verifiable provenance. A second agent-authored HTML, image, SVG, React app, or native artifact is not the canonical After merely because it looks better.
 
+### Semantic Visual Grammar
+
+The canonical semantic path separates decision context from visual representation:
+
+```text
+Semantic Node → presentation eligibility → comparability → layout eligibility
+  → Internal Visual Spec → deterministic renderer → delivered verifier
+```
+
+The Internal Visual Spec is delivered in the manifest and mirrored by `data-visual-*` markers in both HTML and SVG. Trend, distribution, ranking, paired ranking, metric-strip, and radar presentations have distinct structural output. Shared position/length/area/scale is allowed only for compatible unit, comparison group, comparability domain, normalization, and scale; same unit alone is not enough. The grammar is implemented in the existing pipeline and has no external chart-rendering dependency or use-case-specific template registry.
+
 ### Runtime Skill provenance gate
 
 Before an acceptance run, validate that the runtime is reading the intended
@@ -335,6 +346,17 @@ npm run render:saas
 npm run validate:radar-showcase
 npm run render:radar-showcase
 ```
+
+`npm test` is the default contract suite and must stay green. A separate
+expected-negative lane records contracts that are deliberately not productionized yet:
+
+```bash
+npm run test:red-lane
+```
+
+A non-zero exit from the red lane is the documented status of those standing gaps
+(e.g. RED-6 evaluation grounding), not a release gate; CI runs it with
+`continue-on-error` so the gap stays visible without turning the default command red.
 
 For Anthropic plugin packaging, validate the repository root with a current Claude Code CLI before submission:
 

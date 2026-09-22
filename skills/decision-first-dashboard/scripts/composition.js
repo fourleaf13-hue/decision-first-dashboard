@@ -1,4 +1,7 @@
 import { createHash } from 'node:crypto';
+import { applyRegionItemOrder, evaluateProfileComparability, visualSpecErrors } from './visual-grammar.js';
+import { verifyDeliveredGeometry } from './geometry-verifier.js';
+import { verifyDeliveredEncodingGeometry } from './encoding-geometry-verifier.js';
 
 const PRESENTATION_COVERAGE = {
   Trend: {
@@ -13,6 +16,7 @@ const PRESENTATION_COVERAGE = {
   },
   Breakdown: {
     full_breakdown: ['decomposition', 'gap_attribution'],
+    waterfall: ['decomposition', 'gap_attribution'],
     summary: ['current_value']
   },
   Ranking: {
@@ -23,6 +27,7 @@ const PRESENTATION_COVERAGE = {
   },
   Relationship: {
     full_chart: ['relative_comparison', 'target_reference', 'gap_attribution'],
+    bullet_target: ['relative_comparison', 'target_reference', 'gap_attribution'],
     summary: ['current_value']
   },
   ExceptionList: {
@@ -54,6 +59,7 @@ const PRESENTATION_STRUCTURE = {
   },
   Breakdown: {
     full_breakdown: 'decomposition',
+    waterfall: 'additive-path',
     summary: 'current-value'
   },
   Ranking: {
@@ -64,6 +70,7 @@ const PRESENTATION_STRUCTURE = {
   },
   Relationship: {
     full_chart: 'target-gap',
+    bullet_target: 'target-bullet',
     summary: 'current-value'
   },
   ExceptionList: {
@@ -95,7 +102,21 @@ const DECISION_REASON_CODES = new Set([
   'FIRST_VIEW_BUDGET',
   'SOURCE_STRUCTURE_REQUIRED',
   'PROFILE_COMPARABILITY_FAILED',
-  'PROFILE_COMPARABILITY_CONFIRMED'
+  'PROFILE_COMPARABILITY_CONFIRMED',
+  'BULLET_INELIGIBLE_TARGET_NOT_GROUNDED',
+  'BULLET_INELIGIBLE_ACTUAL_NOT_GROUNDED',
+  'BULLET_INELIGIBLE_REQUIREMENT_UNCONFIRMED',
+  'BULLET_INELIGIBLE_RELATIONSHIP_NOT_GROUNDED',
+  'BULLET_INELIGIBLE_COMPARABILITY_FAILED',
+  'BULLET_INELIGIBLE_GAP_NOT_TRACEABLE',
+  'WATERFALL_INELIGIBLE_PATH_NOT_DECLARED',
+  'WATERFALL_INELIGIBLE_START_UNGROUNDED',
+  'WATERFALL_INELIGIBLE_END_UNGROUNDED',
+  'WATERFALL_INELIGIBLE_MEMBER_NOT_GROUNDED',
+  'WATERFALL_INELIGIBLE_MEMBER_SIGN_UNGROUNDED',
+  'WATERFALL_INELIGIBLE_UNIT_MISMATCH',
+  'WATERFALL_INELIGIBLE_ADDITIVE_CONTRACT_FAILED',
+  'RANKING_EXTREMES_NOT_GROUNDED'
 ]);
 
 const COMPOSITION_DECISIONS = new Set(['promote', 'retain_full', 'collapse_to_drilldown', 'drop']);
@@ -124,10 +145,15 @@ function numericValue(value) {
 }
 
 export function semanticItemsForPresentation(sourceNode, selection) {
-  const items = Array.isArray(sourceNode?.items) ? sourceNode.items : [];
+  const items = applyRegionItemOrder(sourceNode?.items, selection?.itemOrderStrategy);
   if (['summary', 'top_summary'].includes(selection?.presentation)) return items.slice(0, 1);
   if (selection?.presentation === 'peak_summary') {
     return items.length === 0 ? [] : [items.reduce((peak, item) => numericValue(item.value) > numericValue(peak.value) ? item : peak, items[0])];
+  }
+  if (selection?.presentation === 'both_ends' && items.length > 2) {
+    const high = items.reduce((best, item) => numericValue(item.value) > numericValue(best.value) ? item : best, items[0]);
+    const low = items.reduce((best, item) => numericValue(item.value) < numericValue(best.value) ? item : best, items[0]);
+    return high === low ? [high] : [high, low];
   }
   return items;
 }
@@ -139,7 +165,8 @@ function profileTest(node) {
   const sharedScale = node.profile?.sharedScale === true;
   const comparable = node.profile?.comparable === true;
   const requested = node.profile?.purpose === 'profile';
-  const pass = dimensions.length >= 3 && units.size === 1 && normalised && sharedScale && comparable && requested;
+  const comparability = evaluateProfileComparability(dimensions, node);
+  const pass = dimensions.length >= 3 && units.size === 1 && normalised && sharedScale && comparable && requested && comparability.pass;
   return {
     pass,
     reasons: pass ? [] : [
@@ -148,8 +175,10 @@ function profileTest(node) {
       ...(!normalised ? ['dimensions lack source-backed normalization'] : []),
       ...(!sharedScale ? ['dimensions lack a shared scale'] : []),
       ...(!comparable ? ['dimensions are not declared comparable'] : []),
-      ...(!requested ? ['profile comparison is not required'] : [])
-    ]
+      ...(!requested ? ['profile comparison is not required'] : []),
+      ...(!comparability.pass ? comparability.reasons : [])
+    ],
+    comparability
   };
 }
 
@@ -344,7 +373,134 @@ export function buildDeliveredClaims(bundle) {
   return claims;
 }
 
-export function composeAdaptiveComposition({ contextRequirements = [], nodes = [], decisionLog = [], modifiers = {} } = {}) {
+export const REGION_ATTENTION_ROLES = Object.freeze(['anchor', 'primary', 'supporting', 'detail']);
+
+// Single decision-relevance mechanism: routed roles decide attention for both
+// consumers — summary metric tiers here, region roles in derivePageComposition.
+export const METRIC_TIER_GEOMETRY_RATIO = 1.5;
+
+export function deriveMetricTiers({ decisionState = null, metrics = [] } = {}) {
+  const routes = Array.isArray(metrics) ? metrics : [];
+  const presentation = decisionState?.presentation ?? null;
+  const leadIds = new Set([
+    ...(Array.isArray(presentation?.primaryMetrics) ? presentation.primaryMetrics : []),
+    ...routes.filter((route) => route?.role === 'exception' && route?.active === true).map((route) => route.metric)
+  ]);
+  const tiers = new Map();
+  for (const route of routes) {
+    if (typeof route?.metric !== 'string' || route.metric.length === 0) continue;
+    const isLead = leadIds.has(route.metric) || route.role === 'primary_signal' || (route.role === 'exception' && route.active === true);
+    tiers.set(route.metric, {
+      metric: route.metric,
+      tier: isLead ? 'lead' : 'secondary',
+      selectionBasis: `routed_role:${route.role}`
+    });
+  }
+  return tiers;
+}
+
+const MONITOR_EXCEPTION_ORDER = ['ExceptionList', 'Trend', 'MetricCluster', 'Relationship', 'Distribution', 'Breakdown', 'Ranking', 'Drilldown'];
+const MONITOR_DESCRIPTIVE_ORDER = ['MetricCluster', 'Relationship', 'Trend', 'Distribution', 'Breakdown', 'Ranking', 'ExceptionList', 'Drilldown'];
+const PRIORITIZE_ORDER = ['Relationship', 'Trend', 'MetricCluster', 'Distribution', 'Breakdown', 'Ranking', 'ExceptionList', 'Drilldown'];
+
+function structureForSelected(node) {
+  return PRESENTATION_STRUCTURE[node?.type]?.[node?.presentation] ?? null;
+}
+
+function isStateReading(type) {
+  return type === 'MetricCluster' || type === 'Relationship';
+}
+
+function rankNodesByReadingOrder(nodes, order) {
+  return nodes
+    .map((node, index) => ({ node, index, rank: order.indexOf(node.type) }))
+    .sort((a, b) => (a.rank === -1 ? 99 : a.rank) - (b.rank === -1 ? 99 : b.rank) || a.index - b.index)
+    .map((entry) => entry.node);
+}
+
+export function derivePageComposition({ nodes = [], compositionIntent = null, semanticNodeIds = [] } = {}) {
+  const archetype = compositionIntent?.archetype ?? null;
+  if (archetype !== 'monitor' && archetype !== 'prioritize_readonly') return null;
+  // A page grammar needs a reading path to express; one- and two-region pages keep their
+  // presentation-level layout untouched so the frozen single/dual-node artifacts stay stable.
+  if (nodes.length < 3) return null;
+
+  const exceptionLed = archetype === 'monitor' && nodes.some((node) => structureForSelected(node) === 'exception-list');
+  let ordered;
+  let anchorNode = null;
+  let itemOrderStrategy = null;
+  let pattern;
+
+  if (archetype === 'prioritize_readonly') {
+    pattern = 'asymmetric';
+    const basis = compositionIntent.orderingBasis ?? null;
+    itemOrderStrategy = basis?.kind === 'grounded_rank' ? 'rank_asc' : basis?.kind === 'grounded_gap' ? 'gap_desc' : null;
+    if (!itemOrderStrategy || !Array.isArray(basis.candidateRefs) || basis.candidateRefs.length === 0) return null;
+    const candidateSegment = Number(String(basis.candidateRefs[0]).split('/')[2]);
+    const candidateNodeId = Number.isInteger(candidateSegment) ? semanticNodeIds[candidateSegment] ?? null : null;
+    anchorNode = nodes.find((node) => node.id === candidateNodeId) ?? null;
+    if (!anchorNode) return null;
+    ordered = [anchorNode, ...rankNodesByReadingOrder(nodes.filter((node) => node !== anchorNode), PRIORITIZE_ORDER)];
+  } else {
+    pattern = 'hero_support';
+    ordered = rankNodesByReadingOrder(nodes, exceptionLed ? MONITOR_EXCEPTION_ORDER : MONITOR_DESCRIPTIVE_ORDER);
+  }
+
+  const regions = ordered.map((node, index) => {
+    let attentionRole;
+    let roleBasis;
+    if (index === 0) {
+      attentionRole = 'anchor';
+      roleBasis = archetype === 'prioritize_readonly'
+        ? 'grounded_ordering_basis_candidate'
+        : exceptionLed
+          ? 'grounded_exception_anchor'
+          : 'monitor_state_reading';
+    } else if (structureForSelected(node) === 'reachable-detail') {
+      attentionRole = 'detail';
+      roleBasis = 'reachable_detail_structure';
+    } else if (index === 1 && archetype === 'prioritize_readonly') {
+      attentionRole = 'primary';
+      roleBasis = 'prioritize_reading_order';
+    } else if (index === 1 && exceptionLed && (node.type === 'Trend' || isStateReading(node.type))) {
+      attentionRole = 'primary';
+      roleBasis = 'exception_follow_up_reading';
+    } else if (index === 1 && !exceptionLed && archetype === 'monitor' && isStateReading(node.type)) {
+      attentionRole = 'primary';
+      roleBasis = 'monitor_state_reading_follow_up';
+    } else {
+      attentionRole = 'supporting';
+      roleBasis = archetype === 'prioritize_readonly' ? 'prioritize_reading_order' : 'monitor_reading_order';
+    }
+    const span = attentionRole === 'anchor'
+      ? 'full'
+      : pattern === 'asymmetric'
+        ? attentionRole === 'primary' ? 'wide' : 'narrow'
+        : 'standard';
+    return {
+      nodeId: node.id,
+      attentionRole,
+      span,
+      roleBasis,
+      itemOrderStrategy: attentionRole === 'anchor' ? itemOrderStrategy : null
+    };
+  });
+
+  // A trailing odd supporting region would otherwise strand half a row of
+  // whitespace; the reading path gains nothing from an empty column.
+  if (pattern === 'hero_support' && regions.length >= 4 && (regions.length - 1) % 2 === 1) {
+    regions[regions.length - 1] = { ...regions.at(-1), span: 'full' };
+  }
+
+  return {
+    archetype,
+    pattern,
+    exceptionLed: exceptionLed || null,
+    regions
+  };
+}
+
+export function composeAdaptiveComposition({ contextRequirements = [], nodes = [], decisionLog = [], modifiers = {}, compositionIntent = null, semanticNodeIds = [] } = {}) {
   const normalizedModifiers = normalizeModifiers(modifiers);
   const { requirements, errors: requirementErrors } = normalizeRequirements(contextRequirements);
   const selectedNodes = nodes.map((node, inputIndex) => {
@@ -370,13 +526,24 @@ export function composeAdaptiveComposition({ contextRequirements = [], nodes = [
   const resolvedDecisionLog = selectedNodes.flatMap((node) => defaultDecisionsFor(node, requirements, normalizedModifiers));
   const resolvedLog = [...resolvedDecisionLog, ...decisionLog];
   const decisionErrors = decisionLogErrors(resolvedLog, selectedNodes, requirements, normalizedModifiers);
+  const pageComposition = derivePageComposition({ nodes: selectedNodes, compositionIntent, semanticNodeIds });
+  const regionByNodeId = new Map((pageComposition?.regions ?? []).map((region) => [region.nodeId, region]));
+  const orderedNodes = pageComposition
+    ? pageComposition.regions.map((region) => selectedNodes.find((node) => node.id === region.nodeId)).filter(Boolean)
+    : selectedNodes;
 
   return {
     valid: requirementErrors.length + presentationErrors.length + contextErrors.length + decisionErrors.length === 0,
     composition: {
-      nodes: selectedNodes.map(({ inputIndex, ...node }) => node),
+      nodes: orderedNodes.map(({ inputIndex, ...node }) => {
+        const region = regionByNodeId.get(node.id) ?? null;
+        return region
+          ? { ...node, attentionRole: region.attentionRole, regionSpan: region.span, ...(region.itemOrderStrategy ? { itemOrderStrategy: region.itemOrderStrategy } : {}) }
+          : node;
+      }),
       decisionLog: resolvedLog,
-      modifiers: normalizedModifiers
+      modifiers: normalizedModifiers,
+      ...(pageComposition ? { pageComposition } : {})
     },
     coverageManifest: {
       required,
@@ -400,6 +567,24 @@ function openTags(artifact) {
 
 function semanticContainerTags(artifact) {
   return openTags(artifact).filter((tag) => tag.includes('data-semantic-node=') && !tag.includes('data-semantic-item="true"'));
+}
+
+function semanticVisualContainerTags(artifact) {
+  return semanticContainerTags(artifact).filter((tag) => tag.includes('data-semantic-container="true"'));
+}
+
+function semanticRegions(artifact, nodeId) {
+  const tags = semanticVisualContainerTags(artifact);
+  return tags.flatMap((tag, index) => {
+    if (tagAttributes(tag)['data-semantic-node'] !== nodeId) return [];
+    const start = artifact.indexOf(tag);
+    if (start < 0) return [];
+    const nextStart = tags
+      .slice(index + 1)
+      .map((candidate) => artifact.indexOf(candidate, start + tag.length))
+      .find((candidateStart) => candidateStart >= 0);
+    return [artifact.slice(start, nextStart ?? artifact.length)];
+  });
 }
 
 function semanticItemTags(artifact, nodeId) {
@@ -459,13 +644,14 @@ function verifySemanticItems(artifact, node, errors, artifactLabel) {
     'ordered-trajectory': 'point',
     'ordered-distribution': 'member',
     'ranked-order': 'rank',
-    'decomposition': 'component'
+    'decomposition': 'component',
+    'additive-path': 'component'
   }[structure];
   if (roleRequired && roles.some((role) => role !== roleRequired)) {
     addError(errors, 'DELIVERED_STRUCTURE_CONTENT_MISMATCH', `/nodes/${node.id}/structure`, `${node.id} contains non-${roleRequired} items in its ${structure} presentation.`);
   }
-  if (structure === 'target-gap' && !['actual', 'target', 'gap'].every((role) => roles.includes(role))) {
-    addError(errors, 'DELIVERED_STRUCTURE_CONTENT_MISMATCH', `/nodes/${node.id}/structure`, `${node.id} target-gap presentation must contain actual, target, and gap roles.`);
+  if (['target-gap', 'target-bullet'].includes(structure) && !['actual', 'target', 'gap'].every((role) => roles.includes(role))) {
+    addError(errors, 'DELIVERED_STRUCTURE_CONTENT_MISMATCH', `/nodes/${node.id}/structure`, `${node.id} ${structure} presentation must contain actual, target, and gap roles.`);
   }
   if (structure === 'ranked-order') {
     const ranks = itemTags.map((tag) => Number.parseInt(tagAttributes(tag)['data-rank'], 10));
@@ -562,6 +748,105 @@ function verifyClaims(deliveryManifest, html, svg, errors) {
   }
 }
 
+function visualGeometryFor(spec) {
+  if (spec.mark === 'line') return 'trajectory';
+  if (spec.mark === 'paired_bar') return 'paired-bars';
+  if (spec.mark === 'radar') return 'radar-polygon';
+  if (spec.mark === 'metric_tile') return 'metric-tiles';
+  if (spec.mark === 'gap_bar') return 'gap-bars';
+  if (spec.mark === 'bullet') return 'bullet-target';
+  if (spec.mark === 'waterfall') return 'waterfall-segments';
+  if (spec.mark === 'detail_list') return 'detail-list';
+  if (spec.mark === 'list') return 'list';
+  if (spec.structure === 'ordered-distribution') return 'distribution-bars';
+  if (spec.structure === 'ranked-order' || spec.structure === 'top-ranked') return 'ranking-bars';
+  if (spec.structure === 'decomposition') return 'breakdown-bars';
+  if (spec.mark === 'value') return 'value-summary';
+  return 'items';
+}
+
+function visualEncodingFor(spec) {
+  return Object.entries(spec.encoding ?? {}).map(([key, value]) => `${key}:${value}`).join('|');
+}
+
+function visualMarkerMatches(artifact, node) {
+  const spec = node.visualSpec;
+  return semanticVisualContainerTags(artifact).some((tag) => {
+    const attrs = tagAttributes(tag);
+    const comparability = spec.comparability ?? {};
+    const layout = spec.layout ?? {};
+    return attrs['data-semantic-node'] === node.id &&
+      attrs['data-presentation'] === node.presentation &&
+      attrs['data-structure'] === spec.structure &&
+      attrs['data-visual-mark'] === spec.mark &&
+      attrs['data-visual-orientation'] === spec.orientation &&
+      attrs['data-visual-encoding'] === visualEncodingFor(spec) &&
+      attrs['data-scale-type'] === spec.scale?.type &&
+      attrs['data-scale-domain'] === spec.scale?.domain &&
+      attrs['data-comparability-unit'] === String(comparability.unit ?? '') &&
+      attrs['data-comparison-group'] === String(comparability.comparisonGroup ?? '') &&
+      attrs['data-comparability-domain'] === String(comparability.comparabilityDomain ?? '') &&
+      attrs['data-normalization'] === String(comparability.normalization ?? '') &&
+      attrs['data-comparability-scale-id'] === String(comparability.scaleId ?? '') &&
+      attrs['data-comparability-eligible'] === (comparability.eligible ? 'true' : 'false') &&
+      attrs['data-layout-pattern'] === layout.pattern &&
+      attrs['data-layout-reason'] === layout.reasonCode &&
+      attrs['data-layout-requirement-ref'] === String(layout.requirementRef ?? '') &&
+      attrs['data-layout-modifier-ref'] === String(layout.modifierRef ?? '') &&
+      attrs['data-layout-evidence-refs'] === String((layout.evidenceRefs ?? []).join(' ')) &&
+      attrs['data-visual-geometry'] === visualGeometryFor(spec);
+  });
+}
+
+function visualStructurePresent(artifact, node) {
+  const spec = node.visualSpec;
+  const geometry = visualGeometryFor(spec);
+  return semanticRegions(artifact, node.id).some((region) => {
+    const geometryPattern = new RegExp(`data-visual-geometry="${geometry}"`);
+    if (!geometryPattern.test(region)) return false;
+    if (spec.mark === 'line') return /<polyline[^>]*data-visual-geometry="trajectory"/.test(region);
+    if (spec.mark === 'radar') return /<polygon[^>]*data-visual-geometry="radar-polygon"/.test(region);
+    if (spec.mark === 'paired_bar') return /data-ranking-end="high"/.test(region) && /data-ranking-end="low"/.test(region);
+    if (spec.mark === 'metric_tile') return /data-visual-geometry="metric-tiles"/.test(region) && /class="metric-tile["\s]/.test(region);
+    if (spec.mark === 'bullet') return /data-visual-mark-item="bullet-actual"/.test(region) && /data-visual-marker="target"/.test(region) && /data-visual-annotation="gap"/.test(region);
+    if (spec.mark === 'waterfall') return /data-visual-mark-item="waterfall-segment"/.test(region) && /data-waterfall-endpoint="start"/.test(region) && /data-waterfall-endpoint="end"/.test(region);
+    if (['bar', 'gap_bar'].includes(spec.mark)) return /data-visual-mark-item="bar"/.test(region);
+    return true;
+  });
+}
+
+function verifyVisualSpecs(deliveryManifest, nodes, html, svg, errors) {
+  const knownRequirements = new Set((deliveryManifest.coverage?.requirements ?? []).map((requirement) => requirement?.id).filter(Boolean));
+  const knownModifiers = new Set(['default_composition', ...(deliveryManifest.modifiers?.activeModifierIds ?? [])]);
+  const knownEvidence = evidenceIds(deliveryManifest);
+  for (const node of nodes) {
+    if (!node?.visualSpec) continue;
+    for (const error of visualSpecErrors(node.visualSpec)) {
+      addError(errors, error.code, `/nodes/${node.id}/visualSpec${error.path.replace('/visualSpec', '')}`, error.message);
+    }
+    if (node.visualSpec.nodeId !== node.id || node.visualSpec.semanticType !== node.type || node.visualSpec.presentation !== node.presentation) {
+      addError(errors, 'DELIVERED_VISUAL_SPEC_MISMATCH', `/nodes/${node.id}/visualSpec`, `${node.id} visual spec identity does not match the delivered semantic node.`);
+      continue;
+    }
+    if (node.visualSpec.layout?.requirementRef && !knownRequirements.has(node.visualSpec.layout.requirementRef)) {
+      addError(errors, 'DELIVERED_VISUAL_LAYOUT_REF_NOT_FOUND', `/nodes/${node.id}/visualSpec/layout/requirementRef`, `${node.id} visual layout requirementRef does not resolve to delivered coverage.`);
+    }
+    if (node.visualSpec.layout?.modifierRef && !knownModifiers.has(node.visualSpec.layout.modifierRef)) {
+      addError(errors, 'DELIVERED_VISUAL_LAYOUT_REF_NOT_FOUND', `/nodes/${node.id}/visualSpec/layout/modifierRef`, `${node.id} visual layout modifierRef does not resolve to delivered modifiers.`);
+    }
+    for (const evidenceRef of node.visualSpec.layout?.evidenceRefs ?? []) {
+      if (!knownEvidence.has(evidenceRef)) {
+        addError(errors, 'DELIVERED_VISUAL_LAYOUT_REF_NOT_FOUND', `/nodes/${node.id}/visualSpec/layout/evidenceRefs`, `${node.id} visual layout evidenceRef ${evidenceRef} does not resolve to delivered evidence.`);
+      }
+    }
+    for (const [label, artifact] of [['html', html], ['svg', svg]]) {
+      if (!visualMarkerMatches(artifact, node) || !visualStructurePresent(artifact, node)) {
+        addError(errors, 'DELIVERED_VISUAL_SPEC_MISMATCH', `/nodes/${node.id}/visualSpec`, `${node.id} delivered ${label} artifact does not match its visual spec or registered structure.`);
+      }
+    }
+  }
+}
+
 function stripVerification(manifest) {
   const payload = { ...(manifest ?? {}) };
   delete payload.verification;
@@ -594,6 +879,10 @@ function expectedVerification(artifact, manifest) {
 function verificationMismatch(supplied, expected) {
   return ['status', 'verifierVersion', 'artifactHash', 'manifestHash', 'manifestPayloadHash']
     .some((key) => supplied?.[key] !== expected[key]);
+}
+
+export function issueVerificationStamp({ html = '', svg = '', manifest = {} } = {}) {
+  return expectedVerification(`${html}\n${svg}`, manifest);
 }
 
 export function verifyDeliveredArtifact({ html = '', svg = '', manifest = {} } = {}) {
@@ -637,6 +926,13 @@ export function verifyDeliveredArtifact({ html = '', svg = '', manifest = {} } =
   verifyCoverageManifest(deliveryManifest, nodes, errors);
   verifyDeliveredDecisionLog(deliveryManifest, nodes, errors);
   verifyClaims(deliveryManifest, html, svg, errors);
+  verifyVisualSpecs(deliveryManifest, nodes, html, svg, errors);
+  for (const geometryError of verifyDeliveredGeometry({ html, svg, delivery: deliveryManifest })) {
+    addError(errors, geometryError.code, geometryError.path, geometryError.message);
+  }
+  for (const geometryError of verifyDeliveredEncodingGeometry({ html, svg, delivery: deliveryManifest })) {
+    addError(errors, geometryError.code, geometryError.path, geometryError.message);
+  }
 
   const expected = expectedVerification(artifact, manifest);
   if (errors.length > 0) {

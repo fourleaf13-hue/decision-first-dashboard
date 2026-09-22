@@ -7,20 +7,51 @@ import {
   buildDeliveredClaims,
   composeAdaptiveComposition,
   coverageFor,
+  deriveMetricTiers,
+  METRIC_TIER_GEOMETRY_RATIO,
   semanticItemsForPresentation,
   semanticStructureFor,
   verifyDeliveredArtifact
 } from './composition.js';
 import { evaluateWorthinessAssessment } from './worthiness.js';
 import { evaluateDecisionBrief } from './intake.js';
+import { evaluateCompositionIntent } from './composition-intent.js';
 import {
   buildCanonicalProvenance,
   finalizeOutputManifest,
   injectHtmlProvenance,
   injectSvgProvenance
 } from './provenance.js';
+import { buildInternalVisualSpecs } from './visual-grammar.js';
+import { routeVisualEncoding } from './encoding-router.js';
+import { ROLE_PRESENTATION, METRIC_VALUE_FONT_PX, LEAD_VALUE_FONT_PX } from './render-semantic.js';
 
 const currentFile = fileURLToPath(import.meta.url);
+
+// STEP 2.2 parent attention ceiling (model A: region-first, local modulation).
+// The manifest must expose the full derivation for every child prominence
+// token: what the local tier would render unconstrained (base), what the
+// parent region's attentionRole allows (ceiling), and the resulting effective
+// presentation. The local tier classification itself is never rewritten here;
+// tile ceiling ladder fields are declared equal across breakpoints, so the
+// wide ladder is the canonical trace source.
+function effectivePresentationTrace(parentRole, localTier) {
+  const ladder = ROLE_PRESENTATION.ladders.wide[parentRole];
+  if (!ladder) return {};
+  const base = {
+    valueTypography: localTier === 'lead' ? LEAD_VALUE_FONT_PX : METRIC_VALUE_FONT_PX,
+    surface: localTier === 'lead' ? 'emphasis' : 'flat'
+  };
+  const ceiling = {
+    valueTypography: localTier === 'lead' ? ladder.tileLead : ladder.tileValue,
+    surface: ladder.tileSurface
+  };
+  const effective = {
+    valueTypography: Math.min(base.valueTypography, ceiling.valueTypography),
+    surface: base.surface === 'flat' || ceiling.surface === 'flat' ? 'flat' : 'emphasis'
+  };
+  return { parentRole, base, ceiling, effective };
+}
 
 function normalizeIntent(value) {
   return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
@@ -116,6 +147,28 @@ export function compileDecisionDashboard(
     };
   }
 
+  const compositionIntentEvaluation = evaluateCompositionIntent(decisionBrief, bundle);
+  if (compositionIntentEvaluation.transition !== 'PASS') {
+    return {
+      result: {
+        valid: false,
+        stage: 'composition_intent',
+        transition: 'ASK_COMPOSITION_INTENT',
+        errors: [],
+        reasonCode: compositionIntentEvaluation.reasonCode,
+        askQuestion: compositionIntentEvaluation.question,
+        compositionIntent: compositionIntentEvaluation.intent,
+        worthinessSummary: worthiness.summary,
+        intakeSummary: intake.summary
+      },
+      svg: null,
+      html: null,
+      manifest: null,
+      outputMode: null
+    };
+  }
+  const compositionIntent = compositionIntentEvaluation.intent;
+
   const routing = validateMetricRouting(routingManifest, bundle?.decisionState, {
     metricWorthiness: worthinessAssessment.metricWorthiness,
     existingQuestionCount: intake.summary?.questionCount ?? 0
@@ -143,6 +196,17 @@ export function compileDecisionDashboard(
     ? { ...bundle, decisionState: routing.decisionState }
     : bundle;
   const effectiveRoutingManifest = routing.manifest ?? routingManifest;
+  // Visual Encoding Router: fail-closed eligibility for opt-in encodings
+  // declared in the routing manifest. Ineligible requests fall back to the
+  // full presentation and are logged; nothing here changes composition tiers.
+  const encodingRouting = routeVisualEncoding({
+    decisionState: effectiveBundle.decisionState,
+    compositionNodes: effectiveRoutingManifest.compositionNodes ?? [],
+    contextRequirements: decisionBrief.contextRequirements ?? [],
+    orderingBasis: compositionIntent.orderingBasis ?? null
+  });
+  const routedCompositionNodes = encodingRouting.nodes;
+  const routedDecisionLog = [...(effectiveRoutingManifest.decisionLog ?? []), ...encodingRouting.decisionLog];
   const compositionModifiers = {
     audience: decisionBrief.audience?.value ?? null,
     cadence: decisionBrief.cadence?.value ?? null,
@@ -154,9 +218,11 @@ export function compileDecisionDashboard(
   };
   const composition = composeAdaptiveComposition({
     contextRequirements: decisionBrief.contextRequirements ?? [],
-    nodes: effectiveRoutingManifest.compositionNodes ?? [],
-    decisionLog: effectiveRoutingManifest.decisionLog ?? [],
-    modifiers: compositionModifiers
+    nodes: routedCompositionNodes,
+    decisionLog: routedDecisionLog,
+    modifiers: compositionModifiers,
+    compositionIntent,
+    semanticNodeIds: (effectiveBundle.decisionState?.semanticNodes ?? []).map((node) => node?.id)
   });
   if (!composition.valid) {
     return {
@@ -178,12 +244,112 @@ export function compileDecisionDashboard(
     };
   }
 
+  const metricTiers = deriveMetricTiers({
+    decisionState: effectiveBundle.decisionState,
+    metrics: effectiveRoutingManifest.metrics ?? []
+  });
+  const tierErrors = [];
+  const relevanceMetrics = [];
+  for (const node of composition.composition.nodes) {
+    const sourceNode = (effectiveBundle.decisionState?.semanticNodes ?? []).find((entry) => entry?.id === node.id);
+    if (sourceNode?.type !== 'MetricCluster') continue;
+    const items = Array.isArray(sourceNode.items) ? sourceNode.items : [];
+    if (!items.some((item) => typeof item?.metric === 'string' && item.metric.length > 0)) continue;
+    const itemTiers = items.map((item, index) => {
+      const tierEntry = typeof item?.metric === 'string' ? metricTiers.get(item.metric) : undefined;
+      if (!tierEntry) {
+        tierErrors.push({
+          code: 'METRIC_TIER_ROUTE_UNRESOLVED',
+          path: `/semanticNodes/${node.id}/items/${index}/metric`,
+          message: `${node.id} item ${item?.label ?? index} links metric ${item?.metric ?? '<missing>'} which has no routed metric entry.`
+        });
+        return null;
+      }
+      return { ...tierEntry, label: item.label };
+    });
+    if (itemTiers.some((entry) => entry === null)) continue;
+    const tierValues = new Set(itemTiers.map((entry) => entry.tier));
+    if (tierValues.size < 2) {
+      tierErrors.push({
+        code: 'METRIC_TIER_UNIFORM_WALL',
+        path: `/semanticNodes/${node.id}/items`,
+        message: `${node.id} routes every linked metric to the same tier; a state summary must mix lead and secondary metrics instead of rendering a uniform KPI wall.`
+      });
+      continue;
+    }
+    node.metricTiers = itemTiers;
+    relevanceMetrics.push(...itemTiers.map((entry) => ({
+      ...entry,
+      node: node.id,
+      ...(node.attentionRole ? effectivePresentationTrace(node.attentionRole, entry.tier) : {})
+    })));
+  }
+  if (tierErrors.length > 0) {
+    return {
+      result: {
+        valid: false,
+        stage: 'composition',
+        transition: 'FIX_METRIC_ROUTING',
+        errors: tierErrors,
+        worthinessSummary: worthiness.summary,
+        intakeSummary: intake.summary,
+        routingSummary: routing.summary,
+        coverageManifest: composition.coverageManifest
+      },
+      svg: null,
+      html: null,
+      manifest: null,
+      outputMode: null
+    };
+  }
+
+  const hasSemanticState = Array.isArray(effectiveBundle.decisionState?.semanticNodes) && effectiveBundle.decisionState.semanticNodes.length > 0;
+  const visualGrammar = hasSemanticState
+    ? buildInternalVisualSpecs(
+      effectiveBundle.decisionState,
+      composition.composition,
+      {
+        contextRequirements: decisionBrief.contextRequirements ?? [],
+        modifiers: composition.composition.modifiers,
+        decisionLog: composition.composition.decisionLog,
+        orderingBasis: compositionIntent.orderingBasis ?? null
+      }
+    )
+    : { valid: true, specs: [], errors: [] };
+  if (!visualGrammar.valid) {
+    return {
+      result: {
+        valid: false,
+        stage: 'composition',
+        transition: 'DELIVERY_CONTRACT_FAILED',
+        errors: visualGrammar.errors,
+        worthinessSummary: worthiness.summary,
+        intakeSummary: intake.summary,
+        routingSummary: routing.summary,
+        coverageManifest: composition.coverageManifest,
+        visualSpecs: visualGrammar.specs
+      },
+      svg: null,
+      html: null,
+      manifest: null,
+      outputMode: null
+    };
+  }
+
   const deliveredClaims = buildDeliveredClaims(effectiveBundle);
   const compiled = compileGroundedBundle(effectiveBundle, {
     baseDir,
     composition: composition.composition,
     claims: deliveredClaims,
-    requireSemantic: true
+    requireSemantic: true,
+    visualSpecs: visualGrammar.specs,
+    contextRequirements: decisionBrief.contextRequirements ?? [],
+    modifiers: composition.composition.modifiers,
+    decisionLog: composition.composition.decisionLog,
+    pageHeader: {
+      title: typeof decisionBrief.title === 'string' ? decisionBrief.title : null,
+      subtitle: typeof decisionBrief.subtitle === 'string' ? decisionBrief.subtitle : null
+    }
   });
   if (!compiled.result.valid || compiled.result.transition !== 'PASS') {
     return {
@@ -208,6 +374,7 @@ export function compileDecisionDashboard(
   const html = injectHtmlProvenance(compiled.html, provenance);
   const svg = injectSvgProvenance(compiled.svg, provenance);
   const sourceNodes = new Map((effectiveBundle.decisionState.semanticNodes ?? []).map((node) => [node.id, node]));
+  const visualSpecs = new Map(visualGrammar.specs.map((spec) => [spec.nodeId, spec]));
   const deliveredManifest = {
     nodes: composition.composition.nodes.map((node) => {
       const sourceNode = sourceNodes.get(node.id);
@@ -221,17 +388,62 @@ export function compileDecisionDashboard(
         ...(node.metricPriority ? { metricPriority: node.metricPriority } : {}),
         coverage: coverageFor(node),
         ...(sourceNode ? { expectedItemCount: renderedItems.length } : {}),
-        ...(semanticStructureFor(node) ? { structure: semanticStructureFor(node) } : {})
+        ...(semanticStructureFor(node) ? { structure: semanticStructureFor(node) } : {}),
+        ...(node.attentionRole ? { attentionRole: node.attentionRole, regionSpan: node.regionSpan } : {}),
+        ...(node.itemOrderStrategy ? { itemOrderStrategy: node.itemOrderStrategy } : {}),
+        ...(encodingRouting.encodingDecisions.has(node.id)
+          ? { encoding: encodingRouting.encodingDecisions.get(node.id) }
+          : {}),
+        visualSpec: visualSpecs.get(node.id)
       };
     }),
     claims: deliveredClaims,
     evidence: effectiveBundle.evidence,
     coverage: composition.coverageManifest,
     decisionLog: composition.composition.decisionLog,
-    modifiers: composition.composition.modifiers
+    modifiers: composition.composition.modifiers,
+    ...(composition.composition.pageComposition ? { pageComposition: composition.composition.pageComposition } : {}),
+    // Visual-polish trace: every rendered surface keeps its canonical CR-4
+    // attentionRole; the presentation layer only consumes it. Geometry may
+    // collapse across breakpoints, but no presentation-tier merge is declared
+    // (hierarchyDegradation stays 'none' until a principal approves one).
+    presentation: {
+      visualLanguage: 'vp-1',
+      hierarchyChannel: 'attentionRole',
+      hierarchyOrder: ['anchor', 'primary', 'supporting', 'detail'],
+      hierarchyDegradation: 'none',
+      responsiveVariants: [
+        { id: 'wide', condition: 'min-width:901px' },
+        { id: 'tablet', condition: 'max-width:900px' },
+        { id: 'narrow', condition: 'max-width:620px' }
+      ],
+      surfaces: composition.composition.nodes
+        .filter((node) => node.attentionRole)
+        .map((node) => ({ surfaceId: node.id, attentionRole: node.attentionRole, regionSpan: node.regionSpan ?? null }))
+    },
+    ...(relevanceMetrics.length > 0
+      ? {
+        relevance: {
+          mechanism: 'routed_metric_roles',
+          geometryRatio: METRIC_TIER_GEOMETRY_RATIO,
+          // Region owns page-level rank; local tier owns rank only inside the
+          // region. The ceiling is an ordinal, channel-wise constraint derived
+          // from the parent attentionRole's declared ladder — never a global
+          // role x tier ranking table (model B, not implemented).
+          attentionCeiling: { form: 'ordinal', comparison: 'channel-wise', model: 'region-first_local-modulation' },
+          metrics: relevanceMetrics,
+          regions: (composition.composition.pageComposition?.regions ?? []).map((region) => ({
+            nodeId: region.nodeId,
+            attentionRole: region.attentionRole,
+            roleBasis: region.roleBasis
+          }))
+        }
+      }
+      : {})
   };
   const manifestPayload = {
     ...finalizeOutputManifest(provenance, html, svg),
+    compositionIntent,
     delivery: deliveredManifest
   };
   const delivery = verifyDeliveredArtifact({ html, svg, manifest: manifestPayload });
@@ -264,6 +476,7 @@ export function compileDecisionDashboard(
     effectiveDecisionState: effectiveBundle.decisionState,
     result: {
       ...compiled.result,
+      compositionIntent,
       worthinessSummary: worthiness.summary,
       intakeSummary: intake.summary,
       routingSummary: routing.summary,
