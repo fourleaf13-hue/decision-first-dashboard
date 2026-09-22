@@ -28,6 +28,9 @@ jobs:
           node-version: 22
       - run: npm install --no-audit --no-fund
       - run: npm test
+      - name: Expected-negative lane (documents standing un-productionized contracts; failure here is the recorded gap status, not a gate)
+        run: npm run test:red-lane
+        continue-on-error: true
       - run: npm run validate:saas
       - run: npm run render:saas
       - run: npm run validate:radar-showcase

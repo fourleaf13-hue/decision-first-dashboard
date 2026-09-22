@@ -347,6 +347,17 @@ npm run validate:radar-showcase
 npm run render:radar-showcase
 ```
 
+`npm test` is the default contract suite and must stay green. A separate
+expected-negative lane records contracts that are deliberately not productionized yet:
+
+```bash
+npm run test:red-lane
+```
+
+A non-zero exit from the red lane is the documented status of those standing gaps
+(e.g. RED-6 evaluation grounding), not a release gate; CI runs it with
+`continue-on-error` so the gap stays visible without turning the default command red.
+
 For Anthropic plugin packaging, validate the repository root with a current Claude Code CLI before submission:
 
 ```bash
