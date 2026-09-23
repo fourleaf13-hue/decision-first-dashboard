@@ -1,0 +1,13 @@
+# EOL contract: repository blob bytes are the checkout contract (release hygiene after the
+# 2026-09-23 CRLF verification incident; eol=lf overrides core.autocrlf on Windows clients).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.zip binary
+*.gz binary

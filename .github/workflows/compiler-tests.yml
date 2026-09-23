@@ -16,6 +16,7 @@ on:
       - 'scripts/**'
       - 'package.json'
       - 'README.md'
+      - '.gitattributes'
       - '.github/workflows/compiler-tests.yml'
 
 jobs:
