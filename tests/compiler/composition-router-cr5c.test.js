@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { compileDecisionDashboard } from '../../skills/decision-first-dashboard/scripts/compile-dashboard.js';
 import { METRIC_TIER_GEOMETRY_RATIO } from '../../skills/decision-first-dashboard/scripts/composition.js';
 import { requiredRelationshipPaths } from '../../skills/decision-first-dashboard/scripts/relationship-grammar.js';
+import { renderHtml } from '../../skills/decision-first-dashboard/scripts/render.js';
 import { visibleTextOf } from './helpers/composition-signature.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -499,23 +500,98 @@ test('M-B partial packaging semantics fail closed atomically; no mixed-origin he
   }
 });
 
-test('M-C blank or non-string packaging fields are invalid input, not a fallback trigger', () => {
-  for (const header of [
+test('M-C (FC-2 error taxonomy) each invalid packaging class is rejected by exactly one deterministic layer', () => {
+  // T1: missing/partial/whitespace-only pairs reach the delivery gate and fail closed there.
+  const deliveryClasses = [
     { title: '   ', subtitle: 'Current delivery capacity state for the review.' },
-    { title: 'Capacity overview', subtitle: '   ' },
+    { title: 'Capacity overview', subtitle: '   ' }
+  ];
+  // T2: non-string or oversized fields are rejected by the brief schema and never produce a delivery error.
+  const schemaClasses = [
     { title: 42, subtitle: 'Current delivery capacity state for the review.' },
-    { title: 'Capacity overview', subtitle: { nested: true } }
-  ]) {
+    { title: 'Capacity overview', subtitle: { nested: true } },
+    { title: true, subtitle: 'Current delivery capacity state for the review.' },
+    { title: 'x'.repeat(41), subtitle: 'Current delivery capacity state for the review.' },
+    { title: 'Capacity overview', subtitle: 'y'.repeat(121) }
+  ];
+  const observed = [];
+  for (const header of deliveryClasses) {
     const compiled = compileCapacity({ header });
     assert.equal(compiled.result.valid, false, JSON.stringify(header));
+    assert.equal(compiled.result.stage, 'delivery', JSON.stringify(compiled.result));
+    assert.equal(compiled.result.transition, 'DELIVERY_CONTRACT_FAILED');
+    assert.ok(compiled.result.errors.some((error) => error.code === 'PAGE_HEADER_SEMANTICS_REQUIRED' && error.path === '/pageHeader'));
+    assert.equal(compiled.result.errors.some((error) => error.code === 'DECISION_BRIEF_SCHEMA_INVALID'), false);
     assert.equal(compiled.html, null);
     assert.equal(compiled.svg, null);
-    // whitespace-only strings pass the schema's minLength and are caught by the
-    // delivery gate; non-string fields are caught earlier by the brief schema.
-    const caughtByPackagingContract = compiled.result.errors.some((error) => error.code === 'PAGE_HEADER_SEMANTICS_REQUIRED');
-    const caughtBySchema = compiled.result.valid === false && compiled.result.errors.length > 0 && !caughtByPackagingContract;
-    assert.ok(caughtByPackagingContract || caughtBySchema, JSON.stringify(compiled.result.errors));
+    observed.push({ header, stage: 'delivery', codes: compiled.result.errors.map((error) => error.code) });
   }
+  for (const header of schemaClasses) {
+    const compiled = compileCapacity({ header });
+    assert.equal(compiled.result.valid, false, JSON.stringify(header));
+    assert.equal(compiled.result.stage, 'intake', JSON.stringify(compiled.result));
+    assert.equal(compiled.result.transition, 'FIX_DECISION_BRIEF');
+    assert.ok(compiled.result.errors.some((error) => error.code === 'DECISION_BRIEF_SCHEMA_INVALID'));
+    assert.equal(compiled.result.errors.some((error) => error.code === 'PAGE_HEADER_SEMANTICS_REQUIRED'), false);
+    assert.equal(compiled.html, null);
+    assert.equal(compiled.svg, null);
+    observed.push({ header, stage: 'intake', codes: compiled.result.errors.map((error) => error.code) });
+  }
+  // T3: the two layers are mutually exclusive — no observed result carries a code
+  // from both layers, and every result's stage is its single error layer.
+  assert.equal(observed.length, deliveryClasses.length + schemaClasses.length);
+  for (const entry of observed) {
+    const hasDeliveryCode = entry.codes.includes('PAGE_HEADER_SEMANTICS_REQUIRED');
+    const hasSchemaCode = entry.codes.includes('DECISION_BRIEF_SCHEMA_INVALID');
+    assert.equal(hasDeliveryCode && hasSchemaCode, false, JSON.stringify(entry));
+    assert.equal(hasDeliveryCode ? 'delivery' : hasSchemaCode ? 'intake' : entry.stage, entry.stage);
+  }
+});
+
+// M-D direct lower-level calls (bypassing compile-dashboard's always-requireSemantic
+// gate) isolate the renderer's own behavior with NO pageHeader option.
+function capacityRawRenderHtml(extraOptions = {}) {
+  const source = JSON.parse(fs.readFileSync(path.join(capacityDir, 'capacity-reconstructed.source.json'), 'utf8'));
+  const data = {
+    mode: 'no_score',
+    signals: source.signals.map((signal) => ({ ...signal, provenance: 'source' })),
+    presentation: CAPACITY_PRESENTATION,
+    semanticNodes: source.semanticNodes.map((node, index) => ({
+      id: CAPACITY_NODES[index].id,
+      type: CAPACITY_NODES[index].type,
+      title: node.title,
+      ...(node.subtitle ? { subtitle: node.subtitle } : {}),
+      ...(node.comparability ? { comparability: node.comparability } : {}),
+      items: node.items.map((item) => ({ ...item, provenance: 'source' }))
+    })),
+    relationships: []
+  };
+  const composition = {
+    nodes: data.semanticNodes.map((node, index) => ({
+      id: node.id,
+      type: node.type,
+      title: node.title,
+      presentation: CAPACITY_NODES[index].presentation,
+      items: node.items
+    }))
+  };
+  return renderHtml(data, { composition, ...extraOptions });
+}
+
+test('M-D (FC-2 boundary) the atomic-header rule is canonical-gate-only; compat tooling keeps its pre-FC-2 behavior', () => {
+  const compiled = compileCapacity({ header: { title: 'Capacity overview', subtitle: 'Current delivery capacity state for the review.' } });
+  assert.match(compiled.html, /<h1>Capacity overview<\/h1>/);
+  // lower-level compat rendering (no canonical contract requested) must not fail:
+  const compat = capacityRawRenderHtml();
+  assert.match(compat, /<h1>Decision dashboard<\/h1>/);
+  // b60f35a per-field fallback: a partial compat header keeps its valid half
+  // (this input fails closed under the canonical atomic contract instead).
+  const compatPartial = capacityRawRenderHtml({ pageHeader: { title: 'Custom compat title' } });
+  assert.match(compatPartial, /<h1>Custom compat title<\/h1>/);
+  assert.match(compatPartial, /<p>Source-backed context for the next decision\.<\/p>/);
+  // the same call under the canonical contract throws instead of synthesizing copy:
+  assert.throws(() => capacityRawRenderHtml({ requireSemantic: true }), /PAGE_HEADER_SEMANTICS_REQUIRED/);
+  assert.throws(() => capacityRawRenderHtml({ requireSemantic: true, pageHeader: { title: 'Custom compat title' } }), /PAGE_HEADER_SEMANTICS_REQUIRED/);
 });
 
 test('HDR-3 header copy is grounded like everything else: it passes the visible-copy firewall', () => {

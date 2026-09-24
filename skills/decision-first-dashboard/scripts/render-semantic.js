@@ -428,14 +428,33 @@ export function isAtomicPageHeader(header) {
   return Boolean(header) && valid(header.title) && valid(header.subtitle);
 }
 
+// Canonical delivery (requireSemantic) can only render a brief-sourced atomic
+// title+subtitle pair; anything else throws and compile.js converts that into
+// the PAGE_HEADER_SEMANTICS_REQUIRED delivery envelope. The non-atomic branch
+// below is a VERBATIM restoration of the frozen pre-FC-2 implementation at
+// b60f35a (pageHeaderText: `const clean = (value, fallback) => typeof value ===
+// 'string' && value.trim().length > 0 ? value.trim() : fallback;` with defaults
+// 'Decision dashboard' / 'Source-backed context for the next decision.'), so
+// lower-level compatibility/testing calls that render without requireSemantic
+// keep their exact pre-FC-2 per-field output. No canonical production path can
+// reach it (compile-dashboard.js always sets requireSemantic:true and compile.js
+// gates the atomic pair before rendering).
+const LEGACY_COMPAT_PAGE_TITLE = 'Decision dashboard';
+const LEGACY_COMPAT_PAGE_SUBTITLE = 'Source-backed context for the next decision.';
+
 function pageHeaderText(options) {
   const header = options?.pageHeader;
   if (isAtomicPageHeader(header)) {
     return { title: header.title.trim(), subtitle: header.subtitle.trim() };
   }
-  throw new Error(
-    'PAGE_HEADER_SEMANTICS_REQUIRED: the semantic renderer never synthesizes page copy; delivery requires an atomic title+subtitle packaging contract sourced from the decision brief'
-  );
+  if (options?.requireSemantic) {
+    throw new Error(
+      'PAGE_HEADER_SEMANTICS_REQUIRED: canonical delivery requires an atomic title+subtitle packaging contract sourced from the decision brief; the canonical renderer never synthesizes page copy'
+    );
+  }
+  // b60f35a-compatible per-field fallback (legacy behavior, not new logic):
+  const clean = (value, fallback) => (typeof value === 'string' && value.trim().length > 0 ? value.trim() : fallback);
+  return { title: clean(header?.title, LEGACY_COMPAT_PAGE_TITLE), subtitle: clean(header?.subtitle, LEGACY_COMPAT_PAGE_SUBTITLE) };
 }
 
 // Visual-polish presentation tokens. These consume the frozen CR-4 attention
