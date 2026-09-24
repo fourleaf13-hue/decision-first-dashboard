@@ -70,7 +70,8 @@ The production compiler validates, in order:
 9. source SHA-256, evidence integrity, exact JSON Pointer/text-span grounding, and required claim coverage;
 10. composite score mathematics and score-band semantics;
 11. semantic-node composition coverage and a machine-readable decision log;
-12. delivered HTML/SVG markers, delivered manifest, and verifier-issued hash-bound stamp.
+12. the atomic page packaging contract for canonical delivery (brief-sourced `title` + `subtitle`, both present or the run fails `PAGE_HEADER_SEMANTICS_REQUIRED`);
+13. delivered HTML/SVG markers, delivered manifest, and verifier-issued hash-bound stamp.
 
 Worthiness transitions:
 
@@ -95,7 +96,7 @@ Downstream transitions:
 
 ### Layer 3 — Deterministic renderer
 
-`render.js` consumes only validated decision state plus the selected semantic-node composition and fills deterministic SVG/HTML compositions. It does not inspect hidden routing inventory, source data, or invent business meaning. Node presentation variants belong to their semantic node; no use-case, audience, or fixture-specific template registry is allowed.
+`render.js` consumes only validated decision state plus the selected semantic-node composition and fills deterministic SVG/HTML compositions. It does not inspect hidden routing inventory, source data, or invent business meaning. Node presentation variants belong to their semantic node; no use-case, audience, or fixture-specific template registry is allowed. The renderer never invents page-level copy: the page header comes only from the atomic brief-sourced title/subtitle pair, and a missing or partial pair fails closed instead of falling back to generic text.
 
 `drilldown`, `scorecard_only`, and diagnostics routed `on_demand` remain preserved for traceability without becoming eager first-view clutter. Only diagnostics explicitly routed with `visibility: "supporting"` may enter the closed `supportingSignals` layer and render as subordinate context.
 
@@ -179,6 +180,8 @@ Support both intake orders:
 The Decision Brief is internal design context. It is not automatically source evidence and **no compiler/framework methodology labels in visible UI** are permitted.
 
 The structured brief must match `schemas/decision-brief.schema.json`. `scripts/intake.js` requires both Decision and Action to have `status: "confirmed"`. Otherwise the pipeline returns `ASK_DECISION_BRIEF_QUESTION` and produces no dashboard artifact.
+
+**Page packaging contract.** A canonical production page must carry its own page identity in the Decision Brief: `title` (≤ 40 characters) and `subtitle` (≤ 120 characters), supplied together as one atomic pair in plain business language grounded in the confirmed decision context and audience. The renderer never synthesizes page copy: when the pair is missing, blank, or partial, canonical delivery fails closed at the delivery stage with `PAGE_HEADER_SEMANTICS_REQUIRED` and produces no artifact — there is no generic fallback text and no per-field substitution. If the user has not named the page, derive a defensible title/subtitle from the confirmed Decision/Action and include it in the brief before compiling; ask one intake question when the page identity is genuinely ambiguous.
 
 The brief also carries structured intent slots `questionShape` and `actionShape` (same slot format). `state`+`observe` classifies a MONITOR archetype and `priority`+`rank` classifies a PRIORITIZE_READONLY archetype; anything else — missing, inferred, or an unsupported combination — returns `ASK_COMPOSITION_INTENT` with a ready-to-ask question and produces no artifact. Archetypes are compiler-owned: routing manifests cannot set them, and free-form decision/action prose never overrides the structured slots. A `priority`+`rank` intent additionally requires a grounded ordering basis (source-declared explicit ranks, or a grounded actual/target/gap structure); without one the pipeline asks for the basis instead of ever ordering candidates by raw values.
 

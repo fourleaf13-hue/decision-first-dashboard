@@ -1,4 +1,6 @@
 {
+  "title": "Subscription review",
+  "subtitle": "Subscription health state for the recurring review.",
   "decision": {
     "status": "confirmed",
     "value": "Decide whether subscription health requires intervention"

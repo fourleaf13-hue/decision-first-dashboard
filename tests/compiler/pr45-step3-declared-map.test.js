@@ -54,7 +54,9 @@ function makeBundle(state) {
 }
 
 const BRIEF = {
-  decision: { status: 'confirmed', value: 'Decide the next operating focus' },
+      title: 'Operating review',
+    subtitle: 'Current state for the recurring operating review.',
+decision: { status: 'confirmed', value: 'Decide the next operating focus' },
   action: { status: 'confirmed', value: 'Choose the next operating action' },
   questionShape: { status: 'confirmed', value: 'state' },
   actionShape: { status: 'confirmed', value: 'observe' },
@@ -300,8 +302,8 @@ test('T3-4: an unsupported or malformed declared map fails the renderer closed i
   ];
 
   for (const [name, specs, expected] of cases) {
-    assert.throws(() => renderSemanticHtml(data, composition, { visualSpecs: specs }), expected, `${name} must fail HTML rendering closed`);
-    assert.throws(() => renderSemanticSvg(data, composition, { visualSpecs: specs }), expected, `${name} must fail SVG rendering closed`);
+    assert.throws(() => renderSemanticHtml(data, composition, { visualSpecs: specs, pageHeader: { title: 'Operating review', subtitle: 'Current state for the recurring operating review.' } }), expected, `${name} must fail HTML rendering closed`);
+    assert.throws(() => renderSemanticSvg(data, composition, { visualSpecs: specs, pageHeader: { title: 'Operating review', subtitle: 'Current state for the recurring operating review.' } }), expected, `${name} must fail SVG rendering closed`);
   }
 
   const declaration = structuredClone(built.specs[0].scale);

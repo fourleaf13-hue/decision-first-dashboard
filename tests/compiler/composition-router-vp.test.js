@@ -71,7 +71,9 @@ function groundedCase(dir, fileName, { selections, decision, action, requirement
   });
   requiredRelationshipPaths(decisionState).forEach((relationshipPath) => add(relationshipPath, relationshipPath));
   const brief = {
-    decision: { status: 'confirmed', value: decision },
+        title: 'Operating review',
+    subtitle: 'Current state for the recurring operating review.',
+decision: { status: 'confirmed', value: decision },
     action: { status: 'confirmed', value: action },
     questionShape: { status: 'confirmed', value: 'state' },
     actionShape: { status: 'confirmed', value: 'observe' },
@@ -266,7 +268,9 @@ function ceoMonitor() {
   });
   requiredRelationshipPaths(decisionState).forEach((relationshipPath) => add(relationshipPath, relationshipPath));
   const brief = {
-    decision: { status: 'confirmed', value: CEO_MONITOR_INTENT.decision },
+        title: 'Operating review',
+    subtitle: 'Current state for the recurring operating review.',
+decision: { status: 'confirmed', value: CEO_MONITOR_INTENT.decision },
     action: { status: 'confirmed', value: CEO_MONITOR_INTENT.action },
     questionShape: { status: 'confirmed', value: CEO_MONITOR_INTENT.questionShape },
     actionShape: { status: 'confirmed', value: CEO_MONITOR_INTENT.actionShape },

@@ -75,7 +75,9 @@ function groundedCase(dir, fileName, { selections, decision, action, requirement
   });
   requiredRelationshipPaths(decisionState).forEach((relationshipPath) => add(relationshipPath, relationshipPath));
   const brief = {
-    decision: { status: 'confirmed', value: decision },
+        title: 'Operating review',
+    subtitle: 'Current state for the recurring operating review.',
+decision: { status: 'confirmed', value: decision },
     action: { status: 'confirmed', value: action },
     questionShape: { status: 'confirmed', value: 'state' },
     actionShape: { status: 'confirmed', value: 'observe' },

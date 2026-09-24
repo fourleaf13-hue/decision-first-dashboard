@@ -71,8 +71,8 @@ const semanticComposition = {
 
 test('delivered SVG must contain every source item promised by the manifest', () => {
   const state = semanticState(12);
-  const html = renderHtml(state, { composition: { nodes: [semanticComposition.nodes[0]] } });
-  const renderedSvg = renderSvg(state, { composition: { nodes: [semanticComposition.nodes[0]] } });
+  const html = renderHtml(state, { composition: { nodes: [semanticComposition.nodes[0]] }, pageHeader: { title: 'Operating review', subtitle: 'Current state for the recurring operating review.' } });
+  const renderedSvg = renderSvg(state, { composition: { nodes: [semanticComposition.nodes[0]] }, pageHeader: { title: 'Operating review', subtitle: 'Current state for the recurring operating review.' } });
   const svg = renderedSvg.replace(/<g data-semantic-node="monthly_orders" data-semantic-item="true" data-item-index="(?:8|9|10|11)"[^>]*>[\s\S]*?<\/g>/g, '');
   const result = verifyDeliveredArtifact({
     html,
@@ -97,8 +97,8 @@ test('delivered SVG must contain every source item promised by the manifest', ()
 test('semantic presentations expose their actual structure for every node type', () => {
   const state = semanticState(4);
   const composition = { nodes: semanticComposition.nodes.slice(1) };
-  const html = renderHtml(state, { composition });
-  const svg = renderSvg(state, { composition });
+  const html = renderHtml(state, { composition, pageHeader: { title: 'Operating review', subtitle: 'Current state for the recurring operating review.' } });
+  const svg = renderSvg(state, { composition, pageHeader: { title: 'Operating review', subtitle: 'Current state for the recurring operating review.' } });
 
   for (const artifact of [html, svg]) {
     assert.match(artifact, /data-semantic-node="annual_orders"[^>]*data-structure="ordered-trajectory"/);
@@ -106,8 +106,8 @@ test('semantic presentations expose their actual structure for every node type',
     assert.match(artifact, /data-semantic-node="revenue_target"[^>]*data-structure="target-gap"/);
   }
 
-  const distributionHtml = renderHtml(state, { composition: { nodes: [semanticComposition.nodes[0]] } });
-  const distributionSvg = renderSvg(state, { composition: { nodes: [semanticComposition.nodes[0]] } });
+  const distributionHtml = renderHtml(state, { composition: { nodes: [semanticComposition.nodes[0]] }, pageHeader: { title: 'Operating review', subtitle: 'Current state for the recurring operating review.' } });
+  const distributionSvg = renderSvg(state, { composition: { nodes: [semanticComposition.nodes[0]] }, pageHeader: { title: 'Operating review', subtitle: 'Current state for the recurring operating review.' } });
   assert.match(distributionHtml, /data-semantic-node="monthly_orders"[^>]*data-structure="ordered-distribution"/);
   assert.match(distributionSvg, /data-semantic-node="monthly_orders"[^>]*data-structure="ordered-distribution"/);
 });
@@ -117,7 +117,7 @@ test('an overall verdict must enter through a typed claim renderer path', () => 
   state.overallVerdict = 'Business is weakening';
 
   assert.throws(
-    () => renderHtml(state, { composition: { nodes: [semanticComposition.nodes[0]] } }),
+    () => renderHtml(state, { composition: { nodes: [semanticComposition.nodes[0]] }, pageHeader: { title: 'Operating review', subtitle: 'Current state for the recurring operating review.' } }),
     /typed claim/i
   );
 });

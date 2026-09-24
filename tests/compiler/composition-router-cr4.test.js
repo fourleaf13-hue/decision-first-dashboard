@@ -59,7 +59,9 @@ function makeGroundedFixture(dir, fileName, nodeSelections, intents) {
   });
   requiredRelationshipPaths(decisionState).forEach((relationshipPath) => add(relationshipPath, relationshipPath));
   const brief = {
-    decision: { status: 'confirmed', value: intents.decision },
+        title: 'Operating review',
+    subtitle: 'Current state for the recurring operating review.',
+decision: { status: 'confirmed', value: intents.decision },
     action: { status: 'confirmed', value: intents.action },
     questionShape: { status: 'confirmed', value: intents.questionShape },
     actionShape: { status: 'confirmed', value: intents.actionShape }

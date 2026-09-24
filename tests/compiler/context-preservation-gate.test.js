@@ -10,6 +10,8 @@ const action = 'Prioritize products and demand themes using the retained order a
 
 function brief() {
   return {
+    title: 'Operating review',
+    subtitle: 'Current state for the recurring operating review.',
     decision: { status: 'confirmed', value: decision },
     action: { status: 'confirmed', value: action },
     questionShape: { status: 'confirmed', value: 'state' },

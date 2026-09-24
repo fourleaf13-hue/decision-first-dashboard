@@ -423,13 +423,19 @@ function htmlCard(node) {
 export const METRIC_VALUE_FONT_PX = 22;
 export const LEAD_VALUE_FONT_PX = Math.round(METRIC_VALUE_FONT_PX * METRIC_TIER_GEOMETRY_RATIO);
 
-const DEFAULT_PAGE_TITLE = 'Decision dashboard';
-const DEFAULT_PAGE_SUBTITLE = 'Source-backed context for the next decision.';
+export function isAtomicPageHeader(header) {
+  const valid = (v) => typeof v === 'string' && v.trim().length > 0;
+  return Boolean(header) && valid(header.title) && valid(header.subtitle);
+}
 
 function pageHeaderText(options) {
-  const header = options?.pageHeader ?? {};
-  const clean = (value, fallback) => (typeof value === 'string' && value.trim().length > 0 ? value.trim() : fallback);
-  return { title: clean(header.title, DEFAULT_PAGE_TITLE), subtitle: clean(header.subtitle, DEFAULT_PAGE_SUBTITLE) };
+  const header = options?.pageHeader;
+  if (isAtomicPageHeader(header)) {
+    return { title: header.title.trim(), subtitle: header.subtitle.trim() };
+  }
+  throw new Error(
+    'PAGE_HEADER_SEMANTICS_REQUIRED: the semantic renderer never synthesizes page copy; delivery requires an atomic title+subtitle packaging contract sourced from the decision brief'
+  );
 }
 
 // Visual-polish presentation tokens. These consume the frozen CR-4 attention

@@ -24,6 +24,21 @@ const worthiness = JSON.parse(fs.readFileSync(path.join(root, 'fixtures/worthine
 const firewallTerms = /\b(monitor|prioritize_readonly|anchor|primary|grounded_gap|grounded_rank|compositionIntent|orderingBasis|questionShape|actionShape|primary_signal|metric router|responseChange\.kind|semanticItem\.role)\b/i;
 const alertFramingTerms = /\b(alert|alerts|attention|problem|problems|bad|critical|exception|exceptions|warning|breach|breaches|severity)\b/i;
 
+// FC-2: the harness supplies each fixture page's own packaging semantics as INPUT
+// (the renderer never synthesizes page copy; canonical delivery without them fails closed).
+// header === false compiles WITHOUT page copy to exercise the fail-closed path;
+// an explicit object is used verbatim, including partial objects for rejection tests.
+const HARNESS_PAGE_COPY = Object.freeze({ title: 'Operating review', subtitle: 'Current state for the recurring operating review.' });
+
+function pageCopy(header) {
+  if (header === false) return {};
+  const copy = header ?? HARNESS_PAGE_COPY;
+  return {
+    ...(copy.title !== undefined ? { title: copy.title } : {}),
+    ...(copy.subtitle !== undefined ? { subtitle: copy.subtitle } : {})
+  };
+}
+
 function groundedCase(dir, fileName, { selections, decision, action, requirements = [], metrics, presentation = null, header = null, decorateState = null }) {
   const bytes = fs.readFileSync(path.join(dir, fileName));
   const source = JSON.parse(bytes.toString('utf8'));
@@ -75,8 +90,7 @@ function groundedCase(dir, fileName, { selections, decision, action, requirement
     action: { status: 'confirmed', value: action },
     questionShape: { status: 'confirmed', value: 'state' },
     actionShape: { status: 'confirmed', value: 'observe' },
-    ...(header?.title ? { title: header.title } : {}),
-    ...(header?.subtitle ? { subtitle: header.subtitle } : {}),
+    ...pageCopy(header),
     contextRequirements: requirements
   };
   const routing = {
@@ -435,7 +449,7 @@ test('M-4 the capacity page is a state-led monitor: one dominant anchor region, 
 
 // ---------------------------------------------------------------- page header (CR-5d.1)
 
-test('HDR-1 a business-facing brief title/subtitle replaces the framework defaults in both channels', () => {
+test('HDR-1 a business-facing brief title/subtitle is delivered verbatim in both channels', () => {
   const compiled = compileCapacity({
     header: { title: 'Capacity overview', subtitle: 'Current delivery capacity state for the review.' }
   });
@@ -447,11 +461,61 @@ test('HDR-1 a business-facing brief title/subtitle replaces the framework defaul
   assert.doesNotMatch(compiled.svg, /Decision dashboard|Source-backed context for the next decision/);
 });
 
-test('HDR-2 no header in the brief keeps the generic defaults (no fixture-specific page copy in production)', () => {
-  const compiled = compileCapacity();
-  assert.match(compiled.html, /<h1>Decision dashboard<\/h1><p>Source-backed context for the next decision\.<\/p>/);
-  assert.match(compiled.svg, /class="title" font-size="28">Decision dashboard<\/text>/);
-  assert.match(compiled.svg, /class="subtitle">Source-backed context for the next decision\.<\/text>/);
+test('HDR-2 (FC-2, flipped) no packaging semantics in the brief fails closed; no generic copy is ever delivered', () => {
+  const compiled = compileCapacity({ header: false });
+  assert.equal(compiled.result.valid, false);
+  assert.equal(compiled.result.stage, 'delivery');
+  assert.equal(compiled.result.transition, 'DELIVERY_CONTRACT_FAILED');
+  assert.ok(compiled.result.errors.some((error) => error.code === 'PAGE_HEADER_SEMANTICS_REQUIRED' && error.path === '/pageHeader'));
+  assert.equal(compiled.html, null);
+  assert.equal(compiled.svg, null);
+  assert.equal(compiled.manifest, null);
+  assert.equal(JSON.stringify(compiled.result).includes('Decision dashboard'), false);
+  assert.equal(JSON.stringify(compiled.result).includes('Source-backed context'), false);
+});
+
+test('M-A page header co-varies with packaging semantics; identical semantics stay identical', () => {
+  const a = compileCapacity({ header: { title: 'Capacity overview', subtitle: 'Current delivery capacity state for the review.' } });
+  const b = compileCapacity({ header: { title: 'Delivery review', subtitle: 'Delivery capacity state for the weekly operating review.' } });
+  const a2 = compileCapacity({ header: { title: 'Capacity overview', subtitle: 'Current delivery capacity state for the review.' } });
+  assert.match(a.html, /<h1>Capacity overview<\/h1>/);
+  assert.match(b.html, /<h1>Delivery review<\/h1>/);
+  assert.match(b.svg, /class="title" font-size="28">Delivery review<\/text>/);
+  assert.match(b.svg, /class="subtitle">Delivery capacity state for the weekly operating review\.<\/text>/);
+  assert.notEqual(a.html, b.html);
+  assert.equal(a.html, a2.html, 'the header is a pure function of the brief, not per-call noise');
+});
+
+test('M-B partial packaging semantics fail closed atomically; no mixed-origin header can ship', () => {
+  for (const header of [
+    { title: 'Capacity overview' },
+    { subtitle: 'Current delivery capacity state for the review.' }
+  ]) {
+    const compiled = compileCapacity({ header });
+    assert.equal(compiled.result.valid, false, JSON.stringify(header));
+    assert.ok(compiled.result.errors.some((error) => error.code === 'PAGE_HEADER_SEMANTICS_REQUIRED'));
+    assert.equal(compiled.html, null);
+    assert.equal(compiled.svg, null);
+  }
+});
+
+test('M-C blank or non-string packaging fields are invalid input, not a fallback trigger', () => {
+  for (const header of [
+    { title: '   ', subtitle: 'Current delivery capacity state for the review.' },
+    { title: 'Capacity overview', subtitle: '   ' },
+    { title: 42, subtitle: 'Current delivery capacity state for the review.' },
+    { title: 'Capacity overview', subtitle: { nested: true } }
+  ]) {
+    const compiled = compileCapacity({ header });
+    assert.equal(compiled.result.valid, false, JSON.stringify(header));
+    assert.equal(compiled.html, null);
+    assert.equal(compiled.svg, null);
+    // whitespace-only strings pass the schema's minLength and are caught by the
+    // delivery gate; non-string fields are caught earlier by the brief schema.
+    const caughtByPackagingContract = compiled.result.errors.some((error) => error.code === 'PAGE_HEADER_SEMANTICS_REQUIRED');
+    const caughtBySchema = compiled.result.valid === false && compiled.result.errors.length > 0 && !caughtByPackagingContract;
+    assert.ok(caughtByPackagingContract || caughtBySchema, JSON.stringify(compiled.result.errors));
+  }
 });
 
 test('HDR-3 header copy is grounded like everything else: it passes the visible-copy firewall', () => {
