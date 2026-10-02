@@ -290,7 +290,9 @@ test('relationship reference fields resolve against real nodes and evidence', ()
 });
 
 const SPLIT_BRIEF = {
-  decision: { status: 'confirmed', value: 'Decide the next operating focus' },
+      title: 'Operating review',
+    subtitle: 'Current state for the recurring operating review.',
+decision: { status: 'confirmed', value: 'Decide the next operating focus' },
   action: { status: 'confirmed', value: 'Choose the next operating action' },
   questionShape: { status: 'confirmed', value: 'state' },
   actionShape: { status: 'confirmed', value: 'observe' },

@@ -133,6 +133,8 @@ function worthinessAssessment(metricWorthiness, questionCount = 0) {
 function brief(questionCount = 0) {
   return {
     questionCount,
+    title: 'Operating review',
+    subtitle: 'Current state for the recurring operating review.',
     decision: { status: 'confirmed', value: DECISION },
     action: { status: 'confirmed', value: ACTION },
     questionShape: { status: 'confirmed', value: 'state' },

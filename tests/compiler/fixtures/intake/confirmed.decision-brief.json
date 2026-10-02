@@ -1,4 +1,6 @@
 {
+  "title": "Business review",
+  "subtitle": "Current state for the recurring business review.",
   "decision": {
     "status": "confirmed",
     "value": "Decide whether the SaaS business needs intervention"

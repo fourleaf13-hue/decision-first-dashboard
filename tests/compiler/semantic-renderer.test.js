@@ -44,8 +44,8 @@ const composition = {
 };
 
 test('semantic nodes render through the existing renderer entrypoint with delivered markers', () => {
-  const html = renderHtml(state, { composition });
-  const svg = renderSvg(state, { composition });
+  const html = renderHtml(state, { composition, pageHeader: { title: 'Operating review', subtitle: 'Current state for the recurring operating review.' } });
+  const svg = renderSvg(state, { composition, pageHeader: { title: 'Operating review', subtitle: 'Current state for the recurring operating review.' } });
 
   for (const artifact of [html, svg]) {
     assert.match(artifact, /data-semantic-node="monthly_orders"[^>]*data-presentation="full_chart"[^>]*data-coverage="distribution_shape"/);

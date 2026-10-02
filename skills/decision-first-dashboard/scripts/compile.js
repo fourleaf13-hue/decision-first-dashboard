@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { validateGroundedBundle } from './grounding.js';
 import { renderHtml, renderSvg } from './render.js';
 import { buildDeliveredClaims } from './composition.js';
+import { isAtomicPageHeader } from './render-semantic.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 
@@ -48,6 +49,13 @@ export function compileGroundedBundle(
       'SEMANTIC_COMPOSITION_REQUIRED',
       '/composition/nodes',
       'canonical production delivery requires a non-empty validated semantic composition'
+    );
+  }
+  if (requireSemantic && !isAtomicPageHeader(pageHeader)) {
+    return semanticDeliveryFailure(
+      'PAGE_HEADER_SEMANTICS_REQUIRED',
+      '/pageHeader',
+      'canonical production delivery requires an atomic packaging contract: a non-empty title AND subtitle from the decision brief; the renderer never synthesizes page copy'
     );
   }
 
