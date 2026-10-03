@@ -302,7 +302,19 @@
           "maxItems": 24,
           "items": { "$ref": "#/definitions/semanticItem" }
         },
-        "comparability": { "$ref": "#/definitions/comparability" }
+        "comparability": { "$ref": "#/definitions/comparability" },
+        "axis": { "$ref": "#/definitions/axisSemantics" }
+      }
+    },
+    "axisSemantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semantics"],
+      "properties": {
+        "semantics": {
+          "enum": ["categorical", "temporal"],
+          "description": "Declares what the node's item axis expresses. Recurring period bins (day-of-week, hour-of-day, month-of-year aggregated across many spans) declare categorical; a real time index declares temporal."
+        }
       }
     },
     "semanticItem": {

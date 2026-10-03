@@ -16,6 +16,7 @@ import {
 import { evaluateWorthinessAssessment } from './worthiness.js';
 import { evaluateDecisionBrief } from './intake.js';
 import { evaluateCompositionIntent } from './composition-intent.js';
+import { evaluateSemanticTyping } from './temporal-typing-guard.js';
 import {
   buildCanonicalProvenance,
   finalizeOutputManifest,
@@ -168,6 +169,43 @@ export function compileDecisionDashboard(
     };
   }
   const compositionIntent = compositionIntentEvaluation.intent;
+
+  const semanticTyping = evaluateSemanticTyping(decisionBrief, bundle);
+  if (semanticTyping.status === 'fail') {
+    return {
+      result: {
+        valid: false,
+        stage: 'semantic_typing',
+        transition: 'FIX_SEMANTIC_TYPING',
+        errors: semanticTyping.errors,
+        worthinessSummary: worthiness.summary,
+        intakeSummary: intake.summary
+      },
+      svg: null,
+      html: null,
+      manifest: null,
+      outputMode: null
+    };
+  }
+  if (semanticTyping.status === 'ask') {
+    return {
+      result: {
+        valid: false,
+        stage: 'semantic_typing',
+        transition: 'ASK_SEMANTIC_TYPING',
+        errors: [],
+        reasonCode: semanticTyping.reasonCode,
+        askQuestion: semanticTyping.question,
+        semanticTypingNodes: semanticTyping.nodes,
+        worthinessSummary: worthiness.summary,
+        intakeSummary: intake.summary
+      },
+      svg: null,
+      html: null,
+      manifest: null,
+      outputMode: null
+    };
+  }
 
   const routing = validateMetricRouting(routingManifest, bundle?.decisionState, {
     metricWorthiness: worthinessAssessment.metricWorthiness,

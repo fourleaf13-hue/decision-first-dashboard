@@ -94,14 +94,14 @@ const PRIORITIZE_INTENT = {
 
 const HEALTH_NODES = [
   { id: 'annual_orders', type: 'Trend', presentation: 'full_chart' },
-  { id: 'monthly_orders', type: 'Distribution', presentation: 'full_chart' },
+  { id: 'monthly_orders', type: 'Trend', presentation: 'full_chart' },
   { id: 'demand_drivers', type: 'Ranking', presentation: 'full_ranking' },
   { id: 'product_roi', type: 'Ranking', presentation: 'both_ends' }
 ];
 const HEALTH_REQUIREMENTS = [
   { id: 'ctx_annual_relative', type: 'relative_comparison', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
   { id: 'ctx_annual_temporal', type: 'temporal_reference', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
-  { id: 'ctx_monthly_distribution', type: 'distribution_shape', subject: 'monthly_orders', minimumCoverage: 'full_distribution', status: 'inferred' },
+  { id: 'ctx_monthly_temporal', type: 'temporal_reference', subject: 'monthly_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
   { id: 'ctx_product_ranking', type: 'ranking_span', subject: 'product_roi', minimumCoverage: 'both_ends', status: 'inferred' }
 ];
 

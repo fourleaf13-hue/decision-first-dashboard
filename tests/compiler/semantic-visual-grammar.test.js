@@ -33,13 +33,23 @@ function visualState() {
       },
       {
         id: 'monthly_orders',
-        type: 'Distribution',
+        type: 'Trend',
         title: 'Seasonal order volume',
         items: [
           { label: 'Jan', value: 6, provenance: 'source' },
           { label: 'Feb', value: 18, provenance: 'source' },
           { label: 'Mar', value: 23, provenance: 'source' },
           { label: 'Apr', value: 11, provenance: 'source' }
+        ]
+      },
+      {
+        id: 'orders_by_channel',
+        type: 'Distribution',
+        title: 'Orders by channel',
+        items: [
+          { label: 'Online', value: 142, provenance: 'source' },
+          { label: 'Bakery counter', value: 58, provenance: 'source' },
+          { label: 'Wholesale', value: 18, provenance: 'source' }
         ]
       },
       {
@@ -139,7 +149,7 @@ function compileVisualFixture() {
   const selections = state.semanticNodes.map(({ id, type, comparability }) => ({
     id,
     type,
-    presentation: id === 'annual_orders' || id === 'monthly_orders'
+    presentation: id === 'annual_orders' || id === 'monthly_orders' || id === 'orders_by_channel'
       ? 'full_chart'
       : id === 'demand_drivers'
         ? 'full_ranking'
@@ -158,7 +168,8 @@ decision: { status: 'confirmed', value: 'Choose the next operating focus' },
     actionShape: { status: 'confirmed', value: 'observe' },
     contextRequirements: [
       { id: 'ctx_annual_temporal', type: 'temporal_reference', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
-      { id: 'ctx_monthly_distribution', type: 'distribution_shape', subject: 'monthly_orders', minimumCoverage: 'full_distribution', status: 'inferred' },
+      { id: 'ctx_monthly_temporal', type: 'temporal_reference', subject: 'monthly_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
+      { id: 'ctx_channel_shape', type: 'distribution_shape', subject: 'orders_by_channel', minimumCoverage: 'full_distribution', status: 'inferred' },
       { id: 'ctx_product_ranking', type: 'ranking_span', subject: 'product_roi', minimumCoverage: 'both_ends', status: 'inferred' }
     ]
   };
@@ -186,7 +197,8 @@ test('final semantic artifacts use structurally distinct visuals for each semant
   for (const artifact of [compiled.html, compiled.svg]) {
     assert.match(artifact, /data-semantic-node="annual_orders"[^>]*data-visual-mark="line"/);
     assert.match(artifact, /data-visual-geometry="trajectory"/);
-    assert.match(artifact, /data-semantic-node="monthly_orders"[^>]*data-visual-mark="bar"/);
+    assert.match(artifact, /data-semantic-node="monthly_orders"[^>]*data-visual-mark="line"/);
+    assert.match(artifact, /data-semantic-node="orders_by_channel"[^>]*data-visual-mark="bar"/);
     assert.match(artifact, /data-visual-geometry="distribution-bars"/);
     assert.match(artifact, /data-semantic-node="demand_drivers"[^>]*data-visual-mark="bar"/);
     assert.match(artifact, /data-visual-geometry="ranking-bars"/);

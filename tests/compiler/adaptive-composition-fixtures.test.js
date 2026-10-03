@@ -84,7 +84,7 @@ decision: { status: 'confirmed', value: 'Choose the next operating focus' },
 test('Bakery regression preserves seasonality, demand drivers, and both ends of ROI through the delivered artifact', () => {
   const nodes = [
     { id: 'annual_orders', type: 'Trend', presentation: 'full_chart' },
-    { id: 'monthly_orders', type: 'Distribution', presentation: 'full_chart' },
+    { id: 'monthly_orders', type: 'Trend', presentation: 'full_chart' },
     { id: 'demand_drivers', type: 'Ranking', presentation: 'full_ranking' },
     { id: 'product_roi', type: 'Ranking', presentation: 'both_ends' }
   ];
@@ -92,20 +92,20 @@ test('Bakery regression preserves seasonality, demand drivers, and both ends of 
   fixture.brief.contextRequirements = [
     { id: 'ctx_annual_relative', type: 'relative_comparison', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
     { id: 'ctx_annual_temporal', type: 'temporal_reference', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
-    { id: 'ctx_monthly_distribution', type: 'distribution_shape', subject: 'monthly_orders', minimumCoverage: 'full_distribution', status: 'inferred' },
+    { id: 'ctx_monthly_temporal', type: 'temporal_reference', subject: 'monthly_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
     { id: 'ctx_product_ranking', type: 'ranking_span', subject: 'product_roi', minimumCoverage: 'both_ends', status: 'inferred' }
   ];
 
   const compiled = compileDecisionDashboard(worthiness, fixture.brief, fixture.routing, fixture.bundle, { baseDir: fixtureDir });
   assert.equal(compiled.result.valid, true, JSON.stringify(compiled.result.errors));
   assert.match(compiled.html, /Seasonal order volume/);
-  assert.match(compiled.svg, /data-semantic-node="monthly_orders"[^>]*data-presentation="full_chart"[^>]*data-coverage="distribution_shape"/);
+  assert.match(compiled.svg, /data-semantic-node="monthly_orders"[^>]*data-presentation="full_chart"[^>]*data-coverage="temporal_reference relative_comparison"/);
   assert.match(compiled.html, /Sugar Cookies/);
   assert.match(compiled.html, /Salted Caramel Chocolate/);
   assert.doesNotMatch(compiled.html, /DETERIORATING|IMPROVING|MIXED/);
   for (const artifact of [compiled.html, compiled.svg]) {
     assert.equal((artifact.match(/data-semantic-node="monthly_orders" data-semantic-item="true"/g) ?? []).length, 12);
-    assert.match(artifact, /data-semantic-node="monthly_orders"[^>]*data-structure="ordered-distribution"/);
+    assert.match(artifact, /data-semantic-node="monthly_orders"[^>]*data-structure="ordered-trajectory"/);
   }
   assert.equal(compiled.manifest.delivery.coverage.missing.length, 0);
   assert.equal(compiled.manifest.delivery.nodes.find((node) => node.id === 'monthly_orders').expectedItemCount, 12);
@@ -146,14 +146,14 @@ test('Bakery and CEO Sales deliver through the shared visual grammar without inv
       fileName: 'bakery.source.json',
       nodes: [
         { id: 'annual_orders', type: 'Trend', presentation: 'full_chart' },
-        { id: 'monthly_orders', type: 'Distribution', presentation: 'full_chart' },
+        { id: 'monthly_orders', type: 'Trend', presentation: 'full_chart' },
         { id: 'demand_drivers', type: 'Ranking', presentation: 'full_ranking' },
         { id: 'product_roi', type: 'Ranking', presentation: 'both_ends' }
       ],
       contextRequirements: [
         { id: 'ctx_annual_relative', type: 'relative_comparison', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
         { id: 'ctx_annual_temporal', type: 'temporal_reference', subject: 'annual_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
-        { id: 'ctx_monthly_distribution', type: 'distribution_shape', subject: 'monthly_orders', minimumCoverage: 'full_distribution', status: 'inferred' },
+        { id: 'ctx_monthly_temporal', type: 'temporal_reference', subject: 'monthly_orders', minimumCoverage: 'current_plus_reference', status: 'inferred' },
         { id: 'ctx_product_ranking', type: 'ranking_span', subject: 'product_roi', minimumCoverage: 'both_ends', status: 'inferred' }
       ]
     },
