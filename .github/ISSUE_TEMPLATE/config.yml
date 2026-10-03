@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: https://github.com/fourleaf13-hue/decision-first-dashboard/security/advisories/new
+    about: Please report vulnerabilities privately through the Security tab, not in a public issue.

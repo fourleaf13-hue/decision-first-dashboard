@@ -1,0 +1,74 @@
+name: Bug report
+description: Report incorrect compiler results, rendering defects, verification failures, or packaging problems
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the detailed report. **Please remove or syntheticize any real business data before pasting inputs** — do not share confidential dashboards, metrics, or datasets here.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node.js version (`node --version`), and how you obtained the code
+      placeholder: |
+        Windows 11 / Node v24.x / fresh clone @ <commit>
+    validations:
+      required: true
+  - type: dropdown
+    id: invocation
+    attributes:
+      label: Install path / invocation used
+      options:
+        - Repository clone (running scripts from the repo)
+        - npx skills add (installed agent skill)
+        - Uploaded skill ZIP artifact from CI
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Which pipeline path did you exercise?
+      description: The canonical path requires semantic state (compile-dashboard / requireSemantic). The legacy compatibility path (render.js direct) is separate.
+      options:
+        - Canonical path (compileDecisionDashboard / requireSemantic: true)
+        - Compatibility / legacy path (render.js direct call)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal input (synthetic is fine) plus the exact command
+      placeholder: |
+        1. Run `node skills/decision-first-dashboard/scripts/compile-dashboard.js <input.json>`
+        2. See …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: Include the stage / transition / error codes if the pipeline stopped (that is the most useful evidence)
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / errors
+      render: shell
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Data hygiene
+      options:
+        - label: I confirm no confidential or real business data remains in this report
+          required: true

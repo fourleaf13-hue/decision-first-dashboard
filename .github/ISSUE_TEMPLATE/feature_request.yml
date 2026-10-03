@@ -1,0 +1,40 @@
+name: Feature proposal
+description: Propose a new decision shape, presentation coverage, or capability
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Proposals are strongest when grounded in a decision you actually need to make on a recurring basis. **Use synthetic data in any examples.**
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem you are trying to decide
+      description: What decision or monitoring loop is not well served today?
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Recurring decision / use case
+      description: Who decides, how often, and what changes when a signal moves?
+    validations:
+      required: true
+  - type: textarea
+    id: insufficient
+    attributes:
+      label: Why current behavior is insufficient
+      description: Point at the specific stage (worthiness / intake / routing / grounding / composition / rendering) and what it does or refuses today.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence or example (optional, synthetic preferred)
+      description: A sample input bundle, screenshot of the manual version, or dataset shape that illustrates the case.
