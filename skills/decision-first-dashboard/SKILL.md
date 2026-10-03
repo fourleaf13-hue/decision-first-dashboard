@@ -19,7 +19,7 @@ A dashboard earns first-view screen space only when the information can change a
 
 Do not add bakery, sales, SaaS, executive, or monitoring renderer branches. There is one composition engine and one renderer entrypoint. Evolve the existing pipeline as `Decision Brief → Semantic Nodes → Node Presentation → Composition Modifiers → Coverage Manifest → Context Preservation Gate → deterministic renderer → delivered-artifact verifier`.
 
-Semantic nodes may be `MetricCluster`, `Trend`, `Distribution`, `Breakdown`, `Ranking`, `Relationship`, `ExceptionList`, or `Drilldown`. Audience and cadence modify priority, density, prominence, expansion, drilldown depth, and first-view budget; they are not renderer types and cannot discard context required by the confirmed decision.
+Semantic nodes may be `MetricCluster`, `Trend`, `Distribution`, `Breakdown`, `Ranking`, `Relationship`, `ExceptionList`, or `Drilldown`. Typing follows the axis each node expresses: when a set of observations is organized in temporal order by a real time index and expresses a state or trajectory changing over time, its semantic type must be `Trend`; `Distribution` covers category, bin, share, and frequency distributions and never substitutes for a temporal trajectory. Ordered is not `Trend`, and one source table may legitimately yield several semantic types — the node's axis semantics is what is typed, never its table origin. Audience and cadence modify priority, density, prominence, expansion, drilldown depth, and first-view budget; they are not renderer types and cannot discard context required by the confirmed decision.
 
 Use structured `contextRequirements` on the existing Decision Brief when the decision and source structure require retained comparison, distribution, ranking, target, attribution, or decomposition context. Each requirement has a stable `ctx_` id, subject, and minimum coverage. Infer unambiguous requirements, but ask only when an ambiguity would change the decision. Coverage is evaluated for the required subject, never satisfied by another node's compatible shape. Keep the full structure, use an explicit reachable drilldown, or fail closed; never silently replace it with a peak summary. The same source must keep its semantic nodes across audience/cadence changes; modifiers may alter priority, density, prominence, expansion, drilldown, or a node-owned presentation only when that variant preserves every required context.
 
@@ -90,6 +90,8 @@ Downstream transitions:
 
 - `PASS`
 - `FIX_METRIC_ROUTING`
+- `ASK_SEMANTIC_TYPING`
+- `FIX_SEMANTIC_TYPING`
 - `RETURN_TO_EVIDENCE_EXTRACTION`
 - `FALLBACK_TO_NO_SCORE`
 - `FIX_DECISION_STATE`
@@ -104,7 +106,7 @@ Downstream transitions:
 
 After composition selects the semantic nodes, the canonical compiler builds one Internal Visual Spec per selected node. The spec records `nodeId`, `semanticType`, `presentation`, `mark`, `orientation`, `encoding`, `scale`, `comparability`, and attributed `layout`. It is the only source of visual HOW; `render-semantic.js` must consume it and must not infer a chart from labels, audience, fixture, or use case.
 
-The grammar uses one shared registry and one renderer pipeline. Trend full charts are ordered temporal plots, Distribution full charts preserve the complete ordered distribution, full Rankings compare ordered magnitudes, both-end Rankings use an explicit high/low pair, and MetricCluster comparison uses independent metric tiles. Radar remains legal only after the existing Profile Test. No G2, Vega-Lite, Observable Plot, Recharts, ECharts, or other external rendering dependency is permitted.
+The grammar uses one shared registry and one renderer pipeline. Trend full charts are ordered temporal plots, Distribution full charts preserve the complete ordered distribution, full Rankings compare ordered magnitudes, both-end Rankings use an explicit high/low pair, and MetricCluster comparison uses independent metric tiles. Temporal typing is an upstream contract, not a renderer choice: month- or quarter-indexed observations tracing one continuous span are `Trend`, and recurring period-category bins stay `Distribution` only with an explicit categorical axis declaration (`references/semantic-visual-grammar.md`). Radar remains legal only after the existing Profile Test. No G2, Vega-Lite, Observable Plot, Recharts, ECharts, or other external rendering dependency is permitted.
 
 Shared position, length, area, or scale requires compatible unit, comparison group, comparability domain, normalization, and scale. Same unit is not sufficient. Mixed-unit metrics use independent scales; an illegal shared encoding or paired layout fails closed. Non-default layout patterns require a registered `reasonCode` plus a resolvable requirement, modifier, or evidence reference. The delivered verifier cross-checks these specs and their markers against both final HTML and SVG; a manifest-only composition claim is not delivery.
 
@@ -277,7 +279,7 @@ node scripts/worthiness.js <worthiness-assessment.json>
 node scripts/intake.js <decision-brief.json>
 ```
 
-`FIX_WORTHINESS_ASSESSMENT`, `ASK_WORTHINESS_QUESTION`, `REDIRECT_NON_DASHBOARD`, `FIX_DECISION_BRIEF`, `ASK_DECISION_BRIEF_QUESTION`, or `ASK_COMPOSITION_INTENT` produces no final SVG/HTML. Only `ALLOW_ROUTING` may enter Metric Router validation.
+`FIX_WORTHINESS_ASSESSMENT`, `ASK_WORTHINESS_QUESTION`, `REDIRECT_NON_DASHBOARD`, `FIX_DECISION_BRIEF`, `ASK_DECISION_BRIEF_QUESTION`, `ASK_COMPOSITION_INTENT`, `ASK_SEMANTIC_TYPING`, or `FIX_SEMANTIC_TYPING` produces no final SVG/HTML. Only `ALLOW_ROUTING` may enter Metric Router validation.
 
 On final `PASS`, the CLI writes:
 
@@ -352,6 +354,8 @@ package reports `stalenessRisk: true` and is rejected by formal acceptance.
 - `FIX_DECISION_BRIEF` → repair malformed intake state;
 - `ASK_DECISION_BRIEF_QUESTION` → ask one high-information question for unresolved Decision/Action;
 - `ASK_COMPOSITION_INTENT` → ask the returned `askQuestion` string verbatim; never surface internal reason codes, slot names, or archetype names in user-facing text;
+- `ASK_SEMANTIC_TYPING` → ask the returned `askQuestion` string verbatim: whether the month- or quarter-labeled series traces one continuous span of time (type it `Trend`) or aggregates recurring periods (keep `Distribution` with `axis.semantics: "categorical"`);
+- `FIX_SEMANTIC_TYPING` → retype the flagged node as `Trend` (or correct its temporal evidence); never bypass the typing error;
 - `ALLOW_ROUTING` → continue to Metric Router;
 - `FIX_METRIC_ROUTING` → repair routing; do not bypass it;
 - `RETURN_TO_EVIDENCE_EXTRACTION` → repair evidence/claims;
