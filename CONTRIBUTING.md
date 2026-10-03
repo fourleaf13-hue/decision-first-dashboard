@@ -10,7 +10,7 @@ Thanks for your interest in improving Decision-First Dashboard.
 
 ## Setup
 
-The package has **no runtime dependencies**. Tests use Node's built-in test runner (`node --test`, Node.js 18+).
+The package has **no runtime dependencies**. Tests use Node's built-in test runner (`node --test`). Use Node.js 22 to match CI.
 
 ```bash
 npm install   # no-op for dependencies, validates the manifest
