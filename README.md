@@ -4,6 +4,14 @@
 
 # Decision-First Dashboard
 
+<p align="center">
+  <a href="https://github.com/fourleaf13-hue/decision-first-dashboard/actions/workflows/compiler-tests.yml"><img src="https://github.com/fourleaf13-hue/decision-first-dashboard/actions/workflows/compiler-tests.yml/badge.svg?branch=main" alt="Compiler tests status"></a>
+  <a href="https://github.com/fourleaf13-hue/decision-first-dashboard/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
+  <a href="https://github.com/fourleaf13-hue/decision-first-dashboard/releases"><img src="https://img.shields.io/github/v/release/fourleaf13-hue/decision-first-dashboard?color=blue" alt="Latest release"></a>
+</p>
+
+<p align="center">Install: <code>npx skills add fourleaf13-hue/decision-first-dashboard</code> · <a href="#install">Quick start</a> · <a href="CONTRIBUTING.md">Contributing</a> · <a href="SECURITY.md">Security</a></p>
+
 ### Stop AI from turning every dashboard into the same 4 KPI cards + chart + table.
 
 Most AI dashboard redesigns look cleaner.
