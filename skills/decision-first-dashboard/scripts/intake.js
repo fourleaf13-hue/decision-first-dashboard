@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isCliEntrypoint } from './cli-entrypoint.js';
 import { validateAgainstSchema } from './validate.js';
 
 const currentFile = fileURLToPath(import.meta.url);
@@ -104,7 +105,7 @@ export function evaluateDecisionBrief(brief, {
   };
 }
 
-if (process.argv[1] === currentFile) {
+if (isCliEntrypoint(import.meta.url)) {
   const inputPath = process.argv[2];
   if (!inputPath) {
     process.stderr.write(`${JSON.stringify({

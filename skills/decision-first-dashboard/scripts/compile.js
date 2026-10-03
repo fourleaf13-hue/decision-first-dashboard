@@ -1,12 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { isCliEntrypoint } from './cli-entrypoint.js';
 import { validateGroundedBundle } from './grounding.js';
 import { renderHtml, renderSvg } from './render.js';
 import { buildDeliveredClaims } from './composition.js';
 import { isAtomicPageHeader } from './render-semantic.js';
-
-const currentFile = fileURLToPath(import.meta.url);
 
 function semanticDeliveryFailure(code, pathValue, message) {
   return {
@@ -107,7 +105,7 @@ export function compileGroundedBundle(
   }
 }
 
-if (process.argv[1] === currentFile) {
+if (isCliEntrypoint(import.meta.url)) {
   const inputPath = process.argv[2];
   const outputDir = process.argv[3] ?? path.dirname(inputPath ?? '.');
 

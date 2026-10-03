@@ -1,8 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const currentFile = fileURLToPath(import.meta.url);
+import { isCliEntrypoint } from './cli-entrypoint.js';
 
 function add(errors, code, message) {
   errors.push({ code, message });
@@ -53,7 +51,7 @@ export function evaluateRecordedAgentTurn(spec, response) {
   };
 }
 
-if (process.argv[1] === currentFile) {
+if (isCliEntrypoint(import.meta.url)) {
   const specPath = process.argv[2];
   const responsePath = process.argv[3];
   if (!specPath || !responsePath) {

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isCliEntrypoint } from './cli-entrypoint.js';
 import { validateDecisionState } from './validate.js';
 
 const currentFile = fileURLToPath(import.meta.url);
@@ -696,7 +697,7 @@ export function renderHtml(data, options = {}) {
   return data.mode === 'composite' ? renderCompositeHtml(data, options) : renderNoScoreHtml(data);
 }
 
-if (process.argv[1] === currentFile) {
+if (isCliEntrypoint(import.meta.url)) {
   const inputPath = process.argv[2];
   const outputDir = process.argv[3] ?? path.dirname(inputPath ?? '.');
 
