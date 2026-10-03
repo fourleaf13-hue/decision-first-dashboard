@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isCliEntrypoint } from './cli-entrypoint.js';
 
 const currentFile = fileURLToPath(import.meta.url);
 const currentDir = path.dirname(currentFile);
@@ -442,7 +443,7 @@ export function validateDecisionState(data) {
   return { valid: errors.length === 0, errors };
 }
 
-if (process.argv[1] === currentFile) {
+if (isCliEntrypoint(import.meta.url)) {
   const inputPath = process.argv[2];
   if (!inputPath) {
     console.error('Usage: node validate.js <decision-state.json>');
