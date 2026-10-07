@@ -7,7 +7,10 @@ import {
   renderSvg as renderSvgCore
 } from './render-core.js';
 import { renderNonRadarHtml, renderNonRadarSvg } from './render-non-radar.js';
-import { renderSemanticHtml, renderSemanticSvg } from './render-semantic.js';
+import {
+  renderSemanticHtml as renderSemanticHtmlCore,
+  renderSemanticSvg as renderSemanticSvgCore
+} from './render-semantic.js';
 import { buildInternalVisualSpecs } from './visual-grammar.js';
 import { applyEditorialHtml, applyEditorialSvg } from './editorial-visual-system.js';
 
@@ -184,13 +187,18 @@ function tuneHtmlRadar(markup, dimensions) {
   return tuned;
 }
 
+function renderSemanticSvg(data, composition, options) {
+  return applyEditorialSvg(renderSemanticSvgCore(data, composition, options));
+}
+
+function renderSemanticHtml(data, composition, options) {
+  return applyEditorialHtml(renderSemanticHtmlCore(data, composition, options));
+}
+
 export function renderSvg(data, options = {}) {
   const { composition } = options;
   if (options.requireSemantic) assertSemanticDeliveryContract(data, composition);
-  if (Array.isArray(data?.semanticNodes) && composition) {
-    const semantic = renderSemanticSvg(data, composition, { ...options, visualSpecs: visualSpecsFor(data, composition, options) });
-    return applyEditorialSvg(semantic);
-  }
+  if (Array.isArray(data?.semanticNodes) && composition) return renderSemanticSvg(data, composition, { ...options, visualSpecs: visualSpecsFor(data, composition, options) });
   const prepared = prepareRenderData(data);
   const coreMarkup = renderSvgCore(prepared, options);
   if (isPlainNoScore(prepared)) return renderNonRadarSvg(prepared);
@@ -201,10 +209,7 @@ export function renderSvg(data, options = {}) {
 export function renderHtml(data, options = {}) {
   const { composition } = options;
   if (options.requireSemantic) assertSemanticDeliveryContract(data, composition);
-  if (Array.isArray(data?.semanticNodes) && composition) {
-    const semantic = renderSemanticHtml(data, composition, { ...options, visualSpecs: visualSpecsFor(data, composition, options) });
-    return applyEditorialHtml(semantic);
-  }
+  if (Array.isArray(data?.semanticNodes) && composition) return renderSemanticHtml(data, composition, { ...options, visualSpecs: visualSpecsFor(data, composition, options) });
   const prepared = prepareRenderData(data);
   const coreMarkup = renderHtmlCore(prepared, options);
   if (isPlainNoScore(prepared)) return renderNonRadarHtml(prepared);
