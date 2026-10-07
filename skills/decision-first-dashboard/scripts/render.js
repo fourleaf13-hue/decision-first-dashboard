@@ -9,6 +9,7 @@ import {
 import { renderNonRadarHtml, renderNonRadarSvg } from './render-non-radar.js';
 import { renderSemanticHtml, renderSemanticSvg } from './render-semantic.js';
 import { buildInternalVisualSpecs } from './visual-grammar.js';
+import { applyEditorialHtml, applyEditorialSvg } from './editorial-visual-system.js';
 
 const SVG_LAYOUT = {
   cx: 698,
@@ -186,7 +187,10 @@ function tuneHtmlRadar(markup, dimensions) {
 export function renderSvg(data, options = {}) {
   const { composition } = options;
   if (options.requireSemantic) assertSemanticDeliveryContract(data, composition);
-  if (Array.isArray(data?.semanticNodes) && composition) return renderSemanticSvg(data, composition, { ...options, visualSpecs: visualSpecsFor(data, composition, options) });
+  if (Array.isArray(data?.semanticNodes) && composition) {
+    const semantic = renderSemanticSvg(data, composition, { ...options, visualSpecs: visualSpecsFor(data, composition, options) });
+    return applyEditorialSvg(semantic);
+  }
   const prepared = prepareRenderData(data);
   const coreMarkup = renderSvgCore(prepared, options);
   if (isPlainNoScore(prepared)) return renderNonRadarSvg(prepared);
@@ -197,7 +201,10 @@ export function renderSvg(data, options = {}) {
 export function renderHtml(data, options = {}) {
   const { composition } = options;
   if (options.requireSemantic) assertSemanticDeliveryContract(data, composition);
-  if (Array.isArray(data?.semanticNodes) && composition) return renderSemanticHtml(data, composition, { ...options, visualSpecs: visualSpecsFor(data, composition, options) });
+  if (Array.isArray(data?.semanticNodes) && composition) {
+    const semantic = renderSemanticHtml(data, composition, { ...options, visualSpecs: visualSpecsFor(data, composition, options) });
+    return applyEditorialHtml(semantic);
+  }
   const prepared = prepareRenderData(data);
   const coreMarkup = renderHtmlCore(prepared, options);
   if (isPlainNoScore(prepared)) return renderNonRadarHtml(prepared);
