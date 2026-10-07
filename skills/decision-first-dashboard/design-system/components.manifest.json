@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "visualSystem": "editorial-v1",
+  "components": [
+    {
+      "id": "finding",
+      "surface": "none",
+      "allowedRoles": ["anchor"],
+      "purpose": "Primary decision finding and its highest-priority grounded context.",
+      "containerDefault": false
+    },
+    {
+      "id": "primary-diagnostic",
+      "surface": "none",
+      "allowedRoles": ["primary"],
+      "purpose": "The single dominant visual explanation for the finding.",
+      "dominantVisual": true,
+      "containerDefault": false
+    },
+    {
+      "id": "secondary-evidence",
+      "surface": "none",
+      "allowedRoles": ["supporting"],
+      "purpose": "Subordinate evidence that supports but does not compete with the primary diagnostic.",
+      "dominantVisual": false,
+      "containerDefault": false
+    },
+    {
+      "id": "evidence-strip",
+      "surface": "none",
+      "allowedRoles": ["supporting", "detail"],
+      "purpose": "Compact driver evidence presented as a reading sequence instead of equal KPI cards.",
+      "maxItems": 3,
+      "containerDefault": false
+    },
+    {
+      "id": "recommended-action",
+      "surface": "subtle",
+      "allowedRoles": ["primary", "supporting"],
+      "purpose": "Independent next-move guidance supplied by upstream decision semantics.",
+      "containerDefault": true
+    },
+    {
+      "id": "metric-inline",
+      "surface": "none",
+      "allowedRoles": ["anchor", "primary", "supporting", "detail"],
+      "purpose": "A metric expressed inline with its semantic region rather than as a generic KPI tile.",
+      "containerDefault": false
+    },
+    {
+      "id": "chart-frame",
+      "surface": "none",
+      "allowedRoles": ["primary", "supporting"],
+      "purpose": "A flat visual frame for a router-approved chart encoding.",
+      "containerDefault": false
+    },
+    {
+      "id": "section-divider",
+      "surface": "none",
+      "allowedRoles": ["anchor", "primary", "supporting", "detail"],
+      "purpose": "A rule/whitespace grouping primitive used before introducing a container.",
+      "containerDefault": false
+    }
+  ],
+  "forbiddenFirstClassComponents": ["generic-card", "decorative-gradient", "icon-confetti"]
+}
