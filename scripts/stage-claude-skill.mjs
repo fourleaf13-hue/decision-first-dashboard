@@ -10,7 +10,7 @@ const defaultOutDir = path.join(repoRoot, 'dist', 'claude-skill');
 const outDir = path.resolve(process.argv[2] ?? defaultOutDir);
 const packageJsonPath = path.join(repoRoot, 'package.json');
 const pluginManifestPath = path.join(repoRoot, '.claude-plugin', 'plugin.json');
-const packageEntries = ['SKILL.md', 'scripts', 'schemas', 'templates', 'references'];
+const packageEntries = ['SKILL.md', 'scripts', 'schemas', 'templates', 'references', 'design-system'];
 const requiredRuntimeFiles = [
   'SKILL.md',
   'scripts/preflight.js',
@@ -22,6 +22,11 @@ const requiredRuntimeFiles = [
   'scripts/runtime-provenance-preflight.js',
   'scripts/bind-runtime-skill.js',
   'scripts/render.js',
+  'scripts/editorial-visual-system.js',
+  'design-system/DESIGN.md',
+  'design-system/tokens.css',
+  'design-system/components.manifest.json',
+  'design-system/archetypes/diagnosis.json',
   'schemas/worthiness-assessment.schema.json',
   'schemas/decision-brief.schema.json',
   'schemas/metric-routing.schema.json',
