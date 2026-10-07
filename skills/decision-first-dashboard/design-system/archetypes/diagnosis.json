@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "id": "diagnosis",
+  "status": "presentation_contract",
+  "visualSystem": "editorial-v1",
+  "semanticRouting": "not_defined_here",
+  "authority": "presentation_only",
+  "slots": [
+    {
+      "id": "finding",
+      "component": "finding",
+      "attentionRole": "anchor",
+      "span": "full",
+      "required": true,
+      "count": 1,
+      "heightPx": { "min": 160, "max": 240 }
+    },
+    {
+      "id": "primaryDiagnostic",
+      "component": "primary-diagnostic",
+      "attentionRole": "primary",
+      "span": "wide",
+      "required": true,
+      "count": 1,
+      "columns": 9
+    },
+    {
+      "id": "secondaryEvidence",
+      "component": "secondary-evidence",
+      "attentionRole": "supporting",
+      "span": "narrow",
+      "required": false,
+      "maxCount": 1,
+      "columns": 3
+    },
+    {
+      "id": "drivers",
+      "component": "evidence-strip",
+      "attentionRole": "supporting",
+      "span": "full",
+      "required": false,
+      "maxItems": 3
+    },
+    {
+      "id": "action",
+      "component": "recommended-action",
+      "attentionRole": "primary",
+      "span": "full",
+      "required": false,
+      "count": 1
+    }
+  ],
+  "visualWeightOrder": [
+    "finding",
+    "primaryDiagnostic",
+    "action",
+    "secondaryEvidence",
+    "controls"
+  ],
+  "chartBudget": {
+    "standardChartsMax": 3,
+    "microVisualsExcluded": true
+  },
+  "forbid": [
+    "kpi_strip_before_finding",
+    "equal_weight_grid",
+    "primary_area_filters",
+    "action_inside_evidence",
+    "decorative_gradient",
+    "renderer_invented_causality",
+    "renderer_invented_action"
+  ]
+}
