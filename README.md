@@ -359,7 +359,7 @@ The compiler does.
 
 ## Dashboard Worthiness
 
-Before asking how to render a dashboard, Decision-First asks whether a persistent dashboard is justified.
+Before asking how to render a dashboard, Decision-First asks whether a persistent dashboard is justified. The executable assessment is validated against `schemas/worthiness-assessment.schema.json`.
 
 The assessment records:
 
@@ -383,7 +383,7 @@ A dashboard is not the default just because data exists.
 
 ## Decision intake
 
-The Decision Brief captures the user's intended Decision and Action.
+The **adaptive Decision Brief** captures the user's intended Decision and Action before the **Metric Router** is allowed to run.
 
 Both must be explicitly confirmed before routing is allowed.
 
@@ -460,7 +460,7 @@ Same unit alone is not enough.
 
 ## Two evidence modes
 
-### No-score mode
+### No-score mode — no unsupported score invented
 
 If the source does not contain a defensible composite score model, Decision-First does not invent one.
 
@@ -474,11 +474,11 @@ It can still show:
 - rankings;
 - a real radar profile when the dimensions are genuinely comparable.
 
-### Composite mode
+### Composite mode — when the evidence supports it
 
 If the source provides a real composite model — including the required score, scale, normalized components, weights, aggregation rule, and score bands — Decision-First can preserve and display it.
 
-If those facts are missing, the system falls back to `no_score`.
+If those facts are missing, the system falls back to `no_score`. A composite-mode reference is available at `examples/saas/composite-mode.png`; the no-score radar reference is `examples/radar-profile/output.no-score.svg`.
 
 ---
 
@@ -564,11 +564,13 @@ The red lane records expected-negative contracts that are deliberately not yet p
 
 ## Trust boundary
 
-Decision-First currently provides strong guarantees about:
+Decision-First separates three integrity layers:
 
-1. **compiler integrity** — the canonical path must pass the required gates;
-2. **artifact integrity** — canonical output must carry the expected provenance and delivery state;
-3. **contract fidelity** — the delivered artifact is checked against the approved compiler inputs and structure.
+1. **Compiler integrity — hard-enforced.** Once the canonical compiler is invoked, its required worthiness, intake, routing, grounding, semantic, rendering, and delivered-verification gates must pass.
+2. **Artifact integrity — verifier-enforced.** Canonical HTML/SVG and `output.manifest.json` must carry the expected provenance and delivery state.
+3. **Agent invocation compliance — not runtime-enforced.** Repository tests prove compiler and artifact integrity; they **do not prove that an unconstrained agent actually invoked the canonical compiler** instead of bypassing it with a separate artifact.
+
+This does not prove that the agent or model followed the intended invocation path; it proves the behavior of the governed path when that path is actually used.
 
 It does **not** claim that:
 
@@ -579,6 +581,10 @@ It does **not** claim that:
 - every dashboard domain has been proven to generalize.
 
 Those boundaries are part of the product contract, not footnotes to hide.
+
+### Runtime Skill provenance gate
+
+Formal acceptance can run through `npm run run:acceptance`, which checks that the runtime is bound to the intended Skill package rather than a stale copied install. Runtime provenance is independent of dashboard semantics: logs, caches, and temp files must remain outside the package.
 
 ---
 
