@@ -12,21 +12,39 @@
 
 <p align="center">Install: <code>npx skills add fourleaf13-hue/decision-first-dashboard</code> · <a href="#install">Quick start</a> · <a href="CONTRIBUTING.md">Contributing</a> · <a href="SECURITY.md">Security</a></p>
 
-### Stop AI from turning every dashboard into the same 4 KPI cards + chart + table.
+### AI can generate a dashboard. Decision-First governs whether it should exist, what it is allowed to say, and what the final artifact is allowed to show.
 
-Most AI dashboard redesigns look cleaner.
+Most AI dashboard tools optimize for getting from data to a polished interface faster.
 
-They don't necessarily get smarter.
+**Decision-First starts earlier.**
 
-**Decision-First Dashboard first asks whether the dashboard deserves to exist — then figures out what decision it is actually for.**
+Before anything is rendered, it asks:
+
+> **Does this need to be a dashboard at all?**
+
+If it does, the dashboard must have a confirmed **Decision** and **Action**. Metrics earn first-view space because they change that decision — not because they happen to exist in the dataset.
+
+Then the compiler enforces the contract.
+
+### Authority → Enforcement → Verification
+
+- **Authority** — establish the confirmed Decision and Action, metric roles, semantic meaning, and source-backed evidence before rendering.
+- **Enforcement** — unsupported claims, ambiguous semantics, illegal comparisons, or missing required context fail closed instead of being smoothed over.
+- **Verification** — canonical HTML/SVG is cross-checked against the manifest and delivered-artifact markers so the final output can be verified, not merely inspected.
 
 > **What matters → Why → What should I do?**
 
+### A 3 / 10 / 30-second reading heuristic
+
+Most dashboards are optimized for reporting, not decisions. The showcase was redesigned around a simple 3 / 10 / 30-second heuristic:
+
+- **3 seconds** — see what needs attention.
+- **10 seconds** — understand why it matters.
+- **30 seconds** — reach enough supporting evidence to decide where to look or act next.
+
+This is a design heuristic for the showcase, not a substitute for the compiler's hard gates.
+
 ## Sometimes the right dashboard is no dashboard
-
-Before redesigning anything, it asks:
-
-> **Does this need to be a dashboard at all?**
 
 A dashboard should support a **recurring decision or monitoring loop**, have a clear **accountability path**, and change an action, priority, escalation, intervention, or coordination when an important signal changes.
 
@@ -36,33 +54,28 @@ That accountability path can be one owner, an on-call team, or a recurring share
 
 If the real job is one-off or passive, the skill can recommend a **one-off analysis**, **scheduled summary**, **alert**, report, or chat/query workflow instead of forcing another dashboard into existence.
 
-## Less dashboard. More decision.
+## Preserve the evidence. Control the meaning.
 
-Give it a messy dashboard, screenshot, Figma frame, existing dashboard code, or dataset.
+Give Decision-First a messy dashboard, screenshot, Figma frame, existing dashboard code, or verified dataset.
 
 Instead of treating every metric as equally important, it asks:
 
 > **If this number changes, would you actually do something differently?**
 
-The important signals move up.
+The important signals move up. Supporting details move down. The evidence stays available for diagnosis, drilldown, and traceability.
 
-The supporting details move down.
+**Preserve everything without showing everything.**
 
-The noise gets out of the way.
+Decision-First does not invent:
 
-**Keep the data. Lose the clutter.**
+- unsupported **“Health Score: 82”** verdicts;
+- arbitrary KPI priority;
+- decorative radar charts;
+- targets, thresholds, weights, or business meaning the source does not support.
 
-## No made-up insights
+If the evidence supports a score, use it. If it doesn't, show the real signals instead.
 
-No random **“Health Score: 82.”**
-
-No radar chart just because radar charts look fancy.
-
-No pretending unrelated metrics belong together.
-
-If the evidence supports a score, use it.
-
-If it doesn't, show the real signals instead.
+AI can make dashboards cleaner very quickly. It can also turn every problem into the same **4 KPI cards + chart + table**. Decision-First treats layout as the last step, not the first.
 
 ## Before → After
 
