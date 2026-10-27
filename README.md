@@ -8,6 +8,7 @@
   <a href="https://github.com/fourleaf13-hue/decision-first-dashboard/actions/workflows/compiler-tests.yml"><img src="https://github.com/fourleaf13-hue/decision-first-dashboard/actions/workflows/compiler-tests.yml/badge.svg?branch=main" alt="Compiler tests status"></a>
   <a href="https://github.com/fourleaf13-hue/decision-first-dashboard/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
   <a href="https://github.com/fourleaf13-hue/decision-first-dashboard/releases"><img src="https://img.shields.io/github/v/release/fourleaf13-hue/decision-first-dashboard?color=blue" alt="Latest release"></a>
+  <a href="https://skills.sh/fourleaf13-hue/decision-first-dashboard"><img src="https://skills.sh/b/fourleaf13-hue/decision-first-dashboard" alt="skills.sh installs"></a>
 </p>
 
 <p align="center">
