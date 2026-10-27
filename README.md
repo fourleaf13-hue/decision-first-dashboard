@@ -518,7 +518,7 @@ For Claude's **Skills → Upload skill** flow, use the dedicated `decision-first
 
 The artifact is packaged with `SKILL.md` at the ZIP root and without the repository-level plugin manifest.
 
-Do not use GitHub's repository ZIP as the standalone Claude Upload Skill package.
+Do not use GitHub's **Download ZIP** repository archive as the standalone Claude Upload Skill package.
 
 The repository is also packaged separately as a Claude plugin.
 
