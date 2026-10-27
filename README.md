@@ -34,6 +34,16 @@ Then the compiler enforces the contract.
 
 > **What matters → Why → What should I do?**
 
+### A 3 / 10 / 30-second reading heuristic
+
+Most dashboards are optimized for reporting, not decisions. The showcase was redesigned around a simple 3 / 10 / 30-second heuristic:
+
+- **3 seconds** — see what needs attention.
+- **10 seconds** — understand why it matters.
+- **30 seconds** — reach enough supporting evidence to decide where to look or act next.
+
+This is a design heuristic for the showcase, not a substitute for the compiler's hard gates.
+
 ## Sometimes the right dashboard is no dashboard
 
 A dashboard should support a **recurring decision or monitoring loop**, have a clear **accountability path**, and change an action, priority, escalation, intervention, or coordination when an important signal changes.
