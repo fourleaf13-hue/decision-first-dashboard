@@ -36,6 +36,26 @@ If it does, the user must confirm the **Decision** and **Action** during intake 
 
 The dashboard is then built around what can actually change that decision — not around everything that happens to exist in the dataset.
 
+## Try it in 60 seconds
+
+```bash
+npx skills add fourleaf13-hue/decision-first-dashboard
+```
+
+Then give your agent a dashboard screenshot, Figma frame, existing dashboard code, or verified metrics and try one of these:
+
+**Existing dashboard**
+
+> Review this dashboard. First decide whether it should be a dashboard at all. If yes, ask only what you need to confirm the Decision and Action before redesigning it.
+
+**KPI-heavy dashboard**
+
+> Redesign this KPI-heavy dashboard around the decision it needs to support. Preserve the evidence, but do not invent scores, rankings, thresholds, or unsupported conclusions.
+
+**Power BI / Tableau screenshot**
+
+> Audit this dashboard for decision relevance, KPI overload, unsupported visual semantics, and what should actually remain in the first view.
+
 ---
 
 ## What goes in
@@ -123,13 +143,18 @@ Source-backed claims are tied to explicit evidence anchors, and canonical output
 
 ---
 
-## Refusal is a feature
+## What Decision-First refuses to fake
 
 Decision-First is intentionally allowed to say **no**.
 
-If a visual encoding cannot be defended from the available evidence and semantic contract, it should not be produced merely because the chart type is available.
+| Input or request | Decision-First response |
+| --- | --- |
+| No confirmed Decision + Action | **No render** — intake must be resolved first |
+| Seven mixed or incomparable dimensions | **No radar** — shared-scale comparability must be defensible |
+| No grounded ordering basis | **No invented ranking** — ask for or recover a supported basis |
+| No defensible composite score model | **No health score** — fall back to a no-score representation |
 
-For example:
+If a visual encoding cannot be defended from the available evidence and semantic contract, it should not be produced merely because the chart type is available.
 
 ### Seven dimensions do not automatically justify a radar chart
 
