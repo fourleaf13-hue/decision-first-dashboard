@@ -1,6 +1,6 @@
 ---
 name: decision-first-dashboard
-description: Use when redesigning KPI-heavy dashboards where users must scan multiple independent metrics before understanding overall status, the main risk, whether performance is good enough, or what requires action.
+description: Use when reviewing, redesigning, or deciding whether to build KPI, BI, analytics, or executive dashboards—including Power BI or Tableau screenshots/exports—where users need to know what matters, what decision or action changes, and whether scores, rankings, trends, comparisons, or visual structures are actually supported by evidence.
 ---
 
 # Decision-First Dashboard
