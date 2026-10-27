@@ -2,7 +2,7 @@
   <img src="assets/decision-first-dashboard-hero.webp" alt="Decision-First Dashboard — from metric overload to clear decisions" width="100%">
 </p>
 
-# Decision-First Dashboard
+# Decision-First
 
 <p align="center">
   <a href="https://github.com/fourleaf13-hue/decision-first-dashboard/actions/workflows/compiler-tests.yml"><img src="https://github.com/fourleaf13-hue/decision-first-dashboard/actions/workflows/compiler-tests.yml/badge.svg?branch=main" alt="Compiler tests status"></a>
@@ -10,83 +10,207 @@
   <a href="https://github.com/fourleaf13-hue/decision-first-dashboard/releases"><img src="https://img.shields.io/github/v/release/fourleaf13-hue/decision-first-dashboard?color=blue" alt="Latest release"></a>
 </p>
 
-<p align="center">Install: <code>npx skills add fourleaf13-hue/decision-first-dashboard</code> · <a href="#install">Quick start</a> · <a href="CONTRIBUTING.md">Contributing</a> · <a href="SECURITY.md">Security</a></p>
+<p align="center">
+  Install: <code>npx skills add fourleaf13-hue/decision-first-dashboard</code>
+  · <a href="#install">Quick start</a>
+  · <a href="CONTRIBUTING.md">Contributing</a>
+  · <a href="SECURITY.md">Security</a>
+</p>
 
-### AI can generate a dashboard. Decision-First governs whether it should exist, what it is allowed to say, and what the final artifact is allowed to show.
+## AI can generate a dashboard. Decision-First governs what deserves to become one.
+
+A source can contain **70 valid KPIs without becoming a 70-KPI dashboard**.
+
+Decision-First is a rule-driven system for turning messy analytical inputs into decision-oriented dashboard artifacts while preserving provenance, enforcing semantic and structural constraints, and refusing outputs that cannot pass its current evidence and rendering gates.
+
+> **Preserve everything without showing everything.**
 
 Most AI dashboard tools optimize for getting from data to a polished interface faster.
 
-**Decision-First starts earlier.**
-
-Before anything is rendered, it asks:
+Decision-First starts earlier:
 
 > **Does this need to be a dashboard at all?**
 
-If it does, the dashboard must have a confirmed **Decision** and **Action**. Metrics earn first-view space because they change that decision — not because they happen to exist in the dataset.
+If it does, the user must confirm the **Decision** and **Action** during intake before routing or rendering can continue.
 
-Then the compiler enforces the contract.
+The dashboard is then built around what can actually change that decision — not around everything that happens to exist in the dataset.
 
-### Authority → Enforcement → Verification
+---
 
-- **Authority** — establish the confirmed Decision and Action, metric roles, semantic meaning, and source-backed evidence before rendering.
-- **Enforcement** — unsupported claims, ambiguous semantics, illegal comparisons, or missing required context fail closed instead of being smoothed over.
-- **Verification** — canonical HTML/SVG is cross-checked against the manifest and delivered-artifact markers so the final output can be verified, not merely inspected.
+## What goes in
 
-> **What matters → Why → What should I do?**
+Decision-First can work from inputs such as:
 
-### A 3 / 10 / 30-second reading heuristic
+- dashboard screenshots;
+- Figma frames;
+- existing dashboard code;
+- structured or normalized analytical data;
+- source-backed evidence extracted from other material.
 
-Most dashboards are optimized for reporting, not decisions. The showcase was redesigned around a simple 3 / 10 / 30-second heuristic:
+The user confirms the intended **Decision** and **Action** during intake.
 
-- **3 seconds** — see what needs attention.
-- **10 seconds** — understand why it matters.
+The system then determines:
+
+- whether a persistent dashboard is warranted;
+- which metrics are decision-relevant;
+- which evidence belongs in the first view;
+- which context must remain available for diagnosis or drilldown;
+- which visual structures are semantically legal;
+- and whether the final artifact matches the approved compiler output.
+
+It is designed to work alongside AI-assisted generation, but the governing rules are separate from the generative model.
+
+---
+
+## What it governs
+
+Decision-First does not begin with:
+
+> **What can we visualize?**
+
+It begins with:
+
+> **What must the user understand in order to make or support this decision?**
+
+That changes the role of the dashboard.
+
+The source may contain dozens of valid metrics, dimensions, exceptions, relationships, and candidate views.
+
+Decision-First preserves that analytical inventory without assuming that all of it belongs on screen.
+
+A metric earns first-view space because it changes the decision, exposes an active exception, or provides necessary diagnostic context — not simply because it exists.
+
+> **Preserve everything without showing everything.**
+
+---
+
+## Authority → Enforcement → Verification
+
+### Authority
+
+The user confirms the intended **Decision** and **Action** during intake.
+
+The system then establishes the allowed metric roles, semantic structures, evidence bindings, and presentation constraints that downstream rendering must respect.
+
+A screenshot or dataset may suggest intent.
+
+It does not silently confirm business intent.
+
+### Enforcement
+
+The compiler applies those rules to the available evidence and fails closed when required support is missing.
+
+Examples:
+
+- no confirmed Decision + Action → no routing;
+- no grounded ordering basis → no invented priority ranking;
+- incomparable dimensions → no unsupported shared-scale comparison;
+- no defensible composite score model → no invented health score;
+- unresolved semantic intent → ask instead of freestyle.
+
+Decision-First prefers a visible refusal or clarification over a polished artifact that implies more certainty than the evidence supports.
+
+### Verification
+
+The final artifact is checked against the compiler's declared output contract rather than being accepted because it looks correct.
+
+Canonical HTML/SVG, semantic delivery state, provenance, and the compiler's delivery record are cross-checked so divergence between the approved structure and the delivered file can be detected.
+
+**Verification proves that the delivered artifact is faithful to the inputs and contract it was given. It does not prove that the upstream inputs themselves are correct.**
+
+Source-backed claims are tied to explicit evidence anchors, and canonical outputs carry machine-verifiable provenance.
+
+---
+
+## Refusal is a feature
+
+Decision-First is intentionally allowed to say **no**.
+
+If a visual encoding cannot be defended from the available evidence and semantic contract, it should not be produced merely because the chart type is available.
+
+For example:
+
+### Seven dimensions do not automatically justify a radar chart
+
+A radar profile is allowed only when the dimensions are genuinely comparable on a defensible shared scale.
+
+Mixed-unit raw KPIs are not forced into one.
+
+### A ranking requires a grounded basis
+
+If the dashboard is supposed to prioritize candidates, the ordering must come from grounded rank evidence or another supported ordering basis.
+
+Decision-First does not invent a ranking just because a list exists.
+
+### A score requires a real score model
+
+A composite score is allowed only when the source provides the required score model facts, including the score, scale, components, normalization, weighting, aggregation, and bands.
+
+Otherwise the system falls back to a no-score representation.
+
+This is the core difference between generation and governance:
+
+**Generation asks what can be produced.**  
+**Governance asks what can be defended.**
+
+---
+
+## Sometimes the right dashboard is no dashboard
+
+Not every analytical problem deserves a persistent dashboard.
+
+A dashboard should support a recurring decision or monitoring loop, have an accountability path, and change some response when an important signal changes.
+
+That response may involve:
+
+- action;
+- priority;
+- escalation;
+- intervention;
+- coordination.
+
+“Visibility” alone is not enough.
+
+Some problems are better served by:
+
+- a one-off analysis;
+- a scheduled summary;
+- an alert;
+- a report;
+- a query or chat workflow.
+
+Decision-First can redirect to those formats when a persistent dashboard is not warranted.
+
+**Today, that path redirects the workflow; Decision-First does not generate the replacement artifact itself.**
+
+---
+
+## A 3 / 10 / 30-second reading heuristic
+
+Most dashboards are optimized for reporting, not decisions.
+
+The showcase was redesigned around a simple reading heuristic:
+
+- **3 seconds** — see what needs attention;
+- **10 seconds** — understand why it matters;
 - **30 seconds** — reach enough supporting evidence to decide where to look or act next.
 
 This is a design heuristic for the showcase, not a substitute for the compiler's hard gates.
 
-## Sometimes the right dashboard is no dashboard
+> **What matters → Why → What should I do?**
 
-A dashboard should support a **recurring decision or monitoring loop**, have a clear **accountability path**, and change an action, priority, escalation, intervention, or coordination when an important signal changes.
-
-That accountability path can be one owner, an on-call team, or a recurring shared forum such as a board or cross-functional review. It does not have to be one named person.
-
-“Visibility” alone isn't enough.
-
-If the real job is one-off or passive, the skill can recommend a **one-off analysis**, **scheduled summary**, **alert**, report, or chat/query workflow instead of forcing another dashboard into existence.
-
-## Preserve the evidence. Control the meaning.
-
-Give Decision-First a messy dashboard, screenshot, Figma frame, existing dashboard code, or verified dataset.
-
-Instead of treating every metric as equally important, it asks:
-
-> **If this number changes, would you actually do something differently?**
-
-The important signals move up. Supporting details move down. The evidence stays available for diagnosis, drilldown, and traceability.
-
-**Preserve everything without showing everything.**
-
-Decision-First does not invent:
-
-- unsupported **“Health Score: 82”** verdicts;
-- arbitrary KPI priority;
-- decorative radar charts;
-- targets, thresholds, weights, or business meaning the source does not support.
-
-If the evidence supports a score, use it. If it doesn't, show the real signals instead.
-
-AI can make dashboards cleaner very quickly. It can also turn every problem into the same **4 KPI cards + chart + table**. Decision-First treats layout as the last step, not the first.
+---
 
 ## Before → After
 
 **Before:** dozens of metrics competing for attention.
 
-**After:** what matters, why it changed, and what needs attention next.
+**After:** the minimum sufficient decision signals, the reason they matter, and the evidence needed to investigate further.
 
 <table>
   <tr>
     <th width="50%">Before</th>
-    <th width="50%">No-score radar profile — no unsupported score invented</th>
+    <th width="50%">Decision-First After</th>
   </tr>
   <tr>
     <td width="50%"><img src="examples/saas/before.png" width="100%"></td>
@@ -94,132 +218,131 @@ AI can make dashboards cleaner very quickly. It can also turn every problem into
   </tr>
 </table>
 
-The After showcase uses five source-backed percentage dimensions on one 0–100 scale, so the radar is real rather than decorative. Mixed-unit raw KPIs still use the non-radar fallback.
+The After example uses source-backed percentage dimensions on one defensible 0–100 scale.
+
+If the dimensions were not comparable, the radar would not be allowed.
+
+---
+
+## What is enforced today
+
+Current production contracts include:
+
+- dashboard worthiness assessment before dashboard generation;
+- explicit user-confirmed Decision and Action before routing;
+- metric routing bound to that confirmed intent;
+- preservation of the complete metric inventory while limiting first-view exposure;
+- grounded requirements for supported ranking behavior;
+- semantic node typing and presentation eligibility;
+- temporal vs categorical axis semantics;
+- comparability requirements for shared position, length, area, and scale;
+- no unsupported composite score;
+- exact source anchoring for source-backed claims;
+- source file hashing and evidence binding;
+- deterministic compiler-owned HTML/SVG output;
+- canonical provenance;
+- delivered artifact checks against the compiler's delivery state.
+
+Some areas are still being hardened.
+
+In particular, stronger production enforcement for **evaluative business language** — for example claims such as “healthy,” “poor,” “most important,” or “needs attention” when those judgments are not themselves grounded — remains an active boundary rather than a solved problem.
+
+The repository deliberately distinguishes between:
+
+**implemented**  
+**tested**  
+**expected-negative / still being hardened**
+
+Those are not treated as the same thing.
+
+---
+
+## What's tested
+
+Decision-First is tested against both successful compilation and refusal behavior.
+
+The current repository test suite includes contracts around:
+
+- Dashboard Worthiness transitions;
+- ambiguous-intent intake behavior;
+- Decision + Action confirmation;
+- large metric inventories;
+- metric routing;
+- no-score and composite compilation;
+- evidence grounding;
+- semantic node rendering;
+- radar eligibility;
+- comparability and scale behavior;
+- canonical provenance;
+- delivered HTML/SVG verification;
+- byte-level golden snapshots;
+- runtime skill provenance;
+- standalone skill packaging.
+
+The repository also maintains an **expected-negative lane** for contracts that are intentionally visible but not yet productionized.
+
+```bash
+npm run test:red-lane
+```
+
+Those tests document known boundaries instead of hiding them.
+
+Repository tests establish specific contracts and regressions.
+
+**They are not proof that every dashboard domain, every source type, or every live model invocation will generalize correctly.**
+
+---
 
 ## How it works
 
-You don't need to know the perfect KPI set or chart type first.
-
-The skill first checks whether a persistent dashboard is warranted. If it is, it asks only enough questions to understand the decision and what action could change. **Decision and Action must be explicitly confirmed before routing or rendering can proceed.** Then it routes the available metrics by role instead of putting everything on the first screen.
-
-A source can contain 70 valid KPIs without becoming a 70-KPI dashboard.
-
-> **Preserve everything without showing everything.**
-
-Metrics are routed as `primary_signal`, `diagnostic`, `exception`, `drilldown`, or `scorecard_only`.
-
-The first view keeps the minimum sufficient decision signals plus active exceptions. Everything else stays available for diagnosis, drilldown, or traceability.
-
-## Two evidence modes
-
-### No-score mode — no unsupported score invented
-
-If the source does not contain a defensible composite model, the skill does **not** make one up.
-
-It can still show direction, important changes, exceptions, and a true 3–6 dimension radar profile when those dimensions are genuinely comparable on one source-grounded scale.
-
-Unrelated raw KPIs are not forced into a radar chart.
-
-### Composite mode — when the evidence supports it
-
-If the source already provides a real score model — including the score, scale, normalized components, weights, aggregation rule, and score bands — the skill can preserve and display that grounded score without forcing it into the radar center.
-
-<img src="examples/saas/composite-mode.png" width="760">
-
-If those facts are missing, it falls back to `no_score` instead of guessing.
-
-## Install
-
-```bash
-npx skills add fourleaf13-hue/decision-first-dashboard
-```
-
-### Claude workspace — Upload skill
-
-For Claude's **Skills → Upload skill** flow, use the dedicated `decision-first-dashboard-skill` artifact from the latest successful [Compiler tests](https://github.com/fourleaf13-hue/decision-first-dashboard/actions/workflows/compiler-tests.yml) run. Download that artifact ZIP and upload it directly to Claude.
-
-That artifact is built from only `skills/decision-first-dashboard/`, with `SKILL.md` at the ZIP root and without `.claude-plugin/plugin.json`.
-
-**Do not use GitHub's Download ZIP for Claude Upload skill.** The repository ZIP contains the plugin manifest and nests `SKILL.md` under the repository/skill folders, which Claude rejects for a standalone skill upload.
-
-The repository is also packaged as a standard Claude plugin via `.claude-plugin/plugin.json` for Anthropic Plugin Directory submission. The plugin package and the standalone Claude Upload Skill package intentionally remain separate.
-
-## Use
-
-Give your agent a dashboard screenshot, Figma frame, existing dashboard code, or verified metrics and ask:
-
-> Redesign this dashboard using the `decision-first-dashboard` skill.
-
-The skill will first check whether a dashboard is the right format. If it is, it clarifies the decision if needed, routes the metrics, verifies source support, and renders the decision-first output.
-
-An ambiguous prompt such as “redesign this dashboard” is **not render permission**. A screenshot can establish source facts, but it cannot silently confirm the user's Decision or Action. If either is unresolved, the machine intake gate returns `ASK_DECISION_BRIEF_QUESTION` and no dashboard artifact is produced.
-
-**HTML is the primary After deliverable** when file generation is available: use the canonical `output.no-score.html` or `output.composite.html` written by `compile-dashboard.js`. SVG remains the static preview/support artifact for README comparisons, review, and regression testing rather than the main user deliverable.
-
-The canonical compiler also writes `output.manifest.json` and stamps the HTML/SVG with machine-verifiable provenance. A second agent-authored HTML, image, SVG, React app, or native artifact is not the canonical After merely because it looks better.
-
-### Semantic Visual Grammar
-
-The canonical semantic path separates decision context from visual representation:
+The production path is intentionally staged.
 
 ```text
-Semantic Node → presentation eligibility → comparability → layout eligibility
-  → Internal Visual Spec → deterministic renderer → delivered verifier
+User context
+↓
+Worthiness Assessment
+↓
+worthiness gate
+↓
+Decision Brief
+↓
+intake gate
+↓
+evidence extraction
+↓
+Metric Router
+↓
+grounded decision state
+↓
+semantic composition
+↓
+routing + grounding checks
+↓
+deterministic renderer
+↓
+canonical HTML / SVG + output.manifest.json
+↓
+delivered-artifact verification
 ```
 
-The Internal Visual Spec is delivered in the manifest and mirrored by `data-visual-*` markers in both HTML and SVG. Trend, distribution, ranking, paired ranking, metric-strip, and radar presentations have distinct structural output. Shared position/length/area/scale is allowed only for compatible unit, comparison group, comparability domain, normalization, and scale; same unit alone is not enough. The grammar is implemented in the existing pipeline and has no external chart-rendering dependency or use-case-specific template registry.
+The agent does not own the final visual output.
 
-### Runtime Skill provenance gate
+The compiler does.
 
-Before an acceptance run, validate that the runtime is reading the intended
-Skill package rather than a stale copied install. On Windows, the supported
-runtime path is `%USERPROFILE%\.agents\skills\decision-first-dashboard`; bind it
-to this repository's `skills\decision-first-dashboard` directory with the
-standalone installer:
+---
 
-```powershell
-npm run bind:runtime-skill -- --repo-skill-path "$PWD\skills\decision-first-dashboard" --runtime-skill-path "$env:USERPROFILE\.agents\skills\decision-first-dashboard"
-```
+## Dashboard Worthiness
 
-The installer prefers a directory junction and falls back to a directory
-symlink. An existing wrong link fails without overwrite. An ordinary copied
-directory is never deleted silently; pass an explicit recoverable
-`--backup-existing <path>` only when moving that stale copy is intended.
+Before asking how to render a dashboard, Decision-First asks whether a persistent dashboard is justified.
 
-Run a fresh acceptance through the formal acceptance entrypoint. It invokes the
-independent provenance gate before the acceptance command, passes
-`--reject-staleness-risk`, and never starts the acceptance command when
-provenance fails:
+The assessment records:
 
-```powershell
-npm run run:acceptance -- --repo-root "$PWD" --runtime-skill-path "$env:USERPROFILE\.agents\skills\decision-first-dashboard" --expected-repo-head "<expected-40-char-commit>" --run node <acceptance-script.js>
-```
+- whether there is a recurring decision or monitoring loop;
+- whether there is a real accountability path;
+- whether changing signals lead to a meaningful response;
+- whether the task is better served by another format.
 
-The JSON report from the formal entrypoint includes the repository/runtime binding, physical-target check,
-pre/post tree hashes, content equality/stability, package invariants, clean
-repository status, `stalenessRisk`, `firstFailingCheck`, repair diagnostics,
-and `acceptanceValid`. The hash covers the complete Skill package with an
-explicit empty-by-default exclude list, using sorted original-case POSIX paths
-and `relativePath + NUL + fileBytes`; logs, caches, and temp files must remain
-outside the package. A copied package may be content-identical and still has
-`stalenessRisk: true`; formal acceptance rejects that binding before execution.
-The lower-level `preflight:runtime-provenance` command remains available for
-diagnostics and unit testing, but is not a substitute for the formal entrypoint.
-Do not start a fresh Bakery acceptance until the report ends with
-`result: RUNTIME_PROVENANCE_PASS`.
-
-Attention is intentionally restrained by default. Ordinary deterioration and routed exceptions stay visible through values, deltas, profile shape, and compact exception surfaces; large red warning banners, alarm icons, and `Action needed` / `Critical` / `Warning` language require explicit source-grounded alert semantics or an explicit user-supplied alert policy.
-
-<details>
-<summary><strong>Under the hood</strong></summary>
-
-### Dashboard Worthiness Test
-
-Before the Decision Brief, the agent produces a structured assessment matching `schemas/worthiness-assessment.schema.json`.
-
-It records whether there is a recurring decision or monitoring loop, an accountability path, and a response that changes. A shared decision forum is a valid accountability path; a single named owner is not required.
-
-The agent does **not** choose the next transition. The compiler validates the assessment and decides:
+Possible transitions include:
 
 ```text
 BUILD_DECISION_BRIEF
@@ -228,17 +351,15 @@ REDIRECT_NON_DASHBOARD
 FIX_WORTHINESS_ASSESSMENT
 ```
 
-If the request is only “visibility” or is better handled as a one-off analysis, scheduled summary, alert, report, or chat/query workflow, dashboard rendering stops by default. If the user explicitly chooses a dashboard after seeing that trade-off, `userOverride: true` can continue to the Decision Brief — but it still must pass intake, routing, and grounding.
+A dashboard is not the default just because data exists.
 
-This machine gate checks schema and internal semantic consistency. **It does not prove the agent interpreted the user's natural-language intent correctly.** Live host/model behavior still requires end-to-end evaluation.
+---
 
-Any Worthiness questions count toward the same five-question intake budget as the Decision Brief; this is not a second questionnaire.
+## Decision intake
 
-### Adaptive Decision Brief + machine intake gate
+The Decision Brief captures the user's intended Decision and Action.
 
-The skill asks one question at a time, no more than five total across Worthiness + Decision Brief intake, and stops as soon as it has enough confirmed context. Source facts can suggest intent, but they do not silently become business intent.
-
-The structured Decision Brief matches `schemas/decision-brief.schema.json`. `scripts/intake.js` requires both `decision.status` and `action.status` to be `confirmed` before routing is allowed:
+Both must be explicitly confirmed before routing is allowed.
 
 ```text
 ALLOW_ROUTING
@@ -246,121 +367,162 @@ ASK_DECISION_BRIEF_QUESTION
 FIX_DECISION_BRIEF
 ```
 
-An inferred Decision or Action is not equivalent to confirmation. The routing manifest must also preserve the confirmed Decision and Action wording; changing either downstream is a routing failure.
+An inferred Decision or Action is not equivalent to confirmation.
 
-The first intent question should use the user's working language:
+The system asks only as many questions as needed, within a shared intake budget.
 
-> **When you open this dashboard, what are you trying to figure out or do next?**
+---
 
-If the answer remains abstract, ask:
+## Metric routing
 
-> **What would make that job easier?**
+Metrics are not treated as equal peers.
 
-“What decision does this dashboard support?” is a fallback phrasing, not a requirement to use framework terminology.
-
-### Metric Router
-
-The Action Trigger Test asks: **if this metric changes materially, what decision or action changes?**
-
-The routing manifest preserves the complete extracted inventory while keeping only the minimum sufficient first-view signals visible. Active exceptions cannot be hidden to make the dashboard look healthier.
-
-Metric-level Worthiness is evaluated within the same pipeline. Each metric may be inferred, confirmed, or overridden against the dimensions **what changes**, **who cares**, and **what changes in response**. Monitoring and compliance metrics without an immediate action are not silently deleted: they may be demoted to diagnostic, exception, drill-down, or scorecard-only presentation while remaining preserved in the evidence inventory. A material ambiguity is raised only when candidate routing outcomes diverge and that divergence changes primary/hero eligibility; an override is a routing input that must regenerate the canonical artifact.
-
-### Four production gates
-
-The canonical production compiler has four ordered gates:
-
-1. **Worthiness gate** — validates the structured Worthiness Assessment and decides whether to continue, clarify, redirect, or repair the assessment.
-2. **Intake gate** — validates the Decision Brief and blocks routing until Decision + Action are confirmed.
-3. **Routing gate** — verifies metric-routing semantics and exact binding to the confirmed Decision + Action.
-4. **Grounding gate** — verifies that rendered source claims resolve back to source evidence.
-
-Downstream transitions include:
+They may be routed as:
 
 ```text
-ALLOW_ROUTING
-ASK_DECISION_BRIEF_QUESTION
-FIX_DECISION_BRIEF
-PASS
-FIX_METRIC_ROUTING
-RETURN_TO_EVIDENCE_EXTRACTION
-FALLBACK_TO_NO_SCORE
-FIX_DECISION_STATE
+primary_signal
+diagnostic
+exception
+drilldown
+scorecard_only
 ```
 
-Composite output is allowed only when all score-model facts are mechanically grounded. Screenshot workflows should first create a verifiable text/JSON sidecar for claims that need byte-level grounding.
+The first view keeps the minimum sufficient decision signals plus active exceptions.
 
-### Canonical output provenance
+Everything else remains available for diagnosis, drilldown, or traceability.
 
-A successful `compile-dashboard.js` run stamps the final HTML with canonical renderer metadata and embeds a provenance record in the SVG. It also writes `output.manifest.json` containing hashes for the source, Worthiness Assessment, Decision Brief, routing manifest, grounded bundle, decision state, HTML, and SVG.
+A source can contain 70 valid KPIs without becoming a 70-KPI dashboard.
 
-This turns “does this look like our renderer?” into a machine-verifiable question. If a final artifact does not have canonical provenance, it is not the canonical Decision-First After.
+---
 
-### Known limitations / trust boundary
+## Semantic Visual Grammar
 
-The repository distinguishes three separate integrity layers:
-
-1. **Compiler integrity — hard-enforced.** Once `compile-dashboard.js` is invoked, the canonical path must pass Worthiness, Decision Brief, Metric Router, semantic composition, semantic rendering, and delivered verification. The production entrypoint cannot fall back to the legacy renderer.
-2. **Artifact integrity — verifier-enforced.** Final HTML/SVG and `output.manifest.json` must carry canonical provenance, semantic markers, delivered coverage, and a verifier-issued hash-bound verification stamp. A lookalike artifact is not canonical output.
-3. **Agent invocation compliance — behaviorally guarded, not runtime-enforced.** Repository tests cannot prove that an unconstrained agent actually invoked `compile-dashboard.js` instead of writing HTML/SVG directly. Skill instructions and recorded agent evaluations improve compliance, but they are not trusted execution attestation. A runtime with generic file-writing or code-execution capability may still bypass the intended workflow unless the runtime restricts canonical delivery.
-
-Repository tests prove compiler and artifact integrity. They do not prove that an unconstrained agent actually invoked the canonical compiler.
-
-**Schema green ≠ routing green ≠ canonical output green.** Validation must distinguish three claims: the contract shape is valid, routing/composition behavior is correct, and the final HTML/SVG actually contains the delivered semantic result. The delivery gate therefore cross-checks the final artifact's machine-readable markers against the delivered manifest; a composition plan that is not present in the artifact fails even when every schema passes.
-
-The repository also includes a recorded agent E2E regression based on a real ambiguous Sales Dashboard prompt. The passing first turn asks one question for missing decision context; a native artifact that skips intake is rejected. This is a deterministic recorded-turn contract, not a live model benchmark.
-
-### Visual rules
-
-- no four-equal-KPI top row;
-- no dominant giant table;
-- 3–6 primary signals in the first-view center;
-- radar only for 3–6 comparable peer dimensions on one grounded scale;
-- no invented action buttons, targets, scores, weights, or thresholds;
-- active negative/critical exceptions cannot be cosmetically suppressed;
-- soft attention is the default; hard-alert treatment requires explicit source-grounded alert semantics;
-- SVG and HTML consume the same validated decision state, with HTML as the primary user-facing deliverable and SVG as preview/support output.
-
-### Production path
+Decision context and visual representation are separate stages.
 
 ```text
-User context
-→ structured Worthiness Assessment
-→ worthiness validation
-→ structured Decision Brief
-→ intake validation
-→ evidence extraction
-→ Metric Router
-→ no_score / composite decision
-→ grounded decision state
-→ routing validation
-→ grounding validation
-→ deterministic render
-→ canonical HTML / SVG + output.manifest.json
+Semantic Node
+→ presentation eligibility
+→ comparability
+→ layout eligibility
+→ Internal Visual Spec
+→ deterministic renderer
+→ delivered verifier
 ```
 
-From the skill directory:
+Current semantic node types include:
+
+```text
+MetricCluster
+Trend
+Distribution
+Breakdown
+Ranking
+Relationship
+ExceptionList
+Drilldown
+```
+
+Trend is not treated as Distribution.
+
+A recurring calendar bucket is not automatically treated as a temporal trajectory.
+
+Shared visual encodings require compatible semantic and comparability contracts.
+
+Same unit alone is not enough.
+
+---
+
+## Two evidence modes
+
+### No-score mode
+
+If the source does not contain a defensible composite score model, Decision-First does not invent one.
+
+It can still show:
+
+- important signals;
+- changes;
+- exceptions;
+- comparisons;
+- distributions;
+- rankings;
+- a real radar profile when the dimensions are genuinely comparable.
+
+### Composite mode
+
+If the source provides a real composite model — including the required score, scale, normalized components, weights, aggregation rule, and score bands — Decision-First can preserve and display it.
+
+If those facts are missing, the system falls back to `no_score`.
+
+---
+
+## Canonical output
+
+When file generation is available, HTML is the primary user-facing deliverable.
+
+The compiler writes:
+
+```text
+output.no-score.html
+output.composite.html
+output.no-score.svg
+output.composite.svg
+output.manifest.json
+```
+
+The SVG is useful for static preview, review, and regression testing.
+
+The HTML is the primary interactive artifact.
+
+A second agent-authored HTML, SVG, image, React app, or other artifact is not the canonical Decision-First output merely because it looks better.
+
+Canonical output comes from the compiler-owned path.
+
+---
+
+## Install
 
 ```bash
-node scripts/worthiness.js path/to/worthiness-assessment.json
-node scripts/intake.js path/to/decision-brief.json
-node scripts/compile-dashboard.js path/to/worthiness-assessment.json path/to/decision-brief.json path/to/routing-manifest.json path/to/grounded-bundle.json path/to/output-directory
+npx skills add fourleaf13-hue/decision-first-dashboard
 ```
 
-Mode-specific outputs:
+### Claude workspace — Upload Skill
 
-```text
-no_score   → primary: output.no-score.html    | preview: output.no-score.svg
-composite  → primary: output.composite.html   | preview: output.composite.svg
-both       → audit: output.manifest.json
-```
+For Claude's **Skills → Upload skill** flow, use the dedicated `decision-first-dashboard-skill` artifact from the latest successful Compiler Tests run.
 
-</details>
+The artifact is packaged with `SKILL.md` at the ZIP root and without the repository-level plugin manifest.
+
+Do not use GitHub's repository ZIP as the standalone Claude Upload Skill package.
+
+The repository is also packaged separately as a Claude plugin.
+
+---
+
+## Use
+
+Give your agent a dashboard screenshot, Figma frame, existing dashboard code, or verified metrics and ask:
+
+> Redesign this dashboard using the `decision-first-dashboard` skill.
+
+An ambiguous request such as:
+
+> “Redesign this dashboard.”
+
+is **not render permission**.
+
+The source may establish facts.
+
+It cannot silently confirm the user's Decision or Action.
+
+If intent is unresolved, the system asks before rendering.
+
+---
 
 ## Development
 
 ```bash
 npm test
+npm run test:red-lane
 npm run package:claude-skill
 npm run validate:saas
 npm run render:saas
@@ -368,30 +530,55 @@ npm run validate:radar-showcase
 npm run render:radar-showcase
 ```
 
-`npm test` is the default contract suite and must stay green. A separate
-expected-negative lane records contracts that are deliberately not productionized yet:
+`npm test` is the default production contract suite and should remain green.
 
-```bash
-npm run test:red-lane
-```
+The red lane records expected-negative contracts that are deliberately not yet productionized.
 
-A non-zero exit from the red lane is the documented status of those standing gaps
-(e.g. RED-6 evaluation grounding), not a release gate; CI runs it with
-`continue-on-error` so the gap stays visible without turning the default command red.
+---
 
-For Anthropic plugin packaging, validate the repository root with a current Claude Code CLI before submission:
+## Trust boundary
 
-```bash
-claude plugin validate . --strict
-```
+Decision-First currently provides strong guarantees about:
 
-GitHub Actions runs the compiler suite, including the plugin manifest contract, executable Worthiness scenario fixtures, the machine Decision Brief intake gate, the recorded ambiguous-prompt agent E2E contract, 70-KPI Metric Router behavior, canonical provenance, routed production compilation, grounded composite/no-score compilation, radar rendering, byte-level golden snapshots, the HTML delivery/attention-intensity contract, and the standalone Claude Upload Skill packaging contract.
+1. **compiler integrity** — the canonical path must pass the required gates;
+2. **artifact integrity** — canonical output must carry the expected provenance and delivery state;
+3. **contract fidelity** — the delivered artifact is checked against the approved compiler inputs and structure.
+
+It does **not** claim that:
+
+- every upstream source is factually correct;
+- every source is authoritative simply because it is available;
+- every business judgment can already be validated automatically;
+- an unconstrained external agent can never bypass the intended compiler path;
+- every dashboard domain has been proven to generalize.
+
+Those boundaries are part of the product contract, not footnotes to hide.
+
+---
 
 ## What this is not
 
-This is not a generic chart library and not a prompt that asks AI to freestyle a prettier admin dashboard.
+Decision-First is not:
 
-It is a decision-first workflow with worthiness, intake, routing, evidence checks, canonical provenance, and deterministic rendering so the output is useful **and** auditable.
+- a generic chart library;
+- a prompt for making admin dashboards prettier;
+- a guarantee that all source data is correct;
+- a replacement for business ownership or domain judgment;
+- a system that turns every dataset into a dashboard.
+
+It is a decision-first compiler and governance layer for dashboard artifacts that need stronger control over:
+
+**what deserves to appear, what the evidence supports, how meaning is encoded, and whether the delivered artifact obeys the declared contract.**
+
+---
+
+## The principle
+
+**AI can generate. Decision-First governs.**
+
+The system preserves the analytical evidence base while exposing only what the decision requires.
+
+> **Preserve everything without showing everything.**
 
 ## License
 
