@@ -40,12 +40,12 @@ The revised After example does four important things:
 
 ## Important note
 
-The radar chart is illustrative, not mandatory.
+This fixture demonstrates **composite mode**, not a universal page template. The radar chart is illustrative, not mandatory.
 
-The real pattern is:
+The reusable contract is semantic, not positional:
 
-- a dominant status signal;
-- clearly defined score inputs;
-- diagnostics at the sides;
-- action targets;
-- outcome impact separated from score composition.
+- the source-backed composite score may be prominent because this source provides a defensible score model;
+- score inputs remain distinguishable from diagnostics and business outcomes;
+- action-relevant exceptions stay reachable;
+- outcome impact remains separate from score composition;
+- final page structure is derived from the confirmed decision, action, semantic nodes, and grounded composition intent rather than a fixed three-column or center-and-sides layout.
