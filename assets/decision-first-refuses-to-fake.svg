@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="1024" viewBox="0 0 1536 1024" role="img" aria-labelledby="title desc">
+  <title id="title">What Decision-First refuses to fake</title>
+  <desc id="desc">Four production-backed refusal examples: no render without a confirmed Decision and Action, no radar without comparable dimensions, no invented ranking without a grounded basis, and no health score without a defensible composite score model.</desc>
+  <defs>
+    <linearGradient id="cardTint" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff4f4"/><stop offset="1" stop-color="#f2fbf7"/></linearGradient>
+    <linearGradient id="okTint" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e8f8ef"/><stop offset="1" stop-color="#d9f4e4"/></linearGradient>
+    <linearGradient id="badTint" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff0f0"/><stop offset="1" stop-color="#fde4e4"/></linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#101828" flood-opacity="0.06"/></filter>
+    <style>
+      .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; }
+      .serif { font-family: Georgia, "Times New Roman", serif; }
+      .h1 { font-size: 58px; font-weight: 700; fill: #101828; }
+      .sub { font-size: 22px; fill: #526071; }
+      .panelTitle { font-size: 24px; font-weight: 700; fill: #151b26; }
+      .eyebrow { font-size: 18px; font-weight: 700; fill: #151b26; }
+      .body { font-size: 16px; fill: #536174; }
+      .result { font-size: 18px; font-weight: 700; fill: #15743b; }
+      .bad { font-size: 18px; font-weight: 700; fill: #a62525; }
+      .mid { font-size: 18px; font-weight: 700; fill: #4d5968; }
+      .small { font-size: 13px; fill: #536174; }
+      .metric { font-size: 15px; fill: #273244; }
+    </style>
+  </defs>
+  <rect width="1536" height="1024" fill="#ffffff"/>
+  <text x="768" y="62" text-anchor="middle" class="serif h1">What Decision-First refuses to fake</text>
+  <text x="768" y="104" text-anchor="middle" class="sans sub">The compiler is allowed to refuse when evidence does not justify a visual, ranking, score, or render.</text>
+
+  <g transform="translate(20,142)" filter="url(#shadow)">
+    <rect x="0" y="0" width="738" height="402" rx="18" fill="url(#cardTint)" stroke="#eef0f3"/>
+    <circle cx="38" cy="38" r="21" fill="#3e4b5b"/><text x="38" y="45" text-anchor="middle" class="sans" font-size="18" font-weight="700" fill="#fff">1</text>
+    <text x="76" y="46" class="serif panelTitle">No confirmed Decision + Action</text>
+    <rect x="18" y="78" width="336" height="242" rx="14" fill="#fff" stroke="#eef0f3"/>
+    <text x="36" y="110" class="sans eyebrow">Common AI behavior</text>
+    <text x="36" y="136" class="sans body"><tspan x="36" dy="0">Gets a screenshot and redesigns</tspan><tspan x="36" dy="22">immediately.</tspan></text>
+    <g transform="translate(64,166)"><rect x="0" y="0" width="244" height="106" rx="12" fill="#f6f8fb" stroke="#d9dee7"/><rect x="18" y="18" width="80" height="12" rx="6" fill="#aab5c3"/><rect x="18" y="42" width="208" height="10" rx="5" fill="#d5dbe3"/><rect x="18" y="64" width="138" height="10" rx="5" fill="#d5dbe3"/><rect x="158" y="74" width="68" height="18" rx="9" fill="#5d8ee5"/></g>
+    <rect x="368" y="78" width="352" height="242" rx="14" fill="#fff" stroke="#e0efe6"/>
+    <text x="386" y="110" class="sans result">Decision-First result</text><text x="386" y="136" class="sans body">Stops before routing or rendering.</text>
+    <g transform="translate(450,164)"><circle cx="110" cy="48" r="36" fill="none" stroke="#aeb6c0" stroke-width="5"/><line x1="84" y1="22" x2="136" y2="74" stroke="#aeb6c0" stroke-width="5"/><text x="110" y="112" text-anchor="middle" class="serif mid">No render</text><text x="110" y="138" text-anchor="middle" class="sans small">Intake must be resolved first.</text></g>
+    <rect x="18" y="334" width="336" height="52" rx="12" fill="url(#badTint)"/><circle cx="40" cy="360" r="13" fill="#e44444"/><text x="40" y="366" text-anchor="middle" class="sans" font-size="20" font-weight="700" fill="#fff">×</text><text x="62" y="356" class="sans bad">Invented intent</text><text x="62" y="377" class="sans small">Source data cannot confirm business intent.</text>
+    <rect x="368" y="334" width="352" height="52" rx="12" fill="url(#okTint)"/><circle cx="390" cy="360" r="13" fill="#1b9a50"/><text x="390" y="366" text-anchor="middle" class="sans" font-size="18" font-weight="700" fill="#fff">✓</text><text x="412" y="356" class="sans result">Refuses to fake it</text><text x="412" y="377" class="sans small">User confirmation is a hard gate.</text>
+  </g>
+
+  <g transform="translate(778,142)" filter="url(#shadow)">
+    <rect x="0" y="0" width="738" height="402" rx="18" fill="url(#cardTint)" stroke="#eef0f3"/>
+    <circle cx="38" cy="38" r="21" fill="#3e4b5b"/><text x="38" y="45" text-anchor="middle" class="sans" font-size="18" font-weight="700" fill="#fff">2</text>
+    <text x="76" y="46" class="serif panelTitle">Mixed dimensions do not make a radar</text>
+    <rect x="18" y="78" width="336" height="242" rx="14" fill="#fff" stroke="#eef0f3"/><text x="36" y="110" class="sans eyebrow">Common AI behavior</text><text x="36" y="136" class="sans body"><tspan x="36" dy="0">Sees seven dimensions and</tspan><tspan x="36" dy="21">draws a radar.</tspan></text>
+    <g transform="translate(58,154)"><polygon points="110,8 180,35 210,102 176,166 110,192 44,166 10,102 40,35" fill="none" stroke="#cfd6df" stroke-width="2"/><polygon points="110,32 162,52 184,103 160,150 110,168 60,150 34,103 60,54" fill="none" stroke="#e2e6ec" stroke-width="2"/><line x1="110" y1="8" x2="110" y2="192" stroke="#e2e6ec"/><line x1="10" y1="102" x2="210" y2="102" stroke="#e2e6ec"/><line x1="40" y1="35" x2="176" y2="166" stroke="#e2e6ec"/><line x1="180" y1="35" x2="44" y2="166" stroke="#e2e6ec"/><polygon points="110,50 155,70 168,108 148,139 108,152 70,132 54,98 78,62" fill="#7ba7f3" fill-opacity="0.28" stroke="#3478db" stroke-width="3"/><circle cx="110" cy="50" r="4" fill="#3478db"/><circle cx="155" cy="70" r="4" fill="#3478db"/><circle cx="168" cy="108" r="4" fill="#3478db"/><circle cx="148" cy="139" r="4" fill="#3478db"/><circle cx="108" cy="152" r="4" fill="#3478db"/><circle cx="70" cy="132" r="4" fill="#3478db"/><circle cx="54" cy="98" r="4" fill="#3478db"/><circle cx="78" cy="62" r="4" fill="#3478db"/></g>
+    <rect x="368" y="78" width="352" height="242" rx="14" fill="#fff" stroke="#e0efe6"/><text x="386" y="110" class="sans result">Decision-First result</text><text x="386" y="136" class="sans body"><tspan x="386" dy="0">Rejects the shared scale when</tspan><tspan x="386" dy="22">comparability fails.</tspan></text>
+    <g transform="translate(450,164)"><circle cx="110" cy="48" r="36" fill="none" stroke="#aeb6c0" stroke-width="5"/><line x1="84" y1="22" x2="136" y2="74" stroke="#aeb6c0" stroke-width="5"/><text x="110" y="112" text-anchor="middle" class="serif mid">No radar</text><text x="110" y="138" text-anchor="middle" class="sans small">Same unit alone is not enough.</text></g>
+    <rect x="18" y="334" width="336" height="52" rx="12" fill="url(#badTint)"/><circle cx="40" cy="360" r="13" fill="#e44444"/><text x="40" y="366" text-anchor="middle" class="sans" font-size="20" font-weight="700" fill="#fff">×</text><text x="62" y="356" class="sans bad">Unsupported comparison</text><text x="62" y="377" class="sans small">Different semantics cannot share one scale.</text>
+    <rect x="368" y="334" width="352" height="52" rx="12" fill="url(#okTint)"/><circle cx="390" cy="360" r="13" fill="#1b9a50"/><text x="390" y="366" text-anchor="middle" class="sans" font-size="18" font-weight="700" fill="#fff">✓</text><text x="412" y="356" class="sans result">Refuses to fake it</text><text x="412" y="377" class="sans small">Misleading is worse than no radar.</text>
+  </g>
+
+  <g transform="translate(20,568)" filter="url(#shadow)">
+    <rect x="0" y="0" width="738" height="432" rx="18" fill="url(#cardTint)" stroke="#eef0f3"/><circle cx="38" cy="38" r="21" fill="#3e4b5b"/><text x="38" y="45" text-anchor="middle" class="sans" font-size="18" font-weight="700" fill="#fff">3</text><text x="76" y="46" class="serif panelTitle">Missing basis does not make a ranking</text>
+    <rect x="18" y="78" width="336" height="272" rx="14" fill="#fff" stroke="#eef0f3"/><text x="36" y="110" class="sans eyebrow">Common AI behavior</text><text x="36" y="136" class="sans body"><tspan x="36" dy="0">Sorts category performance and</tspan><tspan x="36" dy="22">invents priority.</tspan></text>
+    <g transform="translate(60,166)"><text x="0" y="12" class="sans metric">A</text><rect x="22" y="0" width="215" height="18" rx="3" fill="#5d8ee5"/><text x="246" y="14" class="sans metric">95</text><text x="0" y="48" class="sans metric">B</text><rect x="22" y="36" width="166" height="18" rx="3" fill="#5d8ee5"/><text x="197" y="50" class="sans metric">72</text><text x="0" y="84" class="sans metric">C</text><rect x="22" y="72" width="156" height="18" rx="3" fill="#5d8ee5"/><text x="187" y="86" class="sans metric">68</text><text x="0" y="120" class="sans metric">D</text><rect x="22" y="108" width="119" height="18" rx="3" fill="#5d8ee5"/><text x="150" y="122" class="sans metric">52</text><text x="0" y="156" class="sans metric">E</text><rect x="22" y="144" width="94" height="18" rx="3" fill="#5d8ee5"/><text x="125" y="158" class="sans metric">41</text></g>
+    <rect x="368" y="78" width="352" height="272" rx="14" fill="#fff" stroke="#e0efe6"/><text x="386" y="110" class="sans result">Decision-First result</text><text x="386" y="136" class="sans body"><tspan x="386" dy="0">Requires a grounded ordering</tspan><tspan x="386" dy="22">basis before ranking.</tspan></text>
+    <g transform="translate(450,178)"><circle cx="110" cy="48" r="36" fill="none" stroke="#aeb6c0" stroke-width="5"/><line x1="84" y1="22" x2="136" y2="74" stroke="#aeb6c0" stroke-width="5"/><text x="110" y="112" text-anchor="middle" class="serif mid">No ranking</text><text x="110" y="138" text-anchor="middle" class="sans small">Raw magnitude is not a priority rule.</text></g>
+    <rect x="18" y="364" width="336" height="52" rx="12" fill="url(#badTint)"/><circle cx="40" cy="390" r="13" fill="#e44444"/><text x="40" y="396" text-anchor="middle" class="sans" font-size="20" font-weight="700" fill="#fff">×</text><text x="62" y="386" class="sans bad">Invented priority</text><text x="62" y="407" class="sans small">No grounded basis, no ordered claim.</text>
+    <rect x="368" y="364" width="352" height="52" rx="12" fill="url(#okTint)"/><circle cx="390" cy="390" r="13" fill="#1b9a50"/><text x="390" y="396" text-anchor="middle" class="sans" font-size="18" font-weight="700" fill="#fff">✓</text><text x="412" y="386" class="sans result">Refuses to fake it</text><text x="412" y="407" class="sans small">Ask for or recover a grounded basis.</text>
+  </g>
+
+  <g transform="translate(778,568)" filter="url(#shadow)">
+    <rect x="0" y="0" width="738" height="432" rx="18" fill="url(#cardTint)" stroke="#eef0f3"/><circle cx="38" cy="38" r="21" fill="#3e4b5b"/><text x="38" y="45" text-anchor="middle" class="sans" font-size="18" font-weight="700" fill="#fff">4</text><text x="76" y="46" class="serif panelTitle">No score model means no health score</text>
+    <rect x="18" y="78" width="336" height="272" rx="14" fill="#fff" stroke="#eef0f3"/><text x="36" y="110" class="sans eyebrow">Common AI behavior</text><text x="36" y="136" class="sans body"><tspan x="36" dy="0">Blends KPIs into a synthetic</tspan><tspan x="36" dy="22">“health” number.</tspan></text>
+    <g transform="translate(92,170)"><circle cx="92" cy="72" r="66" fill="#f1f5fb" stroke="#d7dee8" stroke-width="10"/><path d="M92 6 A66 66 0 1 1 42 115" fill="none" stroke="#5d8ee5" stroke-width="10" stroke-linecap="round"/><text x="92" y="72" text-anchor="middle" class="sans" font-size="42" font-weight="700" fill="#1e5fb6">82</text><text x="92" y="98" text-anchor="middle" class="sans small">Health Score</text></g>
+    <rect x="368" y="78" width="352" height="272" rx="14" fill="#fff" stroke="#e0efe6"/><text x="386" y="110" class="sans result">Decision-First result</text><text x="386" y="136" class="sans body"><tspan x="386" dy="0">Falls back to no-score mode unless</tspan><tspan x="386" dy="22">the model is grounded.</tspan></text>
+    <g transform="translate(450,178)"><circle cx="110" cy="48" r="36" fill="none" stroke="#aeb6c0" stroke-width="5"/><line x1="84" y1="22" x2="136" y2="74" stroke="#aeb6c0" stroke-width="5"/><text x="110" y="112" text-anchor="middle" class="serif mid">No health score</text><text x="110" y="138" text-anchor="middle" class="sans small">Score, scale, weights and bands must exist.</text></g>
+    <rect x="18" y="364" width="336" height="52" rx="12" fill="url(#badTint)"/><circle cx="40" cy="390" r="13" fill="#e44444"/><text x="40" y="396" text-anchor="middle" class="sans" font-size="20" font-weight="700" fill="#fff">×</text><text x="62" y="386" class="sans bad">Invented score</text><text x="62" y="407" class="sans small">Available KPIs do not imply a score model.</text>
+    <rect x="368" y="364" width="352" height="52" rx="12" fill="url(#okTint)"/><circle cx="390" cy="390" r="13" fill="#1b9a50"/><text x="390" y="396" text-anchor="middle" class="sans" font-size="18" font-weight="700" fill="#fff">✓</text><text x="412" y="386" class="sans result">Refuses to fake it</text><text x="412" y="407" class="sans small">No-score is a valid explicit outcome.</text>
+  </g>
+</svg>
