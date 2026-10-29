@@ -7,8 +7,12 @@ import {
   renderSvg as renderSvgCore
 } from './render-core.js';
 import { renderNonRadarHtml, renderNonRadarSvg } from './render-non-radar.js';
-import { renderSemanticHtml, renderSemanticSvg } from './render-semantic.js';
+import {
+  renderSemanticHtml as renderSemanticHtmlCore,
+  renderSemanticSvg as renderSemanticSvgCore
+} from './render-semantic.js';
 import { buildInternalVisualSpecs } from './visual-grammar.js';
+import { applyEditorialHtml, applyEditorialSvg } from './editorial-visual-system.js';
 
 const SVG_LAYOUT = {
   cx: 698,
@@ -181,6 +185,14 @@ function tuneHtmlRadar(markup, dimensions) {
 
   tuned = tuneHtmlLabels(tuned, dimensions);
   return tuned;
+}
+
+function renderSemanticSvg(data, composition, options) {
+  return applyEditorialSvg(renderSemanticSvgCore(data, composition, options));
+}
+
+function renderSemanticHtml(data, composition, options) {
+  return applyEditorialHtml(renderSemanticHtmlCore(data, composition, options));
 }
 
 export function renderSvg(data, options = {}) {
