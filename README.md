@@ -147,6 +147,10 @@ Source-backed claims are tied to explicit evidence anchors, and canonical output
 
 Decision-First is intentionally allowed to say **no**.
 
+<p align="center">
+  <img src="assets/decision-first-refuses-to-fake.svg" alt="Decision-First refusal examples: no render without confirmed Decision and Action, no radar without comparability, no ranking without a grounded basis, and no health score without a defensible score model" width="100%">
+</p>
+
 | Input or request | Decision-First response |
 | --- | --- |
 | No confirmed Decision + Action | **No render** — intake must be resolved first |
